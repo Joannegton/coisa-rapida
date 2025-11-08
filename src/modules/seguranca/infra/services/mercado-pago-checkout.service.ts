@@ -1,26 +1,45 @@
-// import { Injectable, Logger } from '@nestjs/common';
-// import { InjectRepository } from '@nestjs/typeorm';
-// import { Repository } from 'typeorm';
-// import { MercadoPagoService } from 'src/modules/seguranca/infra/services/mercado-pago.service';
-// import { CriarCheckoutMercadoPagoDto } from '../controllers/dto/criar-checkout-mercado-pago.dto';
+import { Injectable, Logger } from '@nestjs/common';
+import { MercadoPagoService } from './mercado-pago.service';
 
-// // Importar as entidades necessárias
-// // import { Aluguel } from 'src/domains/aluguel/infra/typeorm/aluguel.entity';
-// // import { Pagamento } from '../typeorm/pagamento.entity';
+export interface CriarPreferenciaCaucaoParams {
+  aluguelId: string;
+  valorCaucao: number;
+  locatarioEmail: string;
+  itemNome: string;
+}
 
-// @Injectable()
-// export class MercadoPagoCheckoutService {
-//   private readonly logger = new Logger(MercadoPagoCheckoutService.name);
-//   private readonly mercadoPagoIntegration: MercadoPagoService;
+@Injectable()
+export class MercadoPagoCheckoutService {
+  private readonly logger = new Logger(MercadoPagoCheckoutService.name);
 
-//   constructor(
-//     // @InjectRepository(Aluguel)
-//     // private readonly aluguelRepository: Repository<Aluguel>,
-//     // @InjectRepository(Pagamento)
-//     // private readonly pagamentoRepository: Repository<Pagamento>,
-//   ) {
-//     this.mercadoPagoIntegration = new MercadoPagoService();
-//   }
+  constructor(
+    private readonly mercadoPagoService: MercadoPagoService,
+  ) {}
+
+  /**
+   * Cria preferência de pagamento para caução (escrow)
+   */
+  async criarPreferenciaCaucao(params: CriarPreferenciaCaucaoParams) {
+    this.logger.log(`Criando preferência de caução para aluguel ${params.aluguelId}`);
+
+    const preferencia = await this.mercadoPagoService.criarPreferenciaPagamento({
+      aluguelId: params.aluguelId,
+      valor: params.valorCaucao,
+      itemNome: `Caução - ${params.itemNome}`,
+      itemDescricao: `Caução de garantia para aluguel do item ${params.itemNome}`,
+      locatarioEmail: params.locatarioEmail,
+    });
+
+    return preferencia;
+  }
+
+  /**
+   * Obtém status de um pagamento
+   */
+  async obterStatusPagamento(paymentId: number) {
+    return this.mercadoPagoService.obterStatusPagamento(paymentId);
+  }
+}
 
 //   /**
 //    * Cria um checkout de pagamento no Mercado Pago
