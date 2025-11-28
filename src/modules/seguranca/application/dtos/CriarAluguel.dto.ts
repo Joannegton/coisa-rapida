@@ -31,9 +31,21 @@ class ParticipanteDto {
   @IsOptional()
   @IsString()
   contaMPId?: string;
+
+  @IsOptional()
+  @IsString()
+  chavePix?: string;
+
+  @IsOptional()
+  @IsString()
+  telefonePix?: string;
+
+  @IsOptional()
+  @IsString()
+  cpfPix?: string;
 }
 
-export class CriarCaucaoDto {
+export class CriarAluguelDto {
   @IsNotEmpty()
   @ValidateNested()
   @Type(() => ItemAluguelDto)
@@ -52,15 +64,18 @@ export class CriarCaucaoDto {
   @IsNotEmpty()
   @IsNumber()
   @Min(0)
-  valorCaucao: number;
-
-  @IsNotEmpty()
-  @IsNumber()
-  @Min(0)
   valorAluguel: number;
 
   @IsOptional()
   @IsNumber()
   @Min(0)
   taxaAppPercentual?: number;
+
+  /**
+   * Opcional: Se informado, cria aluguel com caução
+   * Se não informado, cria aluguel SEM caução
+   */
+  @IsOptional()
+  @IsNumber()
+  caucao?: number;
 }

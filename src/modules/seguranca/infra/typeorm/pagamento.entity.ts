@@ -3,12 +3,9 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
-  ManyToOne,
-  JoinColumn,
   BaseEntity,
   PrimaryColumn,
 } from 'typeorm';
-import { UsuarioModel } from '../models/Usuario.model';
 
 export enum PagamentoTipoEnum {
   ALUGUEL = 'aluguel',
@@ -84,19 +81,11 @@ export class PagamentoModel extends BaseEntity implements PagamentoModelProps {
   multa_id?: string | null;
 
   // Partes envolvidas
-  @Column('uuid')
+  @Column('text')
   pagador_id: string;
 
-  @ManyToOne(() => UsuarioModel)
-  @JoinColumn({ name: 'pagador_id' })
-  pagador: UsuarioModel;
-
-  @Column('uuid')
+  @Column('text')
   recebedor_id: string;
-
-  @ManyToOne(() => UsuarioModel)
-  @JoinColumn({ name: 'recebedor_id' })
-  recebedor: UsuarioModel;
 
   // Valores
   @Column('decimal', { precision: 10, scale: 2 })

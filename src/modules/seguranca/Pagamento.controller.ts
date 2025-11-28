@@ -1,4 +1,14 @@
-import { Controller, Post, Body, UseGuards, UseInterceptors, UploadedFiles, HttpException, Query, Headers, Res, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  HttpException,
+  Query,
+  Headers,
+  Res,
+  HttpStatus,
+} from '@nestjs/common';
 import { FirebaseAuthGuard } from './infra/auth/FirebaseAuth.guard';
 import { CriarCheckoutDto } from './application/dtos/Pagamento.dto';
 import { ProcessarWebhookUsecase } from './application/usecases/ProcessarWebhook.usecase';
@@ -16,22 +26,23 @@ export class PagamentoController {
 
   @UseGuards(FirebaseAuthGuard)
   @Post('criar')
-  async criarCheckout(
-    @Body() props: CriarCheckoutDto,
-  ): Promise<any> {
-      const result = await this.criarPreferenciaPagamentoUsecase.execute(props);
+  async criarCheckout(@Body() props: CriarCheckoutDto): Promise<any> {
+    const result = await this.criarPreferenciaPagamentoUsecase.execute(props);
 
-      if (result.ehFalha()) {
-        throw new HttpException({
+    if (result.ehFalha()) {
+      throw new HttpException(
+        {
           success: false,
           message: result.erro?.message || 'Erro desconhecido',
-        }, 400);
-      }
+        },
+        400,
+      );
+    }
 
-      return {
-        success: true,
-        data: result.valor,
-      };
+    return {
+      success: true,
+      data: result.valor,
+    };
   }
 
   @Post('webhook')
@@ -43,9 +54,16 @@ export class PagamentoController {
   ): Promise<any> {
     const signature = headers['x-signature'];
     const requestId = headers['x-request-id'];
-    const dataId = query['data.id'];
+    // O dataId pode vir de diferentes lugares dependendo do tipo de webhook
+    const dataId = query['data.id'] || query['id'] || body.data?.id || body.id;
 
-    const result = await this.processarWebhookUsecase.execute({signature, requestId, dataId, body});
+    const result = await this.processarWebhookUsecase.execute({
+      signature,
+      requestId,
+      dataId,
+      body,
+      query,
+    });
 
     if (result.ehFalha()) {
       return res.status(400).json({
@@ -58,13 +76,18 @@ export class PagamentoController {
   }
 
   @Post('status')
-  async obterStatusPagamento(@Body('paymentId') paymentId: number): Promise<any> {
+  async obterStatusPagamento(
+    @Body('paymentId') paymentId: number,
+  ): Promise<any> {
     const result = await this.obterStatusPagamentoUsecase.execute(paymentId);
     if (result.ehFalha()) {
-      throw new HttpException({
-        success: false,
-        message: result.erro?.message || 'Erro desconhecido',
-      }, 400);
+      throw new HttpException(
+        {
+          success: false,
+          message: result.erro?.message || 'Erro desconhecido',
+        },
+        400,
+      );
     }
     return {
       success: true,

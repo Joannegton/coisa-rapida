@@ -1,8 +1,16 @@
-# 💸 Integração com Transferências do Mercado Pago
+# 💸 Distribuição de Valores - Modelo MVP para Conta PF
 
-## ✅ Implementação Completa
+## ✅ Solução Implementada para MVP
 
-A integração com a API de transferências do Mercado Pago foi implementada com sucesso para distribuir automaticamente os valores da caução ao finalizar um aluguel.
+Sistema adaptado para **conta Pessoa Física** do Mercado Pago, utilizando **reembolsos automáticos** + **transferências manuais** via Pix/TED.
+
+### 🎯 Por que essa abordagem?
+
+- ✅ **Conta PF não tem acesso à API de transferências/splits**
+- ✅ **Solução viável para MVP** sem necessidade de conta empresarial
+- ✅ **Reembolso automático** funciona em contas PF
+- ✅ **Transferências manuais** via Pix são rápidas e gratuitas
+- ✅ **Escalável**: Pode migrar para automação quando virar PJ
 
 ## 🏗️ Arquitetura Implementada
 
@@ -11,15 +19,12 @@ A integração com a API de transferências do Mercado Pago foi implementada com
 Localização: `src/modules/seguranca/infra/services/mercado-pago-transfer.service.ts`
 
 **Funcionalidades:**
-- ✅ `transferir()` - Transfere valores para conta do locador
-- ✅ `reembolsar()` - Reembolsa caução para o locatário
-- ✅ `criarPagamentoComSplit()` - Split de pagamento entre múltiplos recebedores
-- ✅ `consultarTransferencia()` - Consulta status de transferência
+- ✅ `reembolsar()` - Reembolsa caução para o locatário (AUTOMÁTICO)
+- ✅ `gerarInstrucoesTransferenciaManual()` - Gera instruções Pix para locador (MANUAL)
 - ✅ `consultarReembolso()` - Consulta status de reembolso
 
 **APIs utilizadas:**
-- `/v1/advanced_payments` - Para transferências e splits
-- `/v1/payments/{id}/refunds` - Para reembolsos
+- `/v1/payments/{id}/refunds` - Para reembolsos automáticos
 
 ### 2. Entidade de Domínio (`Transferencia`)
 
@@ -33,6 +38,7 @@ Localização: `src/modules/seguranca/domain/Transferencia.ts`
 **Estados:**
 - `PENDENTE` - Transferência criada, aguardando processamento
 - `PROCESSANDO` - Em processamento no Mercado Pago
+- `AGUARDANDO_TRANSFERENCIA_MANUAL` - **Aguardando execução manual via Pix/TED**
 - `CONCLUIDA` - Transferência realizada com sucesso
 - `FALHOU` - Erro na transferência (pode ser retentada)
 
@@ -50,18 +56,18 @@ Localização: `src/modules/seguranca/domain/Transferencia.ts`
 
 ### 4. Use Case Atualizado (`FinalizarAluguelUseCase`)
 
-**Fluxo Implementado:**
+**Fluxo Implementado (Modelo MVP):**
 
 ```typescript
 1. Valida aluguel e caução
 2. Calcula valores (taxa, locador, locatário, indenização)
 3. Valida reconciliação dos valores
 4. Atualiza status do aluguel e caução
-5. EXECUTA TRANSFERÊNCIAS REAIS:
-   a) Transfere para locador (aluguel líquido + indenização)
-   b) Reembolsa locatário (caução restante)
-6. Registra todas as transferências no banco
-7. Retorna resultado com IDs das transferências
+5. DISTRIBUI VALORES:
+   a) Gera INSTRUÇÕES MANUAIS para locador (Pix/TED)
+   b) Executa REEMBOLSO AUTOMÁTICO para locatário
+6. Registra todas as operações no banco
+7. Retorna instruções de transferência + status do reembolso
 ```
 
 ## 📊 Exemplo de Uso

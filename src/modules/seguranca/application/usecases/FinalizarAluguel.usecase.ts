@@ -1,29 +1,12 @@
 import { Injectable, Logger, BadRequestException, NotFoundException } from '@nestjs/common';
-import { v4 as uuidv4 } from 'uuid';
 import { Aluguel } from '../../domain/Aluguel';
 import { AluguelRepository } from '../../infra/repositories/Aluguel.repository';
-import { CaucaoRepository } from '../../infra/repositories/Caucao.repository';
-import { TransferenciaRepository } from '../../infra/repositories/Transferencia.repository';
 import { MercadoPagoTransferService } from '../../infra/services/mercado-pago-transfer.service';
-import { StatusCaucao } from '../../domain/Caucao';
+import { MetodoPagamentoService } from '../../domain/services/metodo-pagamento.service';
+import { MetodoPagamento } from '../../domain/Caucao';
 import { Transferencia, TipoTransferencia, StatusTransferencia } from '../../domain/Transferencia';
 import { FinalizarAluguelDto } from '../dtos/FinalizarAluguel.dto';
-
-export interface FinalizarAluguelResponse {
-  aluguelId: string;
-  mensagem: string;
-  detalhes: {
-    taxaApp: number;
-    valorLiquidoLocador: number;
-    retornoLocatario: number;
-    indenizacao?: number;
-  };
-  transferencias?: {
-    transferLocadorId?: number;
-    reembolsoLocatarioId?: number;
-    status: string;
-  };
-}
+import { ResultadoAssincrono, ResultadoUtil } from 'src/shared/resultado';
 
 @Injectable()
 export class FinalizarAluguelUseCase {
@@ -31,48 +14,41 @@ export class FinalizarAluguelUseCase {
 
   constructor(
     private readonly aluguelRepository: AluguelRepository,
-    private readonly caucaoRepository: CaucaoRepository,
-    private readonly transferenciaRepository: TransferenciaRepository,
     private readonly transferService: MercadoPagoTransferService,
+    private readonly metodoPagamentoService: MetodoPagamentoService,
   ) {}
 
-  async executar(dto: FinalizarAluguelDto): Promise<FinalizarAluguelResponse> {
-    this.logger.log(`Iniciando finalização do aluguel ${dto.aluguelId}`);
+  async executar(props: FinalizarAluguelDto): ResultadoAssincrono<void, Error> {
+    this.logger.log(`Iniciando finalização do aluguel ${props.aluguelId}`);
 
     // Buscar aluguel
-    const aluguel = await this.aluguelRepository.buscarPorId(dto.aluguelId);
-    
-    if (!aluguel) {
-      throw new NotFoundException('Aluguel não encontrado');
+    const aluguel = await this.aluguelRepository.buscarPorId(props.aluguelId);
+    if (aluguel.ehFalha()) {
+      return ResultadoUtil.falha(new NotFoundException(`Aluguel ${props.aluguelId} não encontrado`));
     }
 
-    // Verificar se pode ser finalizado
-    if (!aluguel.podeSerFinalizado()) {
-      throw new BadRequestException(
-        `Aluguel não pode ser finalizado. Status atual: ${aluguel.status}`
-      );
-    }
-
-    // Buscar caução
-    const caucao = await this.caucaoRepository.buscarPorAluguelId(aluguel.id);
-    
-    if (!caucao || !caucao.estaPaga()) {
-      throw new BadRequestException('Caução não foi paga ou não existe');
+    if (!aluguel.valor!.podeSerFinalizado()) {
+      return ResultadoUtil.falha(new BadRequestException(
+        `Aluguel não pode ser finalizado. Status atual: ${aluguel.valor!.status}`
+      ));
     }
 
     // Calcular valores
-    const taxaApp = aluguel.calcularTaxaApp();
-    const valorLiquidoLocador = aluguel.calcularValorLiquidoLocador();
+    const taxaApp = aluguel.valor!.calcularTaxaApp();
+    const valorLiquidoLocador = aluguel.valor!.calcularValorLiquidoLocador();
     
     let indenizacao = 0;
     
-    if (dto.houveDano) {
-      // Se houve dano, calcular indenização
-      if (dto.valorIndenizacao !== undefined) {
-        indenizacao = dto.valorIndenizacao;
+    if (props.houveDano) {
+      if (props.valorIndenizacao !== undefined) {
+        indenizacao = props.valorIndenizacao;
+      } else if(aluguel.valor!.caucao) {
+        // Indenização padrão: Caução - 10% da taxa do aluguel
+        const taxaDeDesconto = taxaApp * 0.1;
+        indenizacao = aluguel.valor!.caucao.valor - taxaDeDesconto;
       } else {
-        // Indenização padrão: 70% do valor do aluguel (pode ajustar a regra)
-        indenizacao = Math.min(aluguel.valorCaucao, aluguel.valorAluguel * 0.7);
+        // Sem caução: 2x do valor do aluguel
+        indenizacao = aluguel.valor!.valorAluguel * 2;
       }
 
       this.logger.log(
@@ -80,132 +56,108 @@ export class FinalizarAluguelUseCase {
       );
     }
 
-    const retornoLocatario = aluguel.calcularRetornoLocatario(indenizacao);
+    aluguel.valor!.marcarComoFinalizado(props.houveDano, indenizacao);
 
-    // Validar que os valores são consistentes
-    const totalReconciliado = valorLiquidoLocador + taxaApp + retornoLocatario + indenizacao;
-    const diferencaValor = Math.abs(totalReconciliado - aluguel.valorCaucao);
-    
-    if (diferencaValor > 0.01) {
-      this.logger.error(
-        `Erro de reconciliação: Total ${totalReconciliado}, Caução ${aluguel.valorCaucao}`
-      );
-      throw new BadRequestException('Erro na reconciliação dos valores');
+    // Executar transferências conforme cenário (com ou sem caução)
+    const resultadoTransferencias = await this.definirEstrategiaTransferencia(
+      aluguel.valor!,
+      taxaApp,
+      indenizacao
+    );
+    if (resultadoTransferencias.ehFalha()) {
+      return ResultadoUtil.falha(resultadoTransferencias.erro!);
     }
 
-    // Marcar aluguel como finalizado
-    aluguel.marcarComoFinalizado(dto.houveDano, indenizacao);
-    await this.aluguelRepository.atualizar(aluguel);
+    const salvarAluguelResult = await this.aluguelRepository.salvar(aluguel.valor!);
+    if (salvarAluguelResult.ehFalha()) {
+      return ResultadoUtil.falha(salvarAluguelResult.erro!);
+    }
 
-    // Atualizar status da caução
-    caucao.atualizarStatus(StatusCaucao.DEVOLVIDA);
-    await this.caucaoRepository.atualizar(caucao);
-
-    this.logger.log(`Aluguel ${aluguel.id} finalizado com sucesso`);
-
-    // Executar transferências reais via Mercado Pago
-    const resultadoTransferencias = await this.executarTransferencias(
-      aluguel,
-      caucao,
-      valorLiquidoLocador,
-      indenizacao,
-      retornoLocatario,
-      taxaApp
-    );
-
-    // TODO: Enviar notificações para locador e locatário
+    // // TODO: Enviar notificações para locador e locatário
+    // const mensagemReembolso = this.metodoPagamentoService.gerarMensagemReembolso(
+    //     aluguel.valor!.caucao ? aluguel.valor!.caucao.metodoPagamento : undefined, 
+    //     retornoLocatario.valor!
+    //   );
     
-    return {
-      aluguelId: aluguel.id,
-      mensagem: dto.houveDano 
-        ? 'Aluguel finalizado com danos' 
-        : 'Aluguel finalizado sem danos',
-      detalhes: {
-        taxaApp,
-        valorLiquidoLocador,
-        retornoLocatario,
-        indenizacao: dto.houveDano ? indenizacao : undefined,
-      },
-      transferencias: resultadoTransferencias,
-    };
+    return ResultadoUtil.sucesso();
   }
 
   /**
-   * Executa as transferências de valores usando a API do Mercado Pago
+   * Define estratégia de transferência conforme cenário
+   * 
+   * CENÁRIO 1 - COM CAUÇÃO:
+   * - Locador já recebeu via pagamento de caução
+   * - Locatário recebe reembolso da caução (se sobrou)
+   * 
+   * CENÁRIO 2 - SEM CAUÇÃO:
+   * - Locatário é cobrado pelo aluguel
+   * - Transferência manual necessária ao locador
    */
-  private async executarTransferencias(
+  private async definirEstrategiaTransferencia(
     aluguel: Aluguel,
-    caucao: any,
-    valorLiquidoLocador: number,
-    indenizacao: number,
-    retornoLocatario: number,
     taxaApp: number,
-  ): Promise<{ transferLocadorId?: number; reembolsoLocatarioId?: number; status: string }> {
+    indenizacao: number,
+  ): ResultadoAssincrono<void, Error> {
     
-    this.logger.log('========== INICIANDO TRANSFERÊNCIAS ==========');
-    this.logger.log(`Taxa da plataforma retida: R$ ${taxaApp.toFixed(2)}`);
+    if (aluguel.caucao && aluguel.caucao.estaPaga()) {
+      // CENÁRIO COM CAUÇÃO: Caucao já foi paga como depósito
+      const transferenciaComCaucaoResult = await this.executarTransferenciasComCaucao(aluguel, taxaApp, indenizacao);
+      if (transferenciaComCaucaoResult.ehFalha()) {
+        return ResultadoUtil.falha(transferenciaComCaucaoResult.erro!);
+      }
+      return ResultadoUtil.sucesso();
+    } else {
+      // CENÁRIO SEM CAUÇÃO: Locatário paga pelo aluguel
+      const transferenciaSemCaucaoResult = await this.executarTransferenciasSemCaucao(
+        aluguel,
+        taxaApp,
+        indenizacao
+      );
+      if (transferenciaSemCaucaoResult.ehFalha()) {
+        return ResultadoUtil.falha(transferenciaSemCaucaoResult.erro!);
+      }
+      return ResultadoUtil.sucesso();
+    }
+  }
 
-    let transferLocadorId: number | undefined;
+  /**
+   * CENÁRIO 1: Com Caução (já paga)
+   * 
+   * Fluxo:
+   * 1. Taxa app retida (já na nossa conta)
+   * 2. Locador já recebeu via caução (pauta apenas ao finalizar)
+   * 3. Locatário recebe reembolso da caução excedente (se houver)
+   */
+  private async executarTransferenciasComCaucao(
+    aluguel: Aluguel,
+    taxaApp: number,
+    indenizacao: number,
+  ): ResultadoAssincrono<void, Error> {
+    
+    this.logger.log('========== FINALIZAÇÃO COM CAUÇÃO ==========');
+    this.logger.log(`💰 Taxa da plataforma retida: R$ ${taxaApp.toFixed(2)}`);
+    this.logger.log(`📋 Cenário: Caução já paga - Reembolso do excedente`);
+    
+    const caucao = aluguel.caucao!;
+    const retornoLocatario = aluguel.calcularRetornoLocatarioComIndenizacao(indenizacao);
+    if (retornoLocatario.ehFalha())
+      return ResultadoUtil.falha(retornoLocatario.erro!);
+    
     let reembolsoLocatarioId: number | undefined;
     const erros: string[] = [];
 
-    // 1. Transferir para o locador (aluguel líquido + indenização)
-    const valorParaLocador = valorLiquidoLocador + indenizacao;
-    
-    if (valorParaLocador > 0 && aluguel.locador.contaMPId) {
-      this.logger.log(`Transferindo R$ ${valorParaLocador.toFixed(2)} para locador ${aluguel.locador.nome}`);
+    // Reembolsar locatário (valor restante da caução)
+    if (retornoLocatario.valor! > 0 && caucao.paymentId) {
+      this.logger.log(
+        `💳 Reembolsando R$ ${retornoLocatario.valor!.toFixed(2)} para locatário ${aluguel.locatario.nome}`
+      );
       
-      // Criar registro da transferência
-      const transferenciaLocador = new Transferencia({
-        id: uuidv4(),
-        aluguelId: aluguel.id,
-        tipo: indenizacao > 0 ? TipoTransferencia.INDENIZACAO : TipoTransferencia.PAGAMENTO_LOCADOR,
-        valor: valorParaLocador,
-        contaDestinoId: aluguel.locador.contaMPId,
-        nomeDestino: aluguel.locador.nome,
-        descricao: indenizacao > 0 
-          ? `Aluguel + Indenização - ${aluguel.item.nome}` 
-          : `Aluguel - ${aluguel.item.nome}`,
-        status: StatusTransferencia.PROCESSANDO,
-      });
-      
-      await this.transferenciaRepository.salvar(transferenciaLocador);
-      
-      const resultadoTransfer = await this.transferService.transferir({
-        valor: valorParaLocador,
-        contaDestinoId: aluguel.locador.contaMPId,
-        descricao: transferenciaLocador.descricao,
-        externalReference: `aluguel-${aluguel.id}-locador`,
-      });
+      const metodoPagamento = caucao.metodoPagamento;     
 
-      if (resultadoTransfer.ehSucesso()) {
-        transferLocadorId = resultadoTransfer.valor!.id;
-        transferenciaLocador.marcarComoConcluida(transferLocadorId);
-        await this.transferenciaRepository.atualizar(transferenciaLocador);
-        this.logger.log(`✅ Transferência para locador realizada: ID ${transferLocadorId}`);
-      } else {
-        const erro = `Falha ao transferir para locador: ${resultadoTransfer.erro?.message}`;
-        transferenciaLocador.marcarComoFalhou(erro);
-        await this.transferenciaRepository.atualizar(transferenciaLocador);
-        this.logger.error(erro);
-        erros.push(erro);
-      }
-    } else if (!aluguel.locador.contaMPId) {
-      const aviso = 'Locador não possui contaMPId cadastrada';
-      this.logger.warn(aviso);
-      erros.push(aviso);
-    }
-
-    // 2. Reembolsar locatário (valor restante da caução)
-    if (retornoLocatario > 0 && caucao.paymentId) {
-      this.logger.log(`Reembolsando R$ ${retornoLocatario.toFixed(2)} para locatário ${aluguel.locatario.nome}`);
-      
-      // Criar registro do reembolso
-      const transferenciaLocatario = new Transferencia({
-        id: uuidv4(),
+      const transferenciaLocatario = Transferencia.criar({
         aluguelId: aluguel.id,
         tipo: TipoTransferencia.REEMBOLSO_LOCATARIO,
-        valor: retornoLocatario,
+        valor: retornoLocatario.valor!,
         contaDestinoId: aluguel.locatario.id,
         nomeDestino: aluguel.locatario.nome,
         descricao: indenizacao > 0 
@@ -213,50 +165,150 @@ export class FinalizarAluguelUseCase {
           : `Devolução da caução - ${aluguel.item.nome}`,
         status: StatusTransferencia.PROCESSANDO,
       });
-      
-      await this.transferenciaRepository.salvar(transferenciaLocatario);
-      
-      const resultadoReembolso = await this.transferService.reembolsar({
-        paymentId: caucao.paymentId,
-        valor: retornoLocatario,
-        motivo: transferenciaLocatario.descricao,
-      });
 
-      if (resultadoReembolso.ehSucesso()) {
-        reembolsoLocatarioId = resultadoReembolso.valor!.id;
-        transferenciaLocatario.marcarComoConcluida(undefined, reembolsoLocatarioId);
-        await this.transferenciaRepository.atualizar(transferenciaLocatario);
-        this.logger.log(`✅ Reembolso para locatário realizado: ID ${reembolsoLocatarioId}`);
-      } else {
-        const erro = `Falha ao reembolsar locatário: ${resultadoReembolso.erro?.message}`;
-        transferenciaLocatario.marcarComoFalhou(erro);
-        await this.transferenciaRepository.atualizar(transferenciaLocatario);
-        this.logger.error(erro);
-        erros.push(erro);
+      if (transferenciaLocatario.ehFalha()) {
+        return ResultadoUtil.falha(transferenciaLocatario.erro!);
       }
-    } else if (retornoLocatario <= 0) {
+      const adicionarTransferenciaLocatario = aluguel.adicionarTransferencia(transferenciaLocatario.valor!);
+      if (adicionarTransferenciaLocatario.ehFalha()) {
+        return ResultadoUtil.falha(adicionarTransferenciaLocatario.erro!);
+      }
+      
+      // Estratégia de reembolso baseada no método de pagamento
+      const resultadoReembolso = await this.processarReembolsoComMetodo(
+        String(caucao.paymentId),
+        retornoLocatario.valor!,
+        metodoPagamento,
+        aluguel.locatario,
+        transferenciaLocatario.valor!.descricao
+      );
+
+      if (resultadoReembolso.ehFalha()) {
+        return ResultadoUtil.falha(resultadoReembolso.erro!);
+      }
+      reembolsoLocatarioId = resultadoReembolso.valor!.id;
+      
+      // Marcar transferência como processando
+      const marcarProcessando = aluguel.atualizarStatusTransferencia(
+        transferenciaLocatario.valor!.id,
+        StatusTransferencia.PROCESSANDO
+      );
+      if (marcarProcessando.ehFalha()) {
+        return ResultadoUtil.falha(marcarProcessando.erro!);
+      }
+      
+      this.logger.log(`✅ Reembolso para locatário realizado: ID ${reembolsoLocatarioId}`);
+    } else if (retornoLocatario.valor! <= 0) {
       this.logger.log('Sem valor a reembolsar para locatário (caução consumida totalmente)');
     }
 
-    this.logger.log('========== RESUMO DAS TRANSFERÊNCIAS ==========');
-    this.logger.log(`Locador recebeu: R$ ${valorParaLocador.toFixed(2)} ${transferLocadorId ? '✅' : '❌'}`);
-    this.logger.log(`Locatário recebeu: R$ ${retornoLocatario.toFixed(2)} ${reembolsoLocatarioId ? '✅' : '❌'}`);
-    this.logger.log(`Taxa retida: R$ ${taxaApp.toFixed(2)} ✅`);
-    this.logger.log('================================================');
+    return ResultadoUtil.sucesso();
+  }
 
-    if (erros.length > 0) {
-      this.logger.warn(`⚠️  Transferências concluídas com ${erros.length} erro(s)`);
-      return {
-        transferLocadorId,
-        reembolsoLocatarioId,
-        status: 'parcial',
-      };
+  /**
+   * CENÁRIO 2: Sem Caução
+   * 
+   * Fluxo:
+   * 1. Locatário é cobrado pelo aluguel
+   * 2. Taxa app retida
+   * 3. Locador recebe valor líquido (manual ou automático conforme Pix)
+   */
+  private async executarTransferenciasSemCaucao(
+    aluguel: Aluguel,
+    valorLiquidoLocador: number,
+    indenizacao: number,
+  ): ResultadoAssincrono<void, Error> {
+    
+    this.logger.log('========== FINALIZAÇÃO SEM CAUÇÃO ==========');
+    this.logger.log(`💰 Locatário deve pagar: R$ ${aluguel.valorAluguel.toFixed(2)}`);
+    this.logger.log(`📋 Cenário: Sem caução - Transferência manual ao locador`);
+    
+    let transferLocadorId: string | undefined;
+
+    // Gerar instruções para transferência manual ao locador
+    const valorParaLocador = valorLiquidoLocador + indenizacao;
+    
+    if (valorParaLocador > 0) {
+      this.logger.log(`📤 Gerando instruções para transferência de R$ ${valorParaLocador.toFixed(2)} ao locador ${aluguel.locador.nome}`);
+      
+      // Criar registro da transferência MANUAL
+      const transferenciaLocador = Transferencia.criar({
+        aluguelId: aluguel.id,
+        tipo: indenizacao > 0 ? TipoTransferencia.INDENIZACAO : TipoTransferencia.PAGAMENTO_LOCADOR,
+        valor: valorParaLocador,
+        contaDestinoId: aluguel.locador.id,
+        nomeDestino: aluguel.locador.nome,
+        chavePix: aluguel.locador.chavePix,
+        descricao: indenizacao > 0 
+          ? `Aluguel + Indenização - ${aluguel.item.nome}` 
+          : `Aluguel - ${aluguel.item.nome}`,
+        status: StatusTransferencia.PENDENTE,
+      });
+
+      if (transferenciaLocador.ehFalha()) {
+        return ResultadoUtil.falha(transferenciaLocador.erro!);
+      }
+      
+      transferLocadorId = transferenciaLocador.valor!.id;
+      const adicionarTransferenciaLocador = aluguel.adicionarTransferencia(transferenciaLocador.valor!);
+      if (adicionarTransferenciaLocador.ehFalha()) {
+        return ResultadoUtil.falha(adicionarTransferenciaLocador.erro!);
+      }
+        
+      // Gerar instruções de transferência manual
+      const instrucoesTransfer = this.transferService.gerarInstrucoesTransferenciaManual({
+        valor: valorParaLocador,
+        destinatario: aluguel.locador.nome,
+        chavePix: aluguel.locador.chavePix,
+        descricao: transferenciaLocador.valor!.descricao,
+      });
+
+      // Atualizar transferência através do agregado com instruções
+      const marcarAguardandoManual = aluguel.marcarTransferenciaAguardandoManual(
+        transferenciaLocador.valor!.id,
+        instrucoesTransfer.instrucoes
+      );
+      if (marcarAguardandoManual.ehFalha()) {
+        return ResultadoUtil.falha(marcarAguardandoManual.erro!);
+      }
+
+      this.logger.log(`📝 Instruções geradas: ${instrucoesTransfer.instrucoes}`);
+      this.logger.log(`⏳ Transferência aguardando execução manual`);
+
+      return ResultadoUtil.sucesso();
     }
 
-    return {
-      transferLocadorId,
-      reembolsoLocatarioId,
-      status: 'sucesso',
-    };
+    this.logger.log('Sem valor a transferir ao locador');
+    
+    return ResultadoUtil.sucesso();
+  }
+
+  /**
+   * Processa reembolso considerando o método de pagamento
+   */
+  private async processarReembolsoComMetodo(
+    paymentId: string,
+    valor: number,
+    metodo: MetodoPagamento,
+    locatario: any,
+    descricao: string,
+  ) {
+    // Validações por método
+    if (this.metodoPagamentoService.precisaUsarPixParaDevolver(metodo)) {
+      // Cartão de crédito: precisa de Pix para devolver
+      if (!locatario.chavePix && metodo === MetodoPagamento.CARTAO_CREDITO) {
+        this.logger.warn(
+          `⚠️  Locatário pagou via cartão de crédito mas não tem chavePix registrada. ` +
+          `Tentando reembolso automático mesmo assim.`
+        );
+      }
+    }
+
+    // Executar reembolso automático
+    return this.transferService.reembolsar({
+      paymentId,
+      valor,
+      motivo: descricao,
+    });
   }
 }

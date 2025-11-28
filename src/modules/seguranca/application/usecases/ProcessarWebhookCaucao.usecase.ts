@@ -1,9 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { StatusCaucao } from '../../domain/Caucao';
-import { StatusAluguel } from '../../domain/Aluguel';
+import { StatusCaucao, MetodoPagamento } from '../../domain/Caucao';
 import { AluguelRepository } from '../../infra/repositories/Aluguel.repository';
-import { CaucaoRepository } from '../../infra/repositories/Caucao.repository';
-import { MercadoPagoCheckoutService } from '../../infra/services/mercado-pago-checkout.service';
+import { MercadoPagoCheckoutService } from '../services/mercado-pago-checkout.service';
+import { MetodoPagamentoService } from '../../domain/services/metodo-pagamento.service';
 
 @Injectable()
 export class ProcessarWebhookCaucaoUseCase {
@@ -11,8 +10,8 @@ export class ProcessarWebhookCaucaoUseCase {
 
   constructor(
     private readonly aluguelRepository: AluguelRepository,
-    private readonly caucaoRepository: CaucaoRepository,
     private readonly mercadoPagoService: MercadoPagoCheckoutService,
+    private readonly metodoPagamentoService: MetodoPagamentoService,
   ) {}
 
   async executar(webhookData: any): Promise<{ processado: boolean; mensagem: string }> {
@@ -30,71 +29,73 @@ export class ProcessarWebhookCaucaoUseCase {
 
       this.logger.log(`Processando pagamento ID: ${paymentId}`);
 
-      // Obter detalhes do pagamento do Mercado Pago
-      const resultadoPagamento = await this.mercadoPagoService.obterStatusPagamento(Number(paymentId));
+      const pagamentoResult = await this.mercadoPagoService.obterStatusPagamento(Number(paymentId));
       
-      if (resultadoPagamento.ehFalha()) {
-        this.logger.error('Falha ao obter status do pagamento', resultadoPagamento.erro?.message);
+      if (pagamentoResult.ehFalha()) {
+        this.logger.error('Falha ao obter status do pagamento', pagamentoResult.erro?.message);
         return { processado: false, mensagem: 'Erro ao obter dados do pagamento' };
       }
 
-      const mpPayment = resultadoPagamento.valor!;
+      const mpPayment = pagamentoResult.valor!;
       const status = mpPayment.status;
       const externalRef = mpPayment.external_reference;
 
       this.logger.log(`Status do pagamento: ${status}, External reference: ${externalRef}`);
 
-      // Buscar caução pelo payment ID
-      const caucao = await this.caucaoRepository.buscarPorPaymentId(String(paymentId));
+      // 🔍 Detectar método de pagamento
+      const metodoPagamento = this.metodoPagamentoService.detectarMetodoPagamento({
+        id: mpPayment.id,
+        payment_method_id: mpPayment.payment_method_id || mpPayment.payment_method?.id,
+        payment_type_id: mpPayment.payment_type_id,
+        status: status,
+      });
       
-      if (!caucao) {
+      this.logger.log(`💳 Método de pagamento detectado: ${metodoPagamento}`);
+
+      // Buscar caução pelo payment ID
+      const aluguelResult = await this.aluguelRepository.buscarPorPaymentId(String(paymentId));
+      
+      if (aluguelResult.ehFalha()) {
         this.logger.warn(`Caução não encontrada para payment ID: ${paymentId}`);
-        return { processado: false, mensagem: 'Caução não encontrada' };
-      }
-
-      // Buscar aluguel relacionado
-      const aluguel = await this.aluguelRepository.buscarPorId(caucao.aluguelId);
-
-      if (!aluguel) {
-        this.logger.error(`Aluguel ${caucao.aluguelId} não encontrado`);
-        return { processado: false, mensagem: 'Aluguel não encontrado' };
+        return { processado: false, mensagem: aluguelResult.erro!.message };
       }
 
       // Processar status do pagamento
       if (status === 'approved') {
         // Pagamento aprovado - atualizar caução e aluguel
-        caucao.atualizarStatus(StatusCaucao.PAGA, mpPayment);
-        await this.caucaoRepository.atualizar(caucao);
+        aluguelResult.valor?.atualizarStatusPagamentoCaucao(StatusCaucao.PAGA, mpPayment);
+        aluguelResult.valor?.definirMetodoPagamentoCaucao(metodoPagamento); // 💳 Guardar método detectado
 
-        aluguel.atualizarStatusPagamento(String(paymentId));
-        await this.aluguelRepository.atualizar(aluguel);
+        aluguelResult.valor?.atualizarStatusPagamento(String(paymentId));
 
-        this.logger.log(`Caução paga com sucesso para aluguel ${aluguel.id}`);
+        await this.aluguelRepository.salvar(aluguelResult.valor!);
+
+        this.logger.log(`Caução paga com sucesso para aluguel ${aluguelResult.valor!.id}`);
         
         // TODO: Enviar notificações para locador e locatário
         
         return { 
           processado: true, 
-          mensagem: `Caução do aluguel ${aluguel.id} foi paga com sucesso` 
+          mensagem: `Caução do aluguel ${aluguelResult.valor!.id} foi paga com sucesso` 
         };
       } else if (status === 'rejected' || status === 'cancelled') {
-        // Pagamento rejeitado/cancelado
-        caucao.atualizarStatus(StatusCaucao.CANCELADA, mpPayment);
-        await this.caucaoRepository.atualizar(caucao);
+        aluguelResult.valor?.atualizarStatusPagamentoCaucao(StatusCaucao.CANCELADA, mpPayment);
+        await this.aluguelRepository.salvar(aluguelResult.valor!);
 
-        this.logger.log(`Pagamento rejeitado/cancelado para aluguel ${aluguel.id}`);
+        this.logger.log(`Pagamento rejeitado/cancelado para aluguel ${aluguelResult.valor!.id}`);
         
+        // TODO: Enviar notificações para locador e locatário
         return { 
           processado: true, 
           mensagem: `Pagamento da caução foi ${status}` 
         };
       } else if (status === 'pending' || status === 'in_process') {
         // Pagamento pendente
-        caucao.atualizarStatus(StatusCaucao.PROCESSANDO, mpPayment);
-        await this.caucaoRepository.atualizar(caucao);
+        aluguelResult.valor?.atualizarStatusPagamentoCaucao(StatusCaucao.PROCESSANDO, mpPayment);
+        await this.aluguelRepository.salvar(aluguelResult.valor!);
 
-        this.logger.log(`Pagamento em processamento para aluguel ${aluguel.id}`);
-        
+        this.logger.log(`Pagamento em processamento para aluguel ${aluguelResult.valor!.id}`);
+
         return { 
           processado: true, 
           mensagem: 'Pagamento em processamento' 

@@ -10,6 +10,7 @@ type UsuarioModelProps = {
   fotoUrl?: string;
   endereco: EnderecoModel;
   emailVerificado: boolean;
+  chavePix?: string;
   telefoneVerificado?: boolean;
   enderecoVerificado?: boolean;
   verificado: boolean;
@@ -39,6 +40,9 @@ export class UsuarioModel extends BaseEntity implements UsuarioModelProps {
 
   @Column({ nullable: true, unique: true })
   cpf?: string;
+
+  @Column({ nullable: true })
+  chavePix?: string;
 
   @Column({ name: 'foto_url', nullable: true })
   fotoUrl?: string;

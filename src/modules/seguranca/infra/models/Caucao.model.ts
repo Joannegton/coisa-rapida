@@ -1,17 +1,25 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, Index, ManyToOne, JoinColumn } from 'typeorm';
-import { StatusCaucao } from '../../domain/Caucao';
+import { Entity, Column, PrimaryColumn, CreateDateColumn, UpdateDateColumn, Index, ManyToOne, JoinColumn, BaseEntity, OneToOne } from 'typeorm';
+import { StatusCaucao, MetodoPagamento } from '../../domain/Caucao';
 import { AluguelModel } from './Aluguel.model';
+import { v4 as uuidv4 } from 'uuid';
 
-@Entity('caucoes')
-export class CaucaoModel {
-  @PrimaryGeneratedColumn('uuid')
+type CaucaoModelProps = {
+    paymentId: string;
+    valor: number;
+    status: StatusCaucao;
+    metodoPagamento: MetodoPagamento;
+    checkoutUrl: string;
+    mpResponse?: any;
+    criadoEm: Date;
+    atualizadoEm: Date;
+};
+
+@Entity('caucao')
+export class CaucaoModel extends BaseEntity implements CaucaoModelProps {
+  @PrimaryColumn('uuid')
   id: string;
 
-  @Column({ type: 'uuid' })
-  @Index()
-  aluguelId: string;
-
-  @ManyToOne(() => AluguelModel, { nullable: true })
+  @OneToOne(() => AluguelModel, { nullable: true })
   @JoinColumn({ name: 'aluguelId' })
   aluguel?: AluguelModel;
 
@@ -30,15 +38,30 @@ export class CaucaoModel {
   @Index()
   status: StatusCaucao;
 
-  @Column({ type: 'text', nullable: true })
-  checkoutUrl?: string;
+  @Column({
+    type: 'enum',
+    enum: MetodoPagamento,
+    default: MetodoPagamento.DESCONHECIDO,
+  })
+  @Index()
+  metodoPagamento: MetodoPagamento;
+
+  @Column({ type: 'text'})
+  checkoutUrl: string;
 
   @Column({ type: 'jsonb', nullable: true })
   mpResponse?: any;
 
   @CreateDateColumn()
-  createdAt: Date;
+  criadoEm: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  atualizadoEm: Date;
+
+  static criar(props: Omit<CaucaoModelProps, 'id' | 'criadoEm' | 'atualizadoEm'> & { id?: string }): CaucaoModel {
+    const caucao = new CaucaoModel();
+    caucao.id = props.id || uuidv4();
+    Object.assign(caucao, props);
+    return caucao;
+  }
 }

@@ -10,13 +10,11 @@ import { TwilioService } from './infra/services/Twilio.service';
 import { VerificacaoResidenciaRepository } from './infra/repositories/VerificacaoResidencia.repository';
 import { NotificacaoRepository } from './infra/repositories/Notificacao.repository';
 import { AluguelRepository } from './infra/repositories/Aluguel.repository';
-import { CaucaoRepository } from './infra/repositories/Caucao.repository';
-import { TransferenciaRepository } from './infra/repositories/Transferencia.repository';
 import { SalvarComprovanteResidenciaUseCase } from './application/usecases/SalvarComprovanteResidencia.usecase';
 import { ListarVerificacoesPendentesUseCase } from './application/queries/ListarVerificacoesPendentes.usecase';
 import { EnviarCodigoSMSUseCase } from './application/usecases/EnviarCodigoSMS.usecase';
 import { VerificarCodigoSMSUseCase } from './application/usecases/VerificarCodigoSMS.usecase';
-import { CriarCaucaoAluguelUseCase } from './application/usecases/CriarCaucaoAluguel.usecase';
+import { CriarAluguelUseCase } from './application/usecases/CriarAluguel.usecase';
 import { ProcessarWebhookCaucaoUseCase } from './application/usecases/ProcessarWebhookCaucao.usecase';
 import { FinalizarAluguelUseCase } from './application/usecases/FinalizarAluguel.usecase';
 import { VerificacaoResidenciaModel } from './infra/models/VerificacaoResidencia.model';
@@ -26,7 +24,7 @@ import { EnderecoModel } from './infra/models/Endereco.model';
 import { AluguelModel } from './infra/models/Aluguel.model';
 import { CaucaoModel } from './infra/models/Caucao.model';
 import { TransferenciaModel } from './infra/models/Transferencia.model';
-import { FirebaseAuthStrategy } from './infra/auth/FirebaseAuth.strategy';
+import { PagamentoModel } from './infra/typeorm/pagamento.entity';
 import { FirebaseModule } from '../../config/firebase.module';
 import { SegurancaController } from './seguranca.controller';
 import { ProcessarStatusComprovanteResidenciaUseCase } from './application/usecases/ProcessarStatusComprovanteResidencia.usecase';
@@ -38,26 +36,35 @@ import { CriarCheckoutUsecase } from './application/usecases/CriarPreferenciaPag
 import { ObterStatusPagamentoUsecase } from './application/usecases/ObterStatusPagamento.usecase';
 import { ProcessarWebhookUsecase } from './application/usecases/ProcessarWebhook.usecase';
 import { MercadoPagoService } from './infra/services/mercado-pago.service';
-import { MercadoPagoCheckoutService } from './infra/services/mercado-pago-checkout.service';
+import { MercadoPagoCheckoutService } from './application/services/mercado-pago-checkout.service';
 import { MercadoPagoTransferService } from './infra/services/mercado-pago-transfer.service';
 import { PagamentoController } from './Pagamento.controller';
+import { PagamentoRepository } from './infra/repositories/pagamento.repository';
+import { MetodoPagamentoService } from './domain/services/metodo-pagamento.service';
+import { FirebaseAuthStrategy } from './infra/auth/FirebaseAuth.strategy';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([
-      VerificacaoResidenciaModel, 
-      Notificacao, 
-      UsuarioModel, 
+      VerificacaoResidenciaModel,
+      Notificacao,
+      UsuarioModel,
       EnderecoModel,
       AluguelModel,
       CaucaoModel,
       TransferenciaModel,
+      PagamentoModel,
     ]),
     PassportModule.register({ defaultStrategy: 'firebase' }),
     FirebaseModule,
     ConfigModule, //ver se realmente é necessario
   ],
-  controllers: [SegurancaController, ImagemController, PagamentoController, AluguelController],
+  controllers: [
+    SegurancaController,
+    ImagemController,
+    PagamentoController,
+    AluguelController,
+  ],
   providers: [
     CloudinaryService,
     VirusTotalService,
@@ -67,12 +74,13 @@ import { PagamentoController } from './Pagamento.controller';
     MercadoPagoService,
     MercadoPagoCheckoutService,
     MercadoPagoTransferService,
-    FirebaseAuthStrategy,
+    MetodoPagamentoService,
     VerificacaoResidenciaRepository,
     NotificacaoRepository,
     AluguelRepository,
-    CaucaoRepository,
-    TransferenciaRepository,
+    PagamentoRepository,
+    SalvarComprovanteResidenciaUseCase,
+    AluguelRepository,
     SalvarComprovanteResidenciaUseCase,
     ListarVerificacoesPendentesUseCase,
     ProcessarStatusComprovanteResidenciaUseCase,
@@ -83,9 +91,10 @@ import { PagamentoController } from './Pagamento.controller';
     CriarCheckoutUsecase,
     ObterStatusPagamentoUsecase,
     ProcessarWebhookUsecase,
-    CriarCaucaoAluguelUseCase,
+    CriarAluguelUseCase,
     ProcessarWebhookCaucaoUseCase,
     FinalizarAluguelUseCase,
+    FirebaseAuthStrategy,
   ],
   exports: [
     SalvarComprovanteResidenciaUseCase,

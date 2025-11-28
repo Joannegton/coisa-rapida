@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { Repository, DataSource } from 'typeorm';
-import { PagamentoModel, PagamentoStatusEnum, PagamentoTipoEnum, PagamentoMetodoEnum } from '../typeorm/pagamento.entity';
+import {
+  PagamentoModel,
+  PagamentoStatusEnum,
+  PagamentoTipoEnum,
+  PagamentoMetodoEnum,
+} from '../typeorm/pagamento.entity';
 
 export interface CreatePagamentoDto {
   id: string;
@@ -68,17 +73,17 @@ export class PagamentoRepository {
   async buscarPorId(id: string): Promise<PagamentoModel | null> {
     return this.repository.findOne({
       where: { id },
-      relations: ['pagador', 'recebedor'],
     });
   }
 
   /**
    * Buscar pagamento por ID de transação do Mercado Pago
    */
-  async buscarPorMercadoPagoId(mercadoPagoId: string): Promise<PagamentoModel | null> {
+  async buscarPorMercadoPagoId(
+    mercadoPagoId: string,
+  ): Promise<PagamentoModel | null> {
     return this.repository.findOne({
       where: { gateway_transacao_id: mercadoPagoId },
-      relations: ['pagador', 'recebedor'],
     });
   }
 
@@ -88,7 +93,6 @@ export class PagamentoRepository {
   async buscarPorAluguelId(aluguelId: string): Promise<PagamentoModel[]> {
     return this.repository.find({
       where: { aluguel_id: aluguelId },
-      relations: ['pagador', 'recebedor'],
       order: { criadoEm: 'DESC' },
     });
   }
@@ -96,7 +100,10 @@ export class PagamentoRepository {
   /**
    * Buscar pagamentos de um usuário (como pagador)
    */
-  async buscarPorPagadorId(pagadorId: string, status?: PagamentoStatusEnum): Promise<PagamentoModel[]> {
+  async buscarPorPagadorId(
+    pagadorId: string,
+    status?: PagamentoStatusEnum,
+  ): Promise<PagamentoModel[]> {
     const query = this.repository
       .createQueryBuilder('pagamento')
       .where('pagamento.pagador_id = :pagadorId', { pagadorId });
@@ -115,7 +122,10 @@ export class PagamentoRepository {
   /**
    * Buscar pagamentos de um usuário (como recebedor)
    */
-  async buscarPorRecebedorId(recebedorId: string, status?: PagamentoStatusEnum): Promise<PagamentoModel[]> {
+  async buscarPorRecebedorId(
+    recebedorId: string,
+    status?: PagamentoStatusEnum,
+  ): Promise<PagamentoModel[]> {
     const query = this.repository
       .createQueryBuilder('pagamento')
       .where('pagamento.recebedor_id = :recebedorId', { recebedorId });
@@ -137,7 +147,6 @@ export class PagamentoRepository {
   async buscarPendentes(limite: number = 50): Promise<PagamentoModel[]> {
     return this.repository.find({
       where: { status: PagamentoStatusEnum.PENDENTE },
-      relations: ['pagador', 'recebedor'],
       order: { criadoEm: 'ASC' },
       take: limite,
     });
@@ -146,7 +155,10 @@ export class PagamentoRepository {
   /**
    * Atualizar pagamento
    */
-  async atualizar(id: string, dados: UpdatePagamentoDto): Promise<PagamentoModel | null> {
+  async atualizar(
+    id: string,
+    dados: UpdatePagamentoDto,
+  ): Promise<PagamentoModel | null> {
     await this.repository.update(id, dados);
     return this.buscarPorId(id);
   }
@@ -154,7 +166,10 @@ export class PagamentoRepository {
   /**
    * Atualizar status do pagamento
    */
-  async atualizarStatus(id: string, status: PagamentoStatusEnum): Promise<PagamentoModel | null> {
+  async atualizarStatus(
+    id: string,
+    status: PagamentoStatusEnum,
+  ): Promise<PagamentoModel | null> {
     await this.repository.update(id, { status });
     return this.buscarPorId(id);
   }
@@ -191,11 +206,16 @@ export class PagamentoRepository {
   /**
    * Somar valores pagos no período
    */
-  async somarPagamentosNoPeríodo(dataInicio: Date, dataFim: Date): Promise<number> {
+  async somarPagamentosNoPeríodo(
+    dataInicio: Date,
+    dataFim: Date,
+  ): Promise<number> {
     const resultado = await this.repository
       .createQueryBuilder('pagamento')
       .select('SUM(pagamento.valor_liquido)', 'total')
-      .where('pagamento.status = :status', { status: PagamentoStatusEnum.APROVADO })
+      .where('pagamento.status = :status', {
+        status: PagamentoStatusEnum.APROVADO,
+      })
       .andWhere('pagamento.data_pagamento >= :dataInicio', { dataInicio })
       .andWhere('pagamento.data_pagamento <= :dataFim', { dataFim })
       .getRawOne();
@@ -227,11 +247,15 @@ export class PagamentoRepository {
     }
 
     if (filtros?.pagadorId) {
-      query.andWhere('pagamento.pagador_id = :pagadorId', { pagadorId: filtros.pagadorId });
+      query.andWhere('pagamento.pagador_id = :pagadorId', {
+        pagadorId: filtros.pagadorId,
+      });
     }
 
     if (filtros?.recebedorId) {
-      query.andWhere('pagamento.recebedor_id = :recebedorId', { recebedorId: filtros.recebedorId });
+      query.andWhere('pagamento.recebedor_id = :recebedorId', {
+        recebedorId: filtros.recebedorId,
+      });
     }
 
     const skip = (pagina - 1) * limite;

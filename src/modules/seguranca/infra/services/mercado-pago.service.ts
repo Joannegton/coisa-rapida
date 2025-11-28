@@ -1,6 +1,10 @@
 import axios from 'axios';
 import { Injectable, Logger } from '@nestjs/common';
-import { ResultadoAssincrono, ResultadoUtil, ServicoExcecao } from '../../../../shared/resultado';
+import {
+  ResultadoAssincrono,
+  ResultadoUtil,
+  ServicoExcecao,
+} from '../../../../shared/resultado';
 import MercadoPagoConfig, { Preference } from 'mercadopago';
 import { PreferenceResponse } from 'mercadopago/dist/clients/preference/commonTypes';
 
@@ -12,6 +16,7 @@ export interface PreferenciaPagamentoProps {
   locatarioEmail: string;
   locatarioNome?: string;
   locatarioTelefone?: string;
+  tipo: 'aluguel' | 'venda' | 'caucao';
 }
 
 export interface PagamentoStatusResponse {
@@ -20,6 +25,12 @@ export interface PagamentoStatusResponse {
   status_detail: string;
   transaction_amount: number;
   external_reference: string;
+  payment_method_id?: string;
+  payment_type_id?: string;
+  payment_method?: {
+    id?: string;
+    type?: string;
+  };
   payer: {
     email: string;
     identification?: {
@@ -33,9 +44,10 @@ export interface PagamentoStatusResponse {
 export class MercadoPagoService {
   private readonly logger = new Logger(MercadoPagoService.name);
   private readonly apiUrl = 'https://api.mercadopago.com';
-  private readonly client = new MercadoPagoConfig({ accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN || '' });
+  private readonly client = new MercadoPagoConfig({
+    accessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN || '',
+  });
   private readonly preference = new Preference(this.client);
-  
 
   /**
    * Cria uma preferência de pagamento no Mercado Pago
@@ -44,6 +56,7 @@ export class MercadoPagoService {
     props: PreferenciaPagamentoProps,
   ): ResultadoAssincrono<PreferenceResponse, ServicoExcecao> {
     try {
+      const external_reference = `${props.aluguelId}, ${props.tipo}`;
       const preference = {
         items: [
           {
@@ -53,14 +66,16 @@ export class MercadoPagoService {
             quantity: 1,
             unit_price: parseFloat(props.valor.toString()),
             currency_id: 'BRL',
-          }
+          },
         ],
         payer: {
           email: props.locatarioEmail,
           name: props.locatarioNome,
-          phone: props.locatarioTelefone ? { number: props.locatarioTelefone } : undefined,
+          phone: props.locatarioTelefone
+            ? { number: props.locatarioTelefone }
+            : undefined,
         },
-        external_reference: props.aluguelId,
+        external_reference: external_reference,
         back_urls: {
           success: `coisarapida://success`,
           failure: `coisarapida://failure`,
@@ -68,30 +83,35 @@ export class MercadoPagoService {
         },
         auto_return: 'approved',
         statement_descriptor: 'COISARAPIDA',
-        notification_url: 'https://da8a215b077f.ngrok-free.app/checkout/mercado-pago/webhook',
+        notification_url: `${process.env.API_URL || 'http://localhost:3000'}/checkout/mercado-pago/webhook`,
         expires: true,
         expiration_date_from: new Date().toISOString(),
-        expiration_date_to: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 dias
-      }
+        expiration_date_to: new Date(
+          Date.now() + 7 * 24 * 60 * 60 * 1000,
+        ).toISOString(), // 7 dias
+      };
 
       const result = await this.preference.create({
         body: preference,
-      })
+      });
 
-      this.logger.debug(`Preferência de pagamento criada: ${result.id}`);
       return ResultadoUtil.sucesso(result);
     } catch (error) {
       this.logger.error(
         `Erro ao criar preferência de pagamento: ${error.response?.data?.message || error.message}`,
       );
-      return ResultadoUtil.falha(new ServicoExcecao('Erro ao criar preferência de pagamento'));
+      return ResultadoUtil.falha(
+        new ServicoExcecao('Erro ao criar preferência de pagamento'),
+      );
     }
   }
 
   /**
    * Obtém o status de um pagamento
    */
-  async obterStatusPagamento(paymentId: number): ResultadoAssincrono<PagamentoStatusResponse, ServicoExcecao> {
+  async obterStatusPagamento(
+    paymentId: number,
+  ): ResultadoAssincrono<PagamentoStatusResponse, ServicoExcecao> {
     try {
       const response = await axios.get<PagamentoStatusResponse>(
         `${this.apiUrl}/v1/payments/${paymentId}`,
@@ -107,7 +127,9 @@ export class MercadoPagoService {
       this.logger.error(
         `Erro ao obter status do pagamento ${paymentId}: ${error.response?.data?.message || error.message}`,
       );
-      return ResultadoUtil.falha(new ServicoExcecao('Erro ao obter status do pagamento'));
+      return ResultadoUtil.falha(
+        new ServicoExcecao('Erro ao obter status do pagamento'),
+      );
     }
   }
 
@@ -143,7 +165,10 @@ export class MercadoPagoService {
    */
   validarWebhook(webhookData: any): boolean {
     // Mercado Pago sempre envia com type e data
-    return webhookData && (webhookData.type === 'payment' || webhookData.type === 'merchant_order');
+    return (
+      webhookData &&
+      (webhookData.type === 'payment' || webhookData.type === 'merchant_order')
+    );
   }
 
   /**

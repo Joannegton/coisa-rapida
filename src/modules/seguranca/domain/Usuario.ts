@@ -7,6 +7,7 @@ export type UsuarioProps = {
   email: string;
   telefone?: string;
   cpf?: string;
+  chavePix?: string;
   emailVerificado: boolean;
   enderecoVerificado?: boolean;
   verificado: boolean;
@@ -89,6 +90,10 @@ export class Usuario {
     return this.props.criadoEm;
   }
 
+  get chavePix(): string | undefined {
+    return this.props.chavePix;
+  }
+
   // Setters privados
   private setNome(nome: string): Resultado<void, Error> {
     if (!nome || nome.trim().length < 2) {
@@ -169,6 +174,11 @@ export class Usuario {
     return ResultadoUtil.sucesso();
   }
 
+  private setChavePix(chavePix?: string): Resultado<void, Error> {
+    this.props.chavePix = chavePix;
+    return ResultadoUtil.sucesso();
+  }
+
   toDto() {
     return {
       id: this.id,
@@ -176,6 +186,7 @@ export class Usuario {
       email: this.email,
       telefone: this.telefone,
       cpf: this.cpf,
+      chavePix: this.chavePix,
       emailVerificado: this.emailVerificado,
       verificado: this.verificado,
       criadoEm: this.criadoEm,

@@ -47,12 +47,13 @@ export class ResultadoUtil {
         return new ResultadoFalha<T, E>(erro);
     }
 
-    static resultados<T, E>(listaResultados: Resultado<T, E>[], valorSucesso: T): Resultado<T, E> {
-        for (const resultado of listaResultados) {
-            if (resultado.ehFalha()) {
-                return resultado;
-            }
+    static resultados<E extends ServicoExcecao, V>(
+        listaResultados: Resultado<unknown, E>[],
+        valorSucesso: V,
+    ): Resultado<V, E> {
+        if (listaResultados.some((r) => r.ehFalha())) {
+            return listaResultados.find((r) => r.ehFalha()) as Resultado<V, E>;
         }
-        return ResultadoUtil.sucesso(valorSucesso);
+        return new ResultadoSucesso(valorSucesso);
     }
 }

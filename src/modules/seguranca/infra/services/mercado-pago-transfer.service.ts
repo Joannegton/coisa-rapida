@@ -2,21 +2,6 @@ import { Injectable, Logger } from '@nestjs/common';
 import axios from 'axios';
 import { ResultadoAssincrono, ResultadoUtil, ServicoExcecao } from '../../../../shared/resultado';
 
-export interface TransferenciaParams {
-  valor: number;
-  contaDestinoId: string;
-  descricao: string;
-  externalReference?: string;
-}
-
-export interface TransferenciaResponse {
-  id: number;
-  status: string;
-  amount: number;
-  receiver_id: string;
-  date_created: string;
-}
-
 export interface ReembolsoParams {
   paymentId: string;
   valor?: number; // Se não informado, reembolsa total
@@ -31,6 +16,13 @@ export interface ReembolsoResponse {
   date_created: string;
 }
 
+export interface DadosTransferenciaManual {
+  valor: number;
+  destinatario: string;
+  chavePix?: string;
+  descricao: string;
+}
+
 @Injectable()
 export class MercadoPagoTransferService {
   private readonly logger = new Logger(MercadoPagoTransferService.name);
@@ -38,56 +30,23 @@ export class MercadoPagoTransferService {
   private readonly accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN || '';
 
   /**
-   * Realiza uma transferência para uma conta do Mercado Pago
-   * Usado para transferir valores para locador
+   * Gera instruções para transferência manual (Pix/TED)
+   * Para MVP com conta PF - Locador recebe por transferência manual
    */
-  async transferir(params: TransferenciaParams): ResultadoAssincrono<TransferenciaResponse, ServicoExcecao> {
-    try {
-      this.logger.log(`Iniciando transferência de R$ ${params.valor.toFixed(2)} para ${params.contaDestinoId}`);
+  gerarInstrucoesTransferenciaManual(params: DadosTransferenciaManual): {
+    instrucoes: string;
+    dados: DadosTransferenciaManual;
+  } {
+    this.logger.log(`Gerando instruções para transferência de R$ ${params.valor.toFixed(2)} para ${params.destinatario}`);
 
-      // API de Money Transfer do Mercado Pago
-      const response = await axios.post<TransferenciaResponse>(
-        `${this.apiUrl}/v1/advanced_payments`,
-        {
-          application_id: process.env.MERCADO_PAGO_APP_ID,
-          payments: [
-            {
-              payment_method_id: 'account_money',
-              payment_type_id: 'account_money',
-              transaction_amount: Number(params.valor.toFixed(2)),
-              description: params.descricao,
-              collector: {
-                id: params.contaDestinoId,
-              },
-            },
-          ],
-          external_reference: params.externalReference,
-          disbursements: [
-            {
-              amount: Number(params.valor.toFixed(2)),
-              collector_id: params.contaDestinoId,
-            },
-          ],
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${this.accessToken}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+    const instrucoes = params.chavePix
+      ? `Transferir R$ ${params.valor.toFixed(2)} via Pix para ${params.destinatario} (Chave: ${params.chavePix})`
+      : `Transferir R$ ${params.valor.toFixed(2)} para ${params.destinatario}`;
 
-      this.logger.log(`Transferência realizada com sucesso: ${response.data.id}`);
-      return ResultadoUtil.sucesso(response.data);
-    } catch (error) {
-      this.logger.error(
-        `Erro ao realizar transferência: ${error.response?.data?.message || error.message}`,
-        error.response?.data
-      );
-      return ResultadoUtil.falha(
-        new ServicoExcecao(`Erro ao transferir valor: ${error.response?.data?.message || error.message}`)
-      );
-    }
+    return {
+      instrucoes,
+      dados: params,
+    };
   }
 
   /**
@@ -132,86 +91,7 @@ export class MercadoPagoTransferService {
     }
   }
 
-  /**
-   * Split payment - Divide o pagamento entre múltiplos recebedores
-   * Alternativa mais simples usando split direto na preferência
-   */
-  async criarPagamentoComSplit(params: {
-    valorTotal: number;
-    splits: Array<{
-      contaId: string;
-      valor: number;
-      descricao: string;
-    }>;
-    externalReference: string;
-  }): ResultadoAssincrono<any, ServicoExcecao> {
-    try {
-      this.logger.log(`Criando pagamento com split de R$ ${params.valorTotal.toFixed(2)}`);
 
-      const response = await axios.post(
-        `${this.apiUrl}/v1/advanced_payments`,
-        {
-          application_id: process.env.MERCADO_PAGO_APP_ID,
-          payments: params.splits.map(split => ({
-            payment_method_id: 'account_money',
-            payment_type_id: 'account_money',
-            transaction_amount: Number(split.valor.toFixed(2)),
-            description: split.descricao,
-            collector: {
-              id: split.contaId,
-            },
-          })),
-          external_reference: params.externalReference,
-          disbursements: params.splits.map(split => ({
-            amount: Number(split.valor.toFixed(2)),
-            collector_id: split.contaId,
-          })),
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${this.accessToken}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
-
-      this.logger.log(`Pagamento com split criado: ${response.data.id}`);
-      return ResultadoUtil.sucesso(response.data);
-    } catch (error) {
-      this.logger.error(
-        `Erro ao criar pagamento com split: ${error.response?.data?.message || error.message}`,
-        error.response?.data
-      );
-      return ResultadoUtil.falha(
-        new ServicoExcecao(`Erro ao criar split: ${error.response?.data?.message || error.message}`)
-      );
-    }
-  }
-
-  /**
-   * Consulta status de uma transferência
-   */
-  async consultarTransferencia(transferenciaId: number): ResultadoAssincrono<any, ServicoExcecao> {
-    try {
-      const response = await axios.get(
-        `${this.apiUrl}/v1/advanced_payments/${transferenciaId}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${this.accessToken}`,
-          },
-        }
-      );
-
-      return ResultadoUtil.sucesso(response.data);
-    } catch (error) {
-      this.logger.error(
-        `Erro ao consultar transferência: ${error.response?.data?.message || error.message}`
-      );
-      return ResultadoUtil.falha(
-        new ServicoExcecao('Erro ao consultar transferência')
-      );
-    }
-  }
 
   /**
    * Consulta status de um reembolso

@@ -1,9 +1,8 @@
-import { Body, Controller, Post, Get, Param, Logger, HttpCode, HttpStatus } from '@nestjs/common';
-import { CriarCaucaoAluguelUseCase } from './application/usecases/CriarCaucaoAluguel.usecase';
+import { Body, Controller, Post, Get, Param, Patch, Logger, HttpCode, HttpStatus } from '@nestjs/common';
+import { CriarAluguelUseCase } from './application/usecases/CriarAluguel.usecase';
 import { ProcessarWebhookCaucaoUseCase } from './application/usecases/ProcessarWebhookCaucao.usecase';
 import { FinalizarAluguelUseCase } from './application/usecases/FinalizarAluguel.usecase';
-import { TransferenciaRepository } from './infra/repositories/Transferencia.repository';
-import { CriarCaucaoDto } from './application/dtos/CriarCaucao.dto';
+import { CriarAluguelDto } from './application/dtos/CriarAluguel.dto';
 import { FinalizarAluguelDto } from './application/dtos/FinalizarAluguel.dto';
 
 @Controller('aluguel')
@@ -11,29 +10,31 @@ export class AluguelController {
   private readonly logger = new Logger(AluguelController.name);
 
   constructor(
-    private readonly criarCaucaoUseCase: CriarCaucaoAluguelUseCase,
+    private readonly criarAluguelUseCase: CriarAluguelUseCase,
     private readonly processarWebhookUseCase: ProcessarWebhookCaucaoUseCase,
     private readonly finalizarAluguelUseCase: FinalizarAluguelUseCase,
-    private readonly transferenciaRepository: TransferenciaRepository,
   ) {}
 
   /**
-   * Cria uma caução para um novo aluguel
-   * POST /aluguel/criar-caucao
+   * Cria um aluguel (com ou sem caução)
+   * POST /aluguel/criar
+   * 
+   * Se o campo `caucao` for informado, cria aluguel com caução
+   * Se não informado, cria aluguel sem caução
    */
-  @Post('criar-caucao')
+  @Post('criar')
   @HttpCode(HttpStatus.CREATED)
-  async criarCaucao(@Body() dto: CriarCaucaoDto) {
-    this.logger.log('Recebida requisição para criar caução');
+  async criarAluguel(@Body() dto: CriarAluguelDto) {
+    this.logger.log('Recebida requisição para criar aluguel');
     
     try {
-      const resultado = await this.criarCaucaoUseCase.executar(dto);
+      const resultado = await this.criarAluguelUseCase.executar(dto);
       return {
         sucesso: true,
         dados: resultado,
       };
     } catch (error) {
-      this.logger.error('Erro ao criar caução', error.stack);
+      this.logger.error('Erro ao criar aluguel', error.stack);
       throw error;
     }
   }
@@ -80,44 +81,6 @@ export class AluguelController {
       };
     } catch (error) {
       this.logger.error('Erro ao finalizar aluguel', error.stack);
-      throw error;
-    }
-  }
-
-  /**
-   * Consulta histórico de transferências de um aluguel
-   * GET /aluguel/:aluguelId/transferencias
-   */
-  @Get(':aluguelId/transferencias')
-  @HttpCode(HttpStatus.OK)
-  async consultarTransferencias(@Param('aluguelId') aluguelId: string) {
-    this.logger.log(`Consultando transferências do aluguel ${aluguelId}`);
-    
-    try {
-      const transferencias = await this.transferenciaRepository.buscarPorAluguelId(aluguelId);
-      
-      return {
-        sucesso: true,
-        dados: {
-          aluguelId,
-          total: transferencias.length,
-          transferencias: transferencias.map(t => ({
-            id: t.id,
-            tipo: t.tipo,
-            valor: t.valor,
-            destinatario: t.nomeDestino,
-            status: t.status,
-            descricao: t.descricao,
-            mpTransferenciaId: t.mpTransferenciaId,
-            mpRefundId: t.mpRefundId,
-            errorMessage: t.errorMessage,
-            createdAt: t.createdAt,
-            completedAt: t.completedAt,
-          })),
-        },
-      };
-    } catch (error) {
-      this.logger.error('Erro ao consultar transferências', error.stack);
       throw error;
     }
   }
