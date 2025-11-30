@@ -166,12 +166,12 @@ export class ProcessarWebhookUsecase {
       };
 
       if (tipo === 'caucao') {
-        updateData.status = 'emAndamento';
+        updateData.status = 'solicitado';
         updateData['caucao.status'] = 'bloqueada';
         updateData['caucao.metodoPagamento'] = 'mercado_pago';
         updateData['caucao.dataBloqueio'] = new Date();
       } else if (tipo === 'aluguel') {
-        updateData.status = 'emAndamento';
+        updateData.status = 'solicitado';
       } else if (tipo === 'venda') {
         updateData.statusPagamento = 'pago';
         updateData.transacaoId = transacaoId;
