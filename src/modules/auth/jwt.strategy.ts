@@ -1,0 +1,34 @@
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { PassportStrategy } from '@nestjs/passport';
+import { Strategy, ExtractJwt } from 'passport-jwt';
+import { AuthRepository } from './infra/repositories/auth.repository';
+
+export interface JwtPayload {
+    sub: string;
+    email: string;
+}
+
+@Injectable()
+export class JwtStrategy extends PassportStrategy(Strategy) {
+    constructor(private readonly authRepository: AuthRepository) {
+        super({
+            jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+            ignoreExpiration: false,
+            secretOrKey: process.env.JWT_SECRET,
+        });
+    }
+
+    async validate(payload: JwtPayload): Promise<JwtPayload> {
+        const usuarioAuth = await this.authRepository.buscarPorEmail(
+            payload.email,
+        );
+        if (!usuarioAuth) {
+            throw new UnauthorizedException('Usuário não encontrado');
+        }
+
+        return {
+            sub: payload.sub,
+            email: payload.email,
+        };
+    }
+}

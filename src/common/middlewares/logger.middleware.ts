@@ -1,22 +1,14 @@
 import { Injectable, NestMiddleware, Logger } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
+import { IpUtils } from '../../shared/utils/ip.utils';
 
-/**
- * Middleware de logging de requisições HTTP.
- *
- * Registra informações essenciais de cada request para:
- * - Debug e troubleshooting
- * - Monitoramento de performance
- * - Análise de tráfego
- *
- * Logs incluem: método, rota, status, tempo de resposta, IP
- */
 @Injectable()
 export class LoggerMiddleware implements NestMiddleware {
     private readonly logger = new Logger('HTTP');
 
     use(req: Request, res: Response, next: NextFunction): void {
-        const { method, originalUrl, ip } = req;
+        const { method, originalUrl } = req;
+        const ip = IpUtils.normalizarIp(IpUtils.obterIpCliente(req));
         const userAgent = req.get('user-agent') || '';
         const tempoInicio = Date.now();
 

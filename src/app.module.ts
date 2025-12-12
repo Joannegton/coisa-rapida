@@ -1,21 +1,25 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
-import { SegurancaModule } from './modules/seguranca/seguranca.module';
-import { FirebaseModule } from './config/firebase.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { OrmConfig } from './config/ormConfig';
-import { TesteModule } from './modules/teste/teste.module';
+import { PassportModule } from '@nestjs/passport';
+import { OrmConfig } from './config/orm/ormConfig';
 import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { JwtAuthGuard, LimitadorUsuarioGuard } from './common/guards';
 import { LoggerMiddleware, RateLimitMiddleware } from './common/middlewares';
-import { AuditoriaInterceptor } from './common/interceptors/auditoria.interceptor';
-import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { AuditoriaInterceptor } from './common/auditoria.interceptor';
+import { HttpExceptionFilter } from './common/http-exception.filter';
+import { AuthModule } from './modules/auth/auth.module';
+import { UsuarioModule } from './modules/usuario/usuario.module';
+import { AuthController } from './modules/auth/auth.controller';
+import { UsuarioController } from './modules/usuario/presentation/usuario.controller';
+import { SharedModule } from './shared/shared.module';
 
 @Module({
     imports: [
         TypeOrmModule.forRoot({ ...OrmConfig }),
-        // SegurancaModule,
-        // FirebaseModule,
-        // TesteModule,
+        PassportModule.register({ defaultStrategy: 'jwt' }),
+        SharedModule,
+        AuthModule,
+        UsuarioModule,
     ],
     controllers: [],
     providers: [
@@ -39,6 +43,8 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 })
 export class AppModule implements NestModule {
     configure(consumer: MiddlewareConsumer) {
-        consumer.apply(LoggerMiddleware, RateLimitMiddleware).forRoutes('*');
+        consumer
+            .apply(LoggerMiddleware, RateLimitMiddleware)
+            .forRoutes(AuthController, UsuarioController);
     }
 }

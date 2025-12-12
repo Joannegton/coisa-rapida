@@ -26,7 +26,6 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
             return true;
         }
 
-        // Extrai e valida o token
         const request = context.switchToHttp().getRequest();
         const token = this.extrairToken(request);
 
@@ -41,14 +40,6 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
         return super.canActivate(context);
     }
 
-    /**
-     * Extrai o token priorizando Authorization Header.
-     * Fallback para query param (útil para WebSockets/downloads de arquivos).
-     *
-     * Ordem de prioridade:
-     * 1. Authorization: Bearer <token>
-     * 2. Query param: ?token=<token>
-     */
     private extrairToken(request: any): string | null {
         const authHeader = request.headers.authorization;
         if (authHeader?.startsWith('Bearer ')) {

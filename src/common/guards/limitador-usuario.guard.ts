@@ -7,7 +7,8 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { LIMITADOR_USUARIO_KEY } from '../decorators/limitador-usuario.decorator';
-import { AuditoriaCacheService } from '../services/auditoria-cache.service';
+import { CacheService } from '../../shared/services/cache.service';
+import { IpUtils } from '../../shared/utils/ip.utils';
 
 interface ConfigLimitadorUsuario {
     limite: number;
@@ -17,24 +18,11 @@ interface ConfigLimitadorUsuario {
     duracaoBloqueio?: number;
 }
 
-/**
- * Guard que implementa rate limiting por usuário (não por IP).
- *
- * Usa CacheService para rastrear tentativas por usuário.
- *
- * @example
- * // No controller:
- * @LimitarEnvioSMS() // 5 por minuto, bloqueia após 3 violações
- * async enviarSMS() {}
- *
- * @LimitadorUsuario(10, 3600) // 10 por hora, customizado
- * async criarAluguel() {}
- */
 @Injectable()
 export class LimitadorUsuarioGuard implements CanActivate {
     constructor(
         private readonly reflector: Reflector,
-        private readonly cacheService: AuditoriaCacheService,
+        private readonly cacheService: CacheService,
     ) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -52,18 +40,13 @@ export class LimitadorUsuarioGuard implements CanActivate {
         const request = context.switchToHttp().getRequest();
         const usuario = request.usuario;
 
-        // Se não está autenticado, deixa o AuthGuard tratar
-        if (!usuario?.sub) {
-            return true;
-        }
-
-        const usuarioId = usuario.sub;
+        // Se está autenticado, usa o ID do usuário, caso contrário usa o IP
+        const identificador = usuario?.sub || this.obterIp(request);
         const acao = this.obterIdentificadorAcao(context);
 
-        // Verifica se está bloqueado
-        if (await this.cacheService.estaBloqueado(usuarioId)) {
+        if (await this.cacheService.estaBloqueado(identificador)) {
             const tempoRestante =
-                await this.cacheService.tempoRestanteBloqueio(usuarioId);
+                await this.cacheService.tempoRestanteBloqueio(identificador);
             throw new HttpException(
                 {
                     statusCode: HttpStatus.TOO_MANY_REQUESTS,
@@ -74,32 +57,27 @@ export class LimitadorUsuarioGuard implements CanActivate {
             );
         }
 
-        // Chave para contar tentativas: usuario:acao
-        const chaveContador = `rate-limit:${usuarioId}:${acao}`;
-        const chaveViolacoes = `rate-limit:${usuarioId}:${acao}:violacoes`;
+        const chaveContador = `rate-limit:${identificador}:${acao}`;
+        const chaveViolacoes = `rate-limit:${identificador}:${acao}:violacoes`;
 
-        // Incrementa contador
         const tentativas = await this.cacheService.incrementar(
             chaveContador,
             config.janela,
         );
 
-        // Verifica se excedeu o limite
         if (tentativas > config.limite) {
-            // Incrementa violações
             const violacoes = await this.cacheService.incrementar(
                 chaveViolacoes,
                 3600, // 1 hora
             );
 
-            // Verifica se deve bloquear
             if (
                 config.bloquearApos &&
                 config.duracaoBloqueio &&
                 violacoes >= config.bloquearApos
             ) {
                 await this.cacheService.bloquear(
-                    usuarioId,
+                    identificador,
                     config.duracaoBloqueio * 60,
                 );
 
@@ -113,7 +91,6 @@ export class LimitadorUsuarioGuard implements CanActivate {
                 );
             }
 
-            // Lança erro de limite excedido
             const mensagemPadrao = `Limite de ${config.limite} requisições por ${this.formatarTempo(config.janela)} excedido. Tente novamente mais tarde.`;
 
             throw new HttpException(
@@ -157,5 +134,10 @@ export class LimitadorUsuarioGuard implements CanActivate {
             const dias = Math.floor(segundos / 86400);
             return `${dias} dia${dias > 1 ? 's' : ''}`;
         }
+    }
+
+    private obterIp(request: any): string {
+        const ip = IpUtils.obterIpCliente(request);
+        return IpUtils.normalizarIp(ip);
     }
 }

@@ -17,7 +17,15 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "migration:auth:run": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d ./src/config/orm/ormConfig.auth.ts",
+    "migration:auth:revert": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:revert -d ./src/config/orm/ormConfig.auth.ts",
+    "migration:usuario:run": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d ./src/config/orm/ormConfig.usuario.ts",
+    "migration:usuario:revert": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:revert -d ./src/config/orm/ormConfig.usuario.ts",
+    "migration:shared:run": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d ./src/config/orm/ormConfig.shared.ts",
+    "migration:shared:revert": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:revert -d ./src/config/orm/ormConfig.shared.ts",
+    "migration:run:all": "npm run migration:shared:run && npm run migration:auth:run && npm run migration:usuario:run",
+    "migration:revert:all": "npm run migration:usuario:revert && npm run migration:auth:revert && npm run migration:shared:revert"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
@@ -30,6 +38,7 @@
     "@types/firebase": "^2.4.32",
     "@types/multer": "^2.0.0",
     "axios": "^1.12.2",
+    "bcrypt": "^5.1.1",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
     "cloudinary": "^2.7.0",
@@ -52,6 +61,7 @@
     "@nestjs/cli": "^11.0.0",
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.0.1",
+    "@types/bcrypt": "^5.0.2",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",

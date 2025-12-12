@@ -5,13 +5,9 @@ import {
     HttpStatus,
 } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
-
-interface RegistroRequisicao {
-    contagem: number;
-    tempoReset: number;
-    bloqueado: boolean;
-    bloqueadoAte?: number;
-}
+import { CacheService } from '../../shared/services/cache.service';
+import { AuditoriaService } from '../../shared/services/auditoria.service';
+import { IpUtils } from '../../shared/utils/ip.utils';
 
 /**
  * Middleware de Rate Limiting global por IP.
@@ -27,36 +23,25 @@ interface RegistroRequisicao {
  */
 @Injectable()
 export class RateLimitMiddleware implements NestMiddleware {
-    // Armazena contagem de requests por IP (em produção, usar Redis)
-    private readonly requisicoes = new Map<string, RegistroRequisicao>();
-
-    private readonly janelaMs = 60 * 1000;
     private readonly maxRequisicoes = 100;
     private readonly duracaoBloqueio = 5 * 60 * 1000;
 
-    use(req: Request, res: Response, next: NextFunction): void {
-        const ip = this.obterIpCliente(req);
+    constructor(
+        private readonly cacheService: CacheService,
+        private readonly auditoriaService: AuditoriaService,
+    ) {}
+
+    async use(req: Request, res: Response, next: NextFunction): Promise<void> {
+        const ip = IpUtils.obterIpCliente(req);
         const agora = Date.now();
+        const chaveContador = `rate-limit:ip:${ip}`;
+        const chaveBloqueio = `rate-limit:ip:${ip}:bloqueio`;
 
-        let registro = this.requisicoes.get(ip);
-
-        if (!registro || agora > registro.tempoReset) {
-            registro = {
-                contagem: 1,
-                tempoReset: agora + this.janelaMs,
-                bloqueado: false,
-            };
-            this.requisicoes.set(ip, registro);
-            this.definirCabecalhosRateLimit(res, registro);
-            return next();
-        }
-
-        if (
-            registro.bloqueado &&
-            registro.bloqueadoAte &&
-            agora < registro.bloqueadoAte
-        ) {
-            const tentarNovamenteEm = Math.ceil((registro.bloqueadoAte - agora) / 1000);
+        const bloqueio = await this.cacheService.obter<{ ate: number }>(
+            chaveBloqueio,
+        );
+        if (bloqueio && agora < bloqueio.ate) {
+            const tentarNovamenteEm = Math.ceil((bloqueio.ate - agora) / 1000);
             res.setHeader('Retry-After', tentarNovamenteEm);
             throw new HttpException(
                 {
@@ -68,24 +53,35 @@ export class RateLimitMiddleware implements NestMiddleware {
             );
         }
 
-        if (
-            registro.bloqueado &&
-            registro.bloqueadoAte &&
-            agora >= registro.bloqueadoAte
-        ) {
-            registro.bloqueado = false;
-            registro.bloqueadoAte = undefined;
-            registro.contagem = 1;
-            registro.tempoReset = agora + this.janelaMs;
-        }
+        const tentativas = await this.cacheService.incrementar(
+            chaveContador,
+            60,
+        ); // 60 segundos TTL
 
-        registro.contagem++;
-
-        if (registro.contagem > this.maxRequisicoes) {
-            registro.bloqueado = true;
-            registro.bloqueadoAte = agora + this.duracaoBloqueio;
+        // Verificar se excedeu o limite
+        if (tentativas > this.maxRequisicoes) {
+            // Bloquear por 5 minutos
+            const ate = agora + this.duracaoBloqueio;
+            await this.cacheService.definir(chaveBloqueio, { ate }, 300); // 5 minutos TTL
 
             const tentarNovamenteEm = Math.ceil(this.duracaoBloqueio / 1000);
+
+            await this.auditoriaService.criar({
+                timestamp: new Date(),
+                usuarioId: 'desconhecido',
+                modulo: 'rate-limit',
+                acao: 'limite_excedido',
+                recurso: 'rate-limit',
+                descricao: `IP bloqueado por exceder limite de ${this.maxRequisicoes} requisições/minuto`,
+                nivel: 'critico',
+                metodo: req.method,
+                rota: req.url,
+                ip: IpUtils.normalizarIp(ip),
+                userAgent: req.headers['user-agent'],
+                statusCode: HttpStatus.TOO_MANY_REQUESTS,
+                erro: `Rate limit excedido. ${tentativas} tentativas em 60 segundos.`,
+            });
+
             res.setHeader('Retry-After', tentarNovamenteEm);
 
             throw new HttpException(
@@ -98,28 +94,22 @@ export class RateLimitMiddleware implements NestMiddleware {
             );
         }
 
-        this.definirCabecalhosRateLimit(res, registro);
+        this.definirCabecalhosRateLimit(res, tentativas);
         next();
     }
 
-    private obterIpCliente(req: Request): string {
-        // Suporta proxies (Heroku, AWS, etc)
-        const forwarded = req.headers['x-forwarded-for'];
-        if (typeof forwarded === 'string') {
-            return forwarded.split(',')[0].trim();
-        }
-        return req.ip || req.socket.remoteAddress || 'unknown';
-    }
-
-    /**
-     * Define os headers padrão de rate limiting
-     */
-    private definirCabecalhosRateLimit(res: Response, registro: RegistroRequisicao): void {
+    private definirCabecalhosRateLimit(
+        res: Response,
+        tentativas: number,
+    ): void {
         res.setHeader('X-RateLimit-Limit', this.maxRequisicoes);
         res.setHeader(
             'X-RateLimit-Remaining',
-            Math.max(0, this.maxRequisicoes - registro.contagem),
+            Math.max(0, this.maxRequisicoes - tentativas),
         );
-        res.setHeader('X-RateLimit-Reset', Math.ceil(registro.tempoReset / 1000));
+        res.setHeader(
+            'X-RateLimit-Reset',
+            Math.ceil((Date.now() + 60000) / 1000),
+        );
     }
 }
