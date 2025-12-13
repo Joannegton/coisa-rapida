@@ -4,6 +4,7 @@ import { BcryptService } from '../../infra/services/bcrypt.service';
 import { JwtService } from '../../infra/services/jwt.service';
 import { LoginDto } from '../dtos/login.dto';
 import { AuditoriaService } from 'src/shared/services';
+import { AuditoriaAcao } from 'src/shared/constants/auditoria-actions';
 import { RefreshTokenRepository } from '../../infra/repositories/refresh-token.repository';
 
 export type RequestData = {
@@ -87,7 +88,7 @@ export class LoginUsecase {
                     usuarioId: usuario.id,
                     usuarioEmail: usuarioAuth.email,
                     modulo: 'auth',
-                    acao: 'login',
+                    acao: AuditoriaAcao.LOGIN,
                     recurso: 'auth',
                     descricao: 'Usuário realizou login no sistema',
                     nivel: 'medio',
@@ -113,8 +114,8 @@ export class LoginUsecase {
                     usuarioId: 'desconhecido',
                     usuarioEmail: props.email,
                     modulo: 'auth',
-                    acao: 'tentativa_login',
-                    recurso: 'auth',
+                    acao: AuditoriaAcao.LOGIN,
+                    recurso: 'tentativa_login',
                     descricao: 'Tentativa de login falhou',
                     nivel: 'medio',
                     metodo: requestData.method,

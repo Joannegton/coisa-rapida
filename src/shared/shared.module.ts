@@ -20,6 +20,6 @@ import { AuditoriaAdminController } from './controllers/auditoria-admin.controll
         CacheService,
         AuditoriaCleanupJob,
     ],
-    exports: [AuditoriaService, CacheService, AuditoriaCleanupJob],
+    exports: [AuditoriaService, CacheService],
 })
 export class SharedModule {}

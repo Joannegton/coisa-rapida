@@ -28,8 +28,8 @@ import { ValidarCodigoDto } from './application/dtos/validar-codigo.dto';
 import { RefreshTokenGuard } from 'src/common/guards/refresh-token.guard';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import {
-    Authenticated,
-    RefreshAuthenticated,
+    ApiAccessToken,
+    ApiRefreshToken,
 } from 'src/common/decorators/swagger.decorators';
 import { SolicitarRecuperacaoSenhaUsecase } from './application/usecases/solicitar-recuperacao-senha.usecase';
 import { ResetarSenhaUsecase } from './application/usecases/resetar-senha.usecase';
@@ -117,7 +117,7 @@ export class AuthController {
             role: 'USER',
         },
     })
-    @Authenticated()
+    @ApiAccessToken()
     @HttpCode(HttpStatus.OK)
     @Get('me')
     async me(@usuarioAtual() usuario: JwtPayload) {
@@ -137,7 +137,7 @@ export class AuthController {
         description: 'Novo token gerado.',
         example: { accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' },
     })
-    @RefreshAuthenticated()
+    @ApiRefreshToken()
     @Publico() // usado para pular o guard global de auth
     @UseGuards(RefreshTokenGuard)
     @HttpCode(HttpStatus.OK)
@@ -154,7 +154,7 @@ export class AuthController {
         description: 'Revoga o refresh token fornecido.',
     })
     @ApiResponse({ status: 200, description: 'Logout realizado com sucesso.' })
-    @RefreshAuthenticated()
+    @ApiRefreshToken()
     @Publico() // usado para pular o guard global de auth
     @UseGuards(RefreshTokenGuard)
     @HttpCode(HttpStatus.OK)

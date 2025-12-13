@@ -9,7 +9,7 @@ export class CreateAuditoriaTable1765563060463 implements MigrationInterface {
         // Criar tabela particionada
         await queryRunner.query(`
             CREATE TABLE auditoria (
-                id SERIAL,
+                id SERIAL PRIMARY KEY,
                 timestamp TIMESTAMP NOT NULL DEFAULT NOW(),
                 usuario_id VARCHAR(255),
                 usuario_email VARCHAR(255),
@@ -28,8 +28,7 @@ export class CreateAuditoriaTable1765563060463 implements MigrationInterface {
                 erro TEXT,
                 estado_antes JSONB,
                 estado_depois JSONB,
-                mudancas JSONB,
-                PRIMARY KEY (id, timestamp)
+                mudancas JSONB
             ) PARTITION BY RANGE (timestamp);
         `);
 
@@ -51,7 +50,7 @@ export class CreateAuditoriaTable1765563060463 implements MigrationInterface {
             { name: 'set', start: '09-01', end: '10-01' },
             { name: 'out', start: '10-01', end: '11-01' },
             { name: 'nov', start: '11-01', end: '12-01' },
-            { name: 'dez', start: '12-01', end: '12-31' },
+            { name: 'dez', start: '12-01', end: '01-01' },
         ];
 
         for (const month of months2026) {
@@ -102,7 +101,7 @@ export class CreateAuditoriaTable1765563060463 implements MigrationInterface {
                 -- Calcular próximo mês
                 data_inicio := date_trunc('month', CURRENT_DATE + interval '1 month');
                 data_fim := data_inicio + interval '1 month';
-                nome_particao := 'auditoria_' || to_char(data_inicio, 'YYYY_mon');
+                nome_particao := 'auditoria_' || to_char(data_inicio, 'YYYY_MM');
                 
                 -- Criar partição se não existir
                 EXECUTE format(

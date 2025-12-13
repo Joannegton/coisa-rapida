@@ -24,16 +24,6 @@ export class Usuario {
         this.props = {} as UsuarioProps;
     }
 
-    static criar(nome: string): Usuario {
-        const domain = new Usuario();
-        domain.setNome(nome);
-        domain.setTelefoneVerificado(false);
-        domain.setEmailVerificado(false);
-        domain.setVerificado(false);
-
-        return domain;
-    }
-
     static carregar(props: UsuarioProps, id: string): Usuario {
         const domain = new Usuario(id);
         domain.props.nome = props.nome;
@@ -48,6 +38,11 @@ export class Usuario {
         domain.props.endereco = props.endereco;
         domain.props.comprovanteResidencia = props.comprovanteResidencia;
         return domain;
+    }
+
+    verificarTelefone(telefone: string): void {
+        this.setTelefone(telefone);
+        this.setTelefoneVerificado(true);
     }
 
     get id(): string {
@@ -109,8 +104,11 @@ export class Usuario {
         if (cpf) this.props.cpf = cpf;
     }
 
-    private setTelefone(telefone?: string): void {
-        if (telefone) this.props.telefone = telefone;
+    private setTelefone(telefone: string): void {
+        if (!telefone || telefone.trim() === '')
+            throw new UsuarioException('Telefone é obrigatório');
+
+        this.props.telefone = telefone;
     }
 
     private setTelefoneVerificado(telefoneVerificado: boolean): void {

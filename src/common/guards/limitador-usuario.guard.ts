@@ -26,21 +26,18 @@ export class LimitadorUsuarioGuard implements CanActivate {
     ) {}
 
     async canActivate(context: ExecutionContext): Promise<boolean> {
-        // Busca os metadados do decorator
         const config = this.reflector.getAllAndOverride<ConfigLimitadorUsuario>(
             LIMITADOR_USUARIO_KEY,
             [context.getHandler(), context.getClass()],
         );
 
-        // Se não tem decorator, permite acesso
         if (!config) {
             return true;
         }
 
         const request = context.switchToHttp().getRequest();
-        const usuario = request.usuario;
+        const usuario = request.user;
 
-        // Se está autenticado, usa o ID do usuário, caso contrário usa o IP
         const identificador = usuario?.sub || this.obterIp(request);
         const acao = this.obterIdentificadorAcao(context);
 

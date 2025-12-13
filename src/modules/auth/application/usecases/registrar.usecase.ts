@@ -4,6 +4,7 @@ import { BcryptService } from '../../infra/services/bcrypt.service';
 import { JwtService } from '../../infra/services/jwt.service';
 import { RegistrarDto } from '../dtos/registrar.dto';
 import { AuditoriaService } from 'src/shared/services';
+import { AuditoriaAcao } from 'src/shared/constants/auditoria-actions';
 import { RefreshTokenRepository } from '../../infra/repositories/refresh-token.repository';
 
 @Injectable()
@@ -75,8 +76,8 @@ export class RegistrarUsecase {
                     usuarioId: usuario.id,
                     usuarioEmail: usuarioAuth.email,
                     modulo: 'auth',
-                    acao: 'registro_usuario',
-                    recurso: 'auth',
+                    acao: AuditoriaAcao.REGISTRAR_USUARIO,
+                    recurso: 'registro_usuario',
                     descricao: 'Novo usuário se registrou',
                     nivel: 'medio',
                     metodo: requestData.method,
@@ -101,8 +102,8 @@ export class RegistrarUsecase {
                     usuarioId: 'desconhecido',
                     usuarioEmail: dto.email,
                     modulo: 'auth',
-                    acao: 'tentativa_registro',
-                    recurso: 'auth',
+                    acao: AuditoriaAcao.REGISTRAR_USUARIO,
+                    recurso: 'tentativa_registro',
                     descricao: 'Tentativa de registro falhou',
                     nivel: 'medio',
                     metodo: requestData.method,

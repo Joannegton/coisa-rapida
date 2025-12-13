@@ -8,6 +8,7 @@ import { promisify } from 'node:util';
 import { AuditoriaRepository } from '../repositories/auditoria.repository';
 import { AuditoriaConfig } from 'src/shared/config/auditoria.config';
 import { AuditoriaModel } from '../models/auditoria.model';
+import { AuditoriaAcao } from 'src/shared/constants/auditoria-actions';
 
 const gzip = promisify(zlib.gzip);
 
@@ -199,7 +200,9 @@ export class AuditoriaCleanupJob {
      * Verifica se uma ação é considerada de compliance
      */
     private isAcaoCompliance(acao: string): boolean {
-        return AuditoriaConfig.acoesCompliance.includes(acao);
+        return (AuditoriaConfig.acoesCompliance as readonly string[]).includes(
+            acao,
+        );
     }
 
     /**
@@ -243,7 +246,7 @@ export class AuditoriaCleanupJob {
 
         const [complianceResult] = await this.auditoriaRepository.query(
             `SELECT COUNT(*) as total FROM auditoria WHERE acao = ANY($1)`,
-            [AuditoriaConfig.acoesCompliance],
+            [AuditoriaConfig.acoesCompliance as readonly string[]],
         );
 
         const [tamanhoResult] = await this.auditoriaRepository.query(

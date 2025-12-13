@@ -44,10 +44,10 @@ export class AuditoriaService {
             if (log.nivel === 'critico') {
                 await this.notificarLogCritico(log);
             }
-        } catch (erro) {
+        } catch (error_) {
             this.logger.error(
-                `Erro ao criar log de auditoria: ${erro.message}`,
-                erro.stack,
+                `Erro ao criar log de auditoria: ${error_.message}`,
+                error_.stack,
             );
         }
     }

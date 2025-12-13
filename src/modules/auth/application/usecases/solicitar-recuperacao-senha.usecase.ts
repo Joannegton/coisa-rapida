@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { AuthRepository } from '../../infra/repositories/auth.repository';
 import { randomBytes } from 'node:crypto';
 import { AuditoriaService } from 'src/shared/services';
+import { AuditoriaAcao } from 'src/shared/constants/auditoria-actions';
 
 @Injectable()
 export class SolicitarRecuperacaoSenhaUsecase {
@@ -39,8 +40,8 @@ export class SolicitarRecuperacaoSenhaUsecase {
             usuarioId: usuarioAuth?.id || 'desconhecido',
             usuarioEmail: email,
             modulo: 'auth',
-            acao: 'solicitar_recuperacao_senha',
-            recurso: 'auth',
+            acao: AuditoriaAcao.SOLICITAR_RECUPERACAO_SENHA,
+            recurso: 'solicitar_recuperacao_senha',
             descricao: usuarioAuth
                 ? 'Código de recuperação enviado'
                 : 'Tentativa em email inexistente',

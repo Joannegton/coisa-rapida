@@ -1,4 +1,5 @@
 import { SetMetadata } from '@nestjs/common';
+import { AuditoriaAcao } from '../../shared/constants/auditoria-actions';
 
 export const AUDITORIA_KEY = 'auditoria';
 
@@ -39,9 +40,18 @@ export const Auditar = (
         descricao: opcoes?.descricao,
     } as MetadadosAuditoria);
 
-/**
- * Decorator específico para auditar ações críticas
- */
+export const AuditarEnvioSms = () =>
+    Auditar(AuditoriaAcao.ENVIAR_CODIGO_SMS, 'verificacao_sms', {
+        descricao: 'Envio de código SMS',
+        nivel: 'medio',
+    });
+
+export const AuditarVerificacaoSms = () =>
+    Auditar(AuditoriaAcao.VERIFICAR_CODIGO_SMS, 'verificacao_sms', {
+        descricao: 'Verificação de código SMS',
+        nivel: 'medio',
+    });
+
 export const AuditarCritico = (
     acao: string,
     recurso: string,
@@ -52,15 +62,9 @@ export const AuditarCritico = (
         descricao,
     });
 
-/**
- * Decorator para ações financeiras (sempre críticas)
- */
 export const AuditarFinanceiro = (acao: string, descricao?: string) =>
     AuditarCritico(acao, 'financeiro', descricao || 'Transação financeira');
 
-/**
- * Decorator para ações de moderação
- */
 export const AuditarModeracao = (acao: string, descricao?: string) =>
     Auditar(acao, 'moderacao', {
         nivel: 'alto',

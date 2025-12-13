@@ -3,6 +3,7 @@ import { AuthRepository } from '../../infra/repositories/auth.repository';
 import { BcryptService } from '../../infra/services/bcrypt.service';
 import { CacheService } from 'src/shared/services/cache.service';
 import { AuditoriaService } from 'src/shared/services/auditoria.service';
+import { AuditoriaAcao } from 'src/shared/constants/auditoria-actions';
 
 @Injectable()
 export class ResetarSenhaUsecase {
@@ -26,8 +27,8 @@ export class ResetarSenhaUsecase {
                 usuarioId: 'desconhecido',
                 usuarioEmail: undefined,
                 modulo: 'auth',
-                acao: 'resetar_senha',
-                recurso: 'auth',
+                acao: AuditoriaAcao.RESETAR_SENHA,
+                recurso: 'tentativa_resetar_senha',
                 descricao: `Tentativa de reset de senha com token temporário inválido ou expirado`,
                 nivel: 'medio',
                 statusCode: 400,
@@ -47,8 +48,8 @@ export class ResetarSenhaUsecase {
                 usuarioId: 'desconhecido',
                 usuarioEmail: data.email,
                 modulo: 'auth',
-                acao: 'resetar_senha',
-                recurso: 'auth',
+                acao: AuditoriaAcao.RESETAR_SENHA,
+                recurso: 'tentativa_resetar_senha',
                 descricao: `Tentativa de reset de senha para usuário não encontrado: ${data.email}`,
                 nivel: 'medio',
                 statusCode: 400,
@@ -70,8 +71,8 @@ export class ResetarSenhaUsecase {
             usuarioId: usuarioAuth.id,
             usuarioEmail: data.email,
             modulo: 'auth',
-            acao: 'resetar_senha',
-            recurso: 'auth',
+            acao: AuditoriaAcao.RESETAR_SENHA,
+            recurso: 'resetar_senha',
             descricao: `Senha resetada com sucesso para email: ${data.email}`,
             nivel: 'medio',
             statusCode: 200,

@@ -1,19 +1,6 @@
-import {
-    Injectable,
-    Logger,
-    InternalServerErrorException,
-} from '@nestjs/common';
-import {
-    ResultadoAssincrono,
-    ResultadoUtil,
-    ServicoExcecao,
-} from 'src/shared/utils/resultado';
+import { Injectable, Logger } from '@nestjs/common';
 import twilio from 'twilio';
-
-export type EnviarSMSResult = {
-    sid?: string;
-    status?: string;
-};
+import { ServiceException } from 'src/common/exceptions/service.exception';
 
 export type VerificarSMSResult = {
     status?: string;
@@ -27,56 +14,41 @@ export class TwilioService {
     private readonly verifySid: string;
 
     constructor() {
-        const accountSid = process.env.TWILIO_ACCOUNT_SID;
-        const authToken = process.env.TWILIO_AUTH_TOKEN;
-        this.verifySid = process.env.TWILIO_VERIFY_SERVICE_SID || '';
+        const accountSid = process.env.TWILIO_ACCOUNT_SID as string;
+        const authToken = process.env.TWILIO_AUTH_TOKEN as string;
+        this.verifySid = process.env.TWILIO_VERIFY_SERVICE_SID as string;
 
         this.client = twilio(accountSid, authToken);
     }
 
-    async enviarCodigoVerificacao(
-        telefone: string,
-    ): ResultadoAssincrono<EnviarSMSResult, ServicoExcecao> {
+    async enviarCodigoVerificacao(telefone: string): Promise<void> {
         try {
-            const verification = await this.client.verify.v2
+            await this.client.verify.v2
                 .services(this.verifySid)
                 .verifications.create({
                     to: telefone,
                     channel: 'sms',
                     locale: 'pt-BR',
                 });
-
-            return ResultadoUtil.sucesso({
-                sid: verification.sid,
-                status: verification.status,
-            });
         } catch (error) {
             this.logger.error('Erro ao enviar SMS via Twilio:', error);
 
             // Erro 60200: numero invalido
             if (error.code === 60200) {
-                return ResultadoUtil.falha(
-                    new ServicoExcecao(
-                        'Número de telefone inválido ou não suportado',
-                    ),
+                throw new ServiceException(
+                    'Número de telefone inválido ou não suportado',
                 );
             }
 
-            return ResultadoUtil.falha(
-                new ServicoExcecao(
-                    `Erro ao enviar SMS: ${error.message || 'Erro desconhecido'}`,
-                ),
-            );
+            throw new ServiceException('Erro ao enviar SMS');
         }
     }
 
     async verificarCodigo(
         telefone: string,
         codigo: string,
-    ): ResultadoAssincrono<VerificarSMSResult, ServicoExcecao> {
+    ): Promise<VerificarSMSResult> {
         try {
-            this.logger.log(`Verificando código para ${telefone}`);
-
             const verificationCheck = await this.client.verify.v2
                 .services(this.verifySid)
                 .verificationChecks.create({
@@ -84,27 +56,21 @@ export class TwilioService {
                     code: codigo,
                 });
 
-            this.logger.log(
-                `Verificação concluída. Status: ${verificationCheck.status}`,
-            );
-
             const isValid = verificationCheck.status === 'approved';
 
-            return ResultadoUtil.sucesso({
+            return {
                 status: verificationCheck.status,
                 valid: isValid,
-            });
+            };
         } catch (error) {
             this.logger.error('Erro ao verificar código SMS:', error);
 
             // Se o código estiver errado, o Twilio retorna status 404
             if (error.status === 404 || error.code === 20404) {
-                return ResultadoUtil.falha(
-                    new ServicoExcecao('Código de verificação inválido'),
-                );
+                throw new ServiceException('Código de verificação inválido');
             }
 
-            throw new InternalServerErrorException(
+            throw new ServiceException(
                 `Erro ao verificar código: ${error.message || 'Erro desconhecido'}`,
             );
         }

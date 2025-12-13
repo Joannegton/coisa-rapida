@@ -1,6 +1,4 @@
-/**
- * Configurações de auditoria e retenção de dados
- */
+import { ACOES_COMPLIANCE } from '../constants/auditoria-actions';
 export const AuditoriaConfig = {
     /**
      * Período de retenção de logs (em meses)
@@ -20,17 +18,7 @@ export const AuditoriaConfig = {
     /**
      * Ações consideradas de compliance (não podem ser deletadas)
      */
-    acoesCompliance: [
-        'login',
-        'logout',
-        'alterar_senha',
-        'resetar_senha',
-        'criar_usuario',
-        'deletar_usuario',
-        'alterar_permissoes',
-        'acesso_dados_sensiveis',
-        'exportar_dados',
-    ],
+    acoesCompliance: ACOES_COMPLIANCE,
 
     /**
      * Configuração do job de limpeza

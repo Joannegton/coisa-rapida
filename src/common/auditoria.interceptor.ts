@@ -43,7 +43,7 @@ export class AuditoriaInterceptor implements NestInterceptor {
 
         const request = context.switchToHttp().getRequest();
         const response = context.switchToHttp().getResponse();
-        const usuario = request.usuario;
+        const usuario = request.user;
 
         if (!usuario) {
             return next.handle();
@@ -58,7 +58,7 @@ export class AuditoriaInterceptor implements NestInterceptor {
             acao: metadados.acao,
             recurso: metadados.recurso,
             recursoId: request.params?.id || request.body?.id,
-            descricao: metadados.descricao,
+            descricao: `Sucesso: ${metadados.descricao}`,
             nivel: metadados.nivel || 'baixo',
             metodo: request.method,
             rota: request.route?.path || request.url,
@@ -91,6 +91,7 @@ export class AuditoriaInterceptor implements NestInterceptor {
 
                 const log: LogAuditoria = {
                     ...logBase,
+                    descricao: `Falha: ${metadados.descricao}`,
                     statusCode: erro.status || 500,
                     duracaoMs,
                     erro: erro.message || 'Erro desconhecido',

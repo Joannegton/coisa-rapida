@@ -23,13 +23,17 @@ export const LimitadorUsuario = (
         duracaoBloqueio: opcoes?.duracaoBloqueio,
     } as ConfigLimitadorUsuario);
 
-/**
- * Decorator para limitar envios de SMS (5 por minuto)
- */
+export const LimitarResetSenha = () =>
+    LimitadorUsuario(3, 3600, {
+        mensagem: 'Muitas solicitações de reset de senha. Aguarde 1 hora.',
+        bloquearApos: 5,
+        duracaoBloqueio: 120,
+    });
+
 export const LimitarEnvioSMS = () =>
-    LimitadorUsuario(5, 60, {
+    LimitadorUsuario(3, 60, {
         mensagem: 'Você atingiu o limite de envios de SMS. Aguarde 1 minuto.',
-        bloquearApos: 3,
+        bloquearApos: 5,
         duracaoBloqueio: 15,
     });
 
@@ -60,16 +64,6 @@ export const LimitarDisputa = () =>
         mensagem:
             'Você atingiu o limite de disputas por dia. Aguarde 24 horas.',
         bloquearApos: 2,
-        duracaoBloqueio: 120,
-    });
-
-/**
- * Decorator para limitar solicitações de reset de senha (3 por hora)
- */
-export const LimitarResetSenha = () =>
-    LimitadorUsuario(3, 3600, {
-        mensagem: 'Muitas solicitações de reset de senha. Aguarde 1 hora.',
-        bloquearApos: 5,
         duracaoBloqueio: 120,
     });
 

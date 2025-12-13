@@ -24,7 +24,16 @@ export class UsuarioMapper {
 
     domainToModel(domain: Usuario): UsuarioModel {
         const usuarioModel = UsuarioModel.criar({
+            id: domain.id,
             nome: domain.nome,
+            telefone: domain.telefone,
+            cpf: domain.cpf,
+            emailVerificado: domain.emailVerificado,
+            telefoneVerificado: domain.telefoneVerificado,
+            verificado: domain.verificado,
+            fotoUrl: domain.fotoUrl,
+            endereco: domain.endereco,
+            comprovanteResidencia: domain.comprovanteResidencia,
         });
 
         return usuarioModel;

@@ -7,6 +7,7 @@ import {
 import { Request, Response, NextFunction } from 'express';
 import { CacheService } from '../../shared/services/cache.service';
 import { AuditoriaService } from '../../shared/services/auditoria.service';
+import { AuditoriaAcao } from '../../shared/constants/auditoria-actions';
 import { IpUtils } from '../../shared/utils/ip.utils';
 
 /**
@@ -76,7 +77,7 @@ export class RateLimitMiddleware implements NestMiddleware {
                 timestamp: new Date(),
                 usuarioId: 'desconhecido',
                 modulo: 'rate-limit',
-                acao: 'limite_excedido',
+                acao: AuditoriaAcao.LIMITE_EXCEDIDO,
                 recurso: 'rate-limit',
                 descricao: `IP bloqueado por exceder limite de ${this.maxRequisicoes} requisições/minuto`,
                 nivel: 'critico',
