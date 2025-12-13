@@ -8,7 +8,6 @@ import { RefreshTokenRepository } from './infra/repositories/refresh-token.repos
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from 'src/modules/auth/strategies/jwt.strategy';
 import { RefreshTokenStrategy } from 'src/modules/auth/strategies/refresh-token.strategy';
-import { UsuarioMapper } from '../usuario/infra/mappers/usuario.mapper';
 import { SharedModule } from 'src/shared/shared.module';
 import { RefreshTokenModel } from './infra/models/refresh-token.model';
 import { RefreshTokenGuard } from 'src/common/guards/refresh-token.guard';
@@ -38,7 +37,6 @@ import { LimparRefreshTokenJob } from './infra/jobs/refresh-token-cleanup.job';
         RefreshTokenStrategy,
         AuthRepository,
         RefreshTokenRepository,
-        UsuarioMapper,
         RefreshTokenGuard,
     ],
     exports: [],

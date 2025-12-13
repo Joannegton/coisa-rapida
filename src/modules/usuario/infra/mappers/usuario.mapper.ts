@@ -1,8 +1,10 @@
+import { Injectable } from '@nestjs/common';
 import { Usuario } from '../../domain/usuario';
 import { UsuarioModel } from '../models/usuario.model';
 import { EnderecoMapper } from './Endereco.mapper';
 import { ComprovanteResidenciaMapper } from './ComprovanteResidencia.mapper';
 
+@Injectable()
 export class UsuarioMapper {
     constructor(
         private readonly enderecoMapper: EnderecoMapper,

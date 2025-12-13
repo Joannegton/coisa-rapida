@@ -1,6 +1,8 @@
+import { Injectable } from '@nestjs/common';
 import { Endereco } from '../../domain/Endereco';
 import { EnderecoModel } from '../models/endereco.value-objct';
 
+@Injectable()
 export class EnderecoMapper {
     modelToDomain(model: EnderecoModel): Endereco {
         return Endereco.carregar({

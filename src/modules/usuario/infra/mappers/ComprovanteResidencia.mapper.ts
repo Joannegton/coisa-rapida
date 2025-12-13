@@ -1,6 +1,8 @@
+import { Injectable } from '@nestjs/common';
 import { ComprovanteResidencia } from '../../domain/ComprovanteResidencia';
 import { ComprovanteResidenciaModel } from '../models/comprovante-residencia.model';
 
+@Injectable()
 export class ComprovanteResidenciaMapper {
     modelToDomain(model: ComprovanteResidenciaModel): ComprovanteResidencia {
         const comprovante = ComprovanteResidencia.carregar(
