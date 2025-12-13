@@ -9,7 +9,7 @@ export class CreateAuditoriaTable1765563060463 implements MigrationInterface {
         // Criar tabela particionada
         await queryRunner.query(`
             CREATE TABLE auditoria (
-                id SERIAL PRIMARY KEY,
+                id SERIAL NOT NULL,
                 timestamp TIMESTAMP NOT NULL DEFAULT NOW(),
                 usuario_id VARCHAR(255),
                 usuario_email VARCHAR(255),
@@ -28,7 +28,8 @@ export class CreateAuditoriaTable1765563060463 implements MigrationInterface {
                 erro TEXT,
                 estado_antes JSONB,
                 estado_depois JSONB,
-                mudancas JSONB
+                mudancas JSONB,
+                PRIMARY KEY (id, timestamp)
             ) PARTITION BY RANGE (timestamp);
         `);
 

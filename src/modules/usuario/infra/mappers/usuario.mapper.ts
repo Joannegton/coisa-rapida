@@ -1,7 +1,14 @@
 import { Usuario } from '../../domain/usuario';
 import { UsuarioModel } from '../models/usuario.model';
+import { EnderecoMapper } from './Endereco.mapper';
+import { ComprovanteResidenciaMapper } from './ComprovanteResidencia.mapper';
 
 export class UsuarioMapper {
+    constructor(
+        private readonly enderecoMapper: EnderecoMapper,
+        private readonly comprovanteResidenciaMapper: ComprovanteResidenciaMapper,
+    ) {}
+
     modelToDomain(model: UsuarioModel): Usuario {
         const usuario = Usuario.carregar(
             {
@@ -14,8 +21,14 @@ export class UsuarioMapper {
                 fotoUrl: model.fotoUrl,
                 criadoEm: model.criadoEm,
                 atualizadoEm: model.atualizadoEm,
-                endereco: model.endereco,
-                comprovanteResidencia: model.comprovanteResidencia,
+                endereco: model.endereco
+                    ? this.enderecoMapper.modelToDomain(model.endereco)
+                    : undefined,
+                comprovanteResidencia: model.comprovanteResidencia
+                    ? this.comprovanteResidenciaMapper.modelToDomain(
+                          model.comprovanteResidencia,
+                      )
+                    : undefined,
             },
             model.id,
         );
@@ -32,8 +45,14 @@ export class UsuarioMapper {
             telefoneVerificado: domain.telefoneVerificado,
             verificado: domain.verificado,
             fotoUrl: domain.fotoUrl,
-            endereco: domain.endereco,
-            comprovanteResidencia: domain.comprovanteResidencia,
+            endereco: domain.endereco
+                ? this.enderecoMapper.domainToModel(domain.endereco)
+                : undefined,
+            comprovanteResidencia: domain.comprovanteResidencia
+                ? this.comprovanteResidenciaMapper.domainToModel(
+                      domain.comprovanteResidencia,
+                  )
+                : undefined,
         });
 
         return usuarioModel;

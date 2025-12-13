@@ -38,4 +38,10 @@ export class EnderecoModel {
         nullable: true,
     })
     longitude?: number;
+
+    static criar(props: Partial<EnderecoModel>): EnderecoModel {
+        const endereco = new EnderecoModel();
+        Object.assign(endereco, props);
+        return endereco;
+    }
 }

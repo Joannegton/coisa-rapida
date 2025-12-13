@@ -1,15 +1,18 @@
 import {
     Entity,
-    PrimaryGeneratedColumn,
+    PrimaryColumn,
     Column,
     CreateDateColumn,
+    Generated,
 } from 'typeorm';
 
 @Entity('auditoria')
 export class AuditoriaModel {
-    @PrimaryGeneratedColumn()
+    @PrimaryColumn()
+    @Generated('increment')
     id: number;
 
+    @PrimaryColumn()
     @CreateDateColumn({ name: 'timestamp' })
     timestamp: Date;
 

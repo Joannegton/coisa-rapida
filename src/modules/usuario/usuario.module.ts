@@ -9,6 +9,11 @@ import { usuarioUsecases } from './application/usecases';
 import { VerificacaoController } from './presentation/verificacao.controller';
 import { TwilioService } from './infra/services/Twilio.service';
 import { SharedModule } from 'src/shared/shared.module';
+import { ComprovanteResidenciaMapper } from './infra/mappers/ComprovanteResidencia.mapper';
+import { ComprovanteResidenciaRepositoryImpl } from './infra/repositories/comprovante-residencia.repository';
+import { EnderecoMapper } from './infra/mappers/Endereco.mapper';
+import { CloudinaryService } from 'src/shared/services/Cloudinary.service';
+import { VirusTotalService } from 'src/shared/services/VirusTotal.service';
 
 @Module({
     imports: [
@@ -19,10 +24,18 @@ import { SharedModule } from 'src/shared/shared.module';
     providers: [
         ...usuarioUsecases,
         TwilioService,
+        CloudinaryService,
+        VirusTotalService,
         UsuarioMapper,
+        EnderecoMapper,
+        ComprovanteResidenciaMapper,
         {
             provide: 'UsuarioRepository',
             useClass: UsuarioRepositoryImpl,
+        },
+        {
+            provide: 'ComprovanteResidenciaRepository',
+            useClass: ComprovanteResidenciaRepositoryImpl,
         },
     ],
     exports: [],

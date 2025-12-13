@@ -7,6 +7,7 @@ import {
     OneToOne,
     JoinColumn,
     PrimaryGeneratedColumn,
+    Index,
 } from 'typeorm';
 
 export enum ModeracaoStatus {
@@ -26,9 +27,15 @@ export enum TipoComprovante {
 }
 
 @Entity('comprovante_residencia', { schema: 'usuario' })
+@Index(['criadoEm'])
+@Index('idx_comprovante_usuario_id', ['usuarioId'])
+@Index('idx_comprovante_status', ['status'])
 export class ComprovanteResidenciaModel {
     @PrimaryGeneratedColumn('uuid')
     id: string;
+
+    @Column({ name: 'usuario_id' })
+    usuarioId: string;
 
     @Column({ name: 'comprovante_url' })
     comprovanteUrl: string;
@@ -55,18 +62,24 @@ export class ComprovanteResidenciaModel {
     @Column({ name: 'motivo_rejeicao', type: 'text', nullable: true })
     motivoRejeicao?: string;
 
-    // Datas
-
     @Column({ name: 'data_conclusao', type: 'timestamp', nullable: true })
     dataConclusao?: Date;
 
-    @CreateDateColumn({ name: 'created_at' })
-    createdAt: Date;
+    @CreateDateColumn({ name: 'criado_em' })
+    criadoEm: Date;
 
-    @UpdateDateColumn({ name: 'updated_at' })
-    updatedAt: Date;
+    @UpdateDateColumn({ name: 'atualizado_em' })
+    atualizadoEm: Date;
 
     @OneToOne(() => UsuarioModel, (usuario) => usuario.comprovanteResidencia)
     @JoinColumn({ name: 'usuario_id', referencedColumnName: 'id' })
     usuario: UsuarioModel;
+
+    static criar(
+        props: Partial<ComprovanteResidenciaModel>,
+    ): ComprovanteResidenciaModel {
+        const comprovante = new ComprovanteResidenciaModel();
+        Object.assign(comprovante, props);
+        return comprovante;
+    }
 }

@@ -16,8 +16,8 @@ export class CreateComprovanteResidenciaTable1733961800000
                 observacoes_moderador TEXT,
                 motivo_rejeicao TEXT,
                 data_conclusao TIMESTAMP WITH TIME ZONE,
-                created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-                updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                criado_em TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+                atualizado_em TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
                 CONSTRAINT fk_comprovante_usuario 
                     FOREIGN KEY (usuario_id) 
                     REFERENCES usuario.usuario(id) 
@@ -41,27 +41,27 @@ export class CreateComprovanteResidenciaTable1733961800000
         `);
 
         await queryRunner.query(`
-            CREATE INDEX IF NOT EXISTS idx_comprovante_created_at 
-            ON usuario.comprovante_residencia (created_at DESC);
+            CREATE INDEX IF NOT EXISTS idx_comprovante_criado_em 
+            ON usuario.comprovante_residencia (criado_em DESC);
         `);
 
         await queryRunner.query(`
-            CREATE OR REPLACE FUNCTION usuario.update_comprovante_updated_at()
+            CREATE OR REPLACE FUNCTION usuario.update_comprovante_atualizado_em()
             RETURNS TRIGGER AS $$
             BEGIN
-                NEW.updated_at = NOW();
+                NEW.atualizado_em = NOW();
                 RETURN NEW;
             END;
             $$ LANGUAGE plpgsql;
         `);
 
         await queryRunner.query(`
-            DROP TRIGGER IF EXISTS trigger_update_comprovante_updated_at ON usuario.comprovante_residencia;
+            DROP TRIGGER IF EXISTS trigger_update_comprovante_atualizado_em ON usuario.comprovante_residencia;
             
-            CREATE TRIGGER trigger_update_comprovante_updated_at
+            CREATE TRIGGER trigger_update_comprovante_atualizado_em
             BEFORE UPDATE ON usuario.comprovante_residencia
             FOR EACH ROW
-            EXECUTE FUNCTION usuario.update_comprovante_updated_at();
+            EXECUTE FUNCTION usuario.update_comprovante_atualizado_em();
         `);
 
         console.log('✅ Tabela comprovante_residencia criada com sucesso');
@@ -69,13 +69,12 @@ export class CreateComprovanteResidenciaTable1733961800000
 
     public async down(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`
-            DROP TRIGGER IF EXISTS trigger_update_comprovante_updated_at ON usuario.comprovante_residencia;
+            DROP TRIGGER IF EXISTS trigger_update_comprovante_atualizado_em ON usuario.comprovante_residencia;
         `);
 
         await queryRunner.query(`
-            DROP FUNCTION IF EXISTS usuario.update_comprovante_updated_at() CASCADE;
+            DROP FUNCTION IF EXISTS usuario.update_comprovante_atualizado_em() CASCADE;
         `);
-
         await queryRunner.query(`
             ALTER TABLE IF EXISTS usuario.comprovante_residencia 
             DROP CONSTRAINT IF EXISTS fk_comprovante_usuario;

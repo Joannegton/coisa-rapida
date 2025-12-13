@@ -3,9 +3,9 @@ import { AuthRepository } from '../../infra/repositories/auth.repository';
 import { BcryptService } from '../../infra/services/bcrypt.service';
 import { JwtService } from '../../infra/services/jwt.service';
 import { LoginDto } from '../dtos/login.dto';
-import { AuditoriaService } from 'src/shared/services';
 import { AuditoriaAcao } from 'src/shared/constants/auditoria-actions';
 import { RefreshTokenRepository } from '../../infra/repositories/refresh-token.repository';
+import { AuditoriaService } from 'src/shared/services/auditoria.service';
 
 export type RequestData = {
     ip: string;

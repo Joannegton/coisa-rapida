@@ -1,4 +1,7 @@
-import { UsuarioException } from './usuario.exception';
+import { UsuarioException } from './exceptions/usuario.exception';
+import { Endereco } from './Endereco';
+import { ComprovanteResidencia } from './ComprovanteResidencia';
+import { ModeracaoStatus } from '../infra/models/comprovante-residencia.model';
 
 type UsuarioProps = {
     nome: string;
@@ -11,8 +14,8 @@ type UsuarioProps = {
     criadoEm?: Date;
     atualizadoEm?: Date;
 
-    endereco?: any;
-    comprovanteResidencia?: any;
+    endereco?: Endereco;
+    comprovanteResidencia?: ComprovanteResidencia;
 };
 
 export class Usuario {
@@ -43,6 +46,35 @@ export class Usuario {
     verificarTelefone(telefone: string): void {
         this.setTelefone(telefone);
         this.setTelefoneVerificado(true);
+        this.verificarUsuario();
+    }
+
+    verificarEmail(emailVerificado: boolean): void {
+        this.setEmailVerificado(emailVerificado);
+        this.verificarUsuario();
+    }
+
+    aprovarComprovanteResidencia(): void {
+        if (!this.props.comprovanteResidencia)
+            throw new UsuarioException(
+                'Usuário não possui comprovante de residência',
+            );
+        this.props.comprovanteResidencia.aprovarComprovante();
+        this.verificarUsuario();
+    }
+
+    verificarUsuario(): void {
+        if (this.props.verificado) return;
+
+        if (
+            this.props.emailVerificado &&
+            this.props.telefoneVerificado &&
+            this.props.cpf &&
+            this.props.cpf.trim() !== '' &&
+            this.props.comprovanteResidencia?.status ===
+                ModeracaoStatus.APROVADO
+        )
+            this.setVerificado(true);
     }
 
     get id(): string {
@@ -85,11 +117,11 @@ export class Usuario {
         return this.props.atualizadoEm;
     }
 
-    get endereco(): any {
+    get endereco(): Endereco | undefined {
         return this.props.endereco;
     }
 
-    get comprovanteResidencia(): any {
+    get comprovanteResidencia(): ComprovanteResidencia | undefined {
         return this.props.comprovanteResidencia;
     }
 
@@ -131,7 +163,9 @@ export class Usuario {
         this.props.endereco = endereco;
     }
 
-    private setComprovanteResidencia(comprovanteResidencia: any): void {
+    private setComprovanteResidencia(
+        comprovanteResidencia: ComprovanteResidencia | undefined,
+    ): void {
         this.props.comprovanteResidencia = comprovanteResidencia;
     }
 }
