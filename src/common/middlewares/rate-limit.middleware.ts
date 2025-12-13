@@ -23,8 +23,14 @@ import { IpUtils } from '../../shared/utils/ip.utils';
  */
 @Injectable()
 export class RateLimitMiddleware implements NestMiddleware {
-    private readonly maxRequisicoes = 100;
-    private readonly duracaoBloqueio = 5 * 60 * 1000;
+    private readonly maxRequisicoes = Number.parseInt(
+        process.env.RATE_LIMIT_MAX as string,
+        10,
+    );
+    private readonly duracaoBloqueio = Number.parseInt(
+        process.env.RATE_LIMIT_BLOCK_DURATION as string,
+        10,
+    );
 
     constructor(
         private readonly cacheService: CacheService,

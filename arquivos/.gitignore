@@ -1,0 +1,6 @@
+# Arquivos de Auditoria
+# Gerados pelo job de limpeza automática
+*.jsonl
+*.jsonl.gz
+*.csv
+*.csv.gz

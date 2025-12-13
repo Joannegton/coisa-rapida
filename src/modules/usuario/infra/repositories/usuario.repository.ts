@@ -5,9 +5,10 @@ import { UsuarioModel } from '../models/usuario.model';
 import { RepositoryException } from 'src/common/exceptions/repository.exception';
 import { UsuarioMapper } from '../mappers/usuario.mapper';
 import { Usuario } from '../../domain/usuario';
+import { UsuarioRepository } from '../../domain/repositories/usuario.repository';
 
 @Injectable()
-export class UsuarioRepository {
+export class UsuarioRepositoryImpl implements UsuarioRepository {
     constructor(
         @InjectRepository(UsuarioModel)
         private readonly repository: Repository<UsuarioModel>,
@@ -26,10 +27,10 @@ export class UsuarioRepository {
         }
     }
 
-    async buscarPorCPF(cpf: string): Promise<UsuarioModel | null> {
+    async buscarPorCPF(cpf: string): Promise<Usuario | null> {
         try {
             const usuario = await this.repository.findOne({ where: { cpf } });
-            return usuario || null;
+            return usuario ? this.usuarioMapper.modelToDomain(usuario) : null;
         } catch (error) {
             throw new RepositoryException(
                 `Erro ao buscar usuário por CPF: ${error.message}`,
@@ -37,10 +38,10 @@ export class UsuarioRepository {
         }
     }
 
-    async buscarPorId(id: string): Promise<UsuarioModel | null> {
+    async buscarPorId(id: string): Promise<Usuario | null> {
         try {
             const usuario = await this.repository.findOne({ where: { id } });
-            return usuario || null;
+            return usuario ? this.usuarioMapper.modelToDomain(usuario) : null;
         } catch (error) {
             throw new RepositoryException(
                 `Erro ao buscar usuário por ID: ${error.message}`,

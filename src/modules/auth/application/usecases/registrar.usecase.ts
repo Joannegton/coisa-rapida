@@ -4,6 +4,7 @@ import { BcryptService } from '../../infra/services/bcrypt.service';
 import { JwtService } from '../../infra/services/jwt.service';
 import { RegistrarDto } from '../dtos/registrar.dto';
 import { AuditoriaService } from 'src/shared/services';
+import { RefreshTokenRepository } from '../../infra/repositories/refresh-token.repository';
 
 @Injectable()
 export class RegistrarUsecase {
@@ -12,6 +13,7 @@ export class RegistrarUsecase {
         private readonly bcryptService: BcryptService,
         private readonly jwtService: JwtService,
         private readonly auditoriaService: AuditoriaService,
+        private readonly refreshTokenRepository: RefreshTokenRepository,
     ) {}
 
     async execute(
@@ -24,6 +26,7 @@ export class RegistrarUsecase {
         },
     ): Promise<{
         access_token: string;
+        refresh_token: string;
     }> {
         const inicioExecucao = Date.now();
         try {
@@ -46,7 +49,23 @@ export class RegistrarUsecase {
             const accessToken = await this.jwtService.gerarAccessToken(
                 usuario.id,
                 usuarioAuth.email,
+                usuarioAuth.role,
             );
+
+            const refreshTokenString = await this.jwtService.gerarRefreshToken({
+                sub: usuarioAuth.id,
+                email: usuarioAuth.email,
+                role: usuarioAuth.role,
+            });
+
+            const expiraEm = new Date();
+            expiraEm.setDate(expiraEm.getDate() + 7);
+
+            await this.refreshTokenRepository.criar({
+                token: refreshTokenString,
+                usuarioAuthId: usuarioAuth.id,
+                expiraEm,
+            });
 
             const duracaoMs = Date.now() - inicioExecucao;
 
@@ -71,6 +90,7 @@ export class RegistrarUsecase {
 
             return {
                 access_token: accessToken,
+                refresh_token: refreshTokenString,
             };
         } catch (error) {
             const duracaoMs = Date.now() - inicioExecucao;

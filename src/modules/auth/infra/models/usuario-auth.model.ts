@@ -1,4 +1,5 @@
 import { UsuarioModel } from 'src/modules/usuario/infra/models/usuario.model';
+import { RefreshTokenModel } from './refresh-token.model';
 import {
     Column,
     Entity,
@@ -7,6 +8,7 @@ import {
     CreateDateColumn,
     UpdateDateColumn,
     OneToOne,
+    OneToMany,
 } from 'typeorm';
 
 @Entity('usuario_auth', { schema: 'auth' })
@@ -31,6 +33,28 @@ export class UsuarioAuthModel {
     @Column({ name: 'data_ultimo_login', type: 'timestamp', nullable: true })
     dataUltimoLogin?: Date;
 
+    @Column({
+        type: 'varchar',
+        length: 20,
+        default: 'USER',
+    })
+    role: 'USER' | 'MODERADOR' | 'ADMIN';
+
+    @Column({
+        name: 'reset_senha_token',
+        type: 'varchar',
+        length: 255,
+        nullable: true,
+    })
+    resetSenhaToken?: string;
+
+    @Column({
+        name: 'reset_senha_expiracao',
+        type: 'timestamp',
+        nullable: true,
+    })
+    resetSenhaExpiracao?: Date;
+
     @CreateDateColumn({ name: 'criado_em' })
     criadoEm: Date;
 
@@ -39,6 +63,9 @@ export class UsuarioAuthModel {
 
     @OneToOne(() => UsuarioModel, (usuario) => usuario.auth, { nullable: true })
     usuario: UsuarioModel;
+
+    @OneToMany(() => RefreshTokenModel, (token) => token.usuarioAuth)
+    refreshTokens: RefreshTokenModel[];
 
     static criar(props: Partial<UsuarioAuthModel>): UsuarioAuthModel {
         const usuarioAuth = new UsuarioAuthModel();

@@ -1,9 +1,10 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+﻿import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { AuthRepository } from '../../infra/repositories/auth.repository';
 import { BcryptService } from '../../infra/services/bcrypt.service';
 import { JwtService } from '../../infra/services/jwt.service';
 import { LoginDto } from '../dtos/login.dto';
 import { AuditoriaService } from 'src/shared/services';
+import { RefreshTokenRepository } from '../../infra/repositories/refresh-token.repository';
 
 export type RequestData = {
     ip: string;
@@ -19,6 +20,7 @@ export class LoginUsecase {
         private readonly bcryptService: BcryptService,
         private readonly authRepository: AuthRepository,
         private readonly auditoriaService: AuditoriaService,
+        private readonly refreshTokenRepository: RefreshTokenRepository,
     ) {}
 
     async execute(
@@ -26,20 +28,21 @@ export class LoginUsecase {
         requestData?: RequestData,
     ): Promise<{
         access_token: string;
+        refresh_token: string;
     }> {
         const inicioExecucao = Date.now();
         try {
             const usuarioAuth =
                 await this.authRepository.buscarPorEmailComSenha(props.email);
             if (!usuarioAuth)
-                throw new UnauthorizedException('Credenciais Inválidas');
+                throw new UnauthorizedException('Email ou senha inválidos');
 
             const senhaCorreta = await this.bcryptService.compararSenha(
                 props.senha,
                 usuarioAuth.hashSenha,
             );
             if (!senhaCorreta)
-                throw new UnauthorizedException('Credenciais Inválidas');
+                throw new UnauthorizedException('Email ou senha inválidos');
 
             const usuario = await this.authRepository.buscarUsuarioPorAuthId(
                 usuarioAuth.id,
@@ -53,11 +56,31 @@ export class LoginUsecase {
             const access_token = await this.jwtService.gerarAccessToken(
                 usuario.id,
                 usuarioAuth.email,
+                usuarioAuth.role,
             );
+
+            const payload = {
+                sub: usuario.id,
+                email: usuarioAuth.email,
+                role: usuarioAuth.role,
+            };
+
+            const refreshTokenString =
+                await this.jwtService.gerarRefreshToken(payload);
+
+            const expiraEm = new Date();
+            expiraEm.setDate(expiraEm.getDate() + 7);
+
+            await this.refreshTokenRepository.revogarPorUsuario(usuarioAuth.id);
+
+            await this.refreshTokenRepository.criar({
+                token: refreshTokenString,
+                usuarioAuthId: usuarioAuth.id,
+                expiraEm,
+            });
 
             const duracaoMs = Date.now() - inicioExecucao;
 
-            // Auditoria para login bem-sucedido
             if (requestData) {
                 await this.auditoriaService.criar({
                     timestamp: new Date(),
@@ -79,11 +102,11 @@ export class LoginUsecase {
 
             return {
                 access_token,
+                refresh_token: refreshTokenString,
             };
         } catch (error) {
             const duracaoMs = Date.now() - inicioExecucao;
 
-            // Auditoria para tentativa de login falhada
             if (requestData) {
                 await this.auditoriaService.criar({
                     timestamp: new Date(),

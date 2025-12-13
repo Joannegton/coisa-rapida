@@ -20,6 +20,9 @@ export class UsuarioModel {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
+    @Column({ name: 'usuario_auth_id', type: 'uuid', unique: true })
+    usuarioAuthId: string;
+
     @OneToOne(() => UsuarioAuthModel, (auth) => auth.usuario, {
         nullable: true,
     })
