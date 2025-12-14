@@ -8,6 +8,7 @@ import {
     JoinColumn,
     PrimaryGeneratedColumn,
     Index,
+    ManyToOne,
 } from 'typeorm';
 
 export enum ModeracaoStatus {
@@ -71,7 +72,7 @@ export class ComprovanteResidenciaModel {
     @UpdateDateColumn({ name: 'atualizado_em' })
     atualizadoEm: Date;
 
-    @OneToOne(() => UsuarioModel, (usuario) => usuario.comprovanteResidencia)
+    @ManyToOne(() => UsuarioModel, (usuario) => usuario.comprovantesResidencia)
     @JoinColumn({ name: 'usuario_id', referencedColumnName: 'id' })
     usuario: UsuarioModel;
 

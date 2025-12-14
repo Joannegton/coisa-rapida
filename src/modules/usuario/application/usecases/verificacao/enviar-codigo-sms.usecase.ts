@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { TwilioService } from '../../../infra/services/Twilio.service';
-import { EnviarCodigoSMSDto } from '../../dtos/verificacao-sms.dto';
+import { EnviarCodigoSMSDto } from '../../dtos/verificacao/verificacao-sms.dto';
 
 export interface EnviarCodigoSMSResponse {
     mensagem: string;

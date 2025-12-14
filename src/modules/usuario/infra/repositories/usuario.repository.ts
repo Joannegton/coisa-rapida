@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UsuarioModel } from '../models/usuario.model';
@@ -9,6 +9,7 @@ import { UsuarioRepository } from '../../domain/repositories/usuario.repository'
 
 @Injectable()
 export class UsuarioRepositoryImpl implements UsuarioRepository {
+    private readonly logger = new Logger(UsuarioRepositoryImpl.name);
     constructor(
         @InjectRepository(UsuarioModel)
         private readonly repository: Repository<UsuarioModel>,
@@ -21,9 +22,11 @@ export class UsuarioRepositoryImpl implements UsuarioRepository {
             const usuarioSalvo = await this.repository.save(usuarioModel);
             return this.usuarioMapper.modelToDomain(usuarioSalvo);
         } catch (error) {
-            throw new RepositoryException(
+            this.logger.error(
                 `Erro ao salvar usuário: ${error.message}`,
+                error.stack,
             );
+            throw new RepositoryException(`Erro ao salvar usuário`);
         }
     }
 
@@ -32,20 +35,27 @@ export class UsuarioRepositoryImpl implements UsuarioRepository {
             const usuario = await this.repository.findOne({ where: { cpf } });
             return usuario ? this.usuarioMapper.modelToDomain(usuario) : null;
         } catch (error) {
-            throw new RepositoryException(
+            this.logger.error(
                 `Erro ao buscar usuário por CPF: ${error.message}`,
+                error.stack,
             );
+            throw new RepositoryException(`Erro ao buscar usuário`);
         }
     }
 
     async buscarPorId(id: string): Promise<Usuario | null> {
         try {
-            const usuario = await this.repository.findOne({ where: { id } });
+            const usuario = await this.repository.findOne({
+                where: { id },
+                relations: ['comprovantesResidencia'],
+            });
             return usuario ? this.usuarioMapper.modelToDomain(usuario) : null;
         } catch (error) {
-            throw new RepositoryException(
+            this.logger.error(
                 `Erro ao buscar usuário por ID: ${error.message}`,
+                error.stack,
             );
+            throw new RepositoryException(`Erro ao buscar usuário`);
         }
     }
 }

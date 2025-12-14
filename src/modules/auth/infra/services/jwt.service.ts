@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService as NestJwtService, JwtSignOptions } from '@nestjs/jwt';
 
-export interface JwtPayload {
+export interface UsuarioPayload {
     sub: string;
     email: string;
     role: 'USER' | 'MODERADOR' | 'ADMIN';
@@ -18,7 +18,7 @@ export class JwtService {
         email: string,
         role: 'USER' | 'MODERADOR' | 'ADMIN' = 'USER',
     ): Promise<string> {
-        const payload: JwtPayload = {
+        const payload: UsuarioPayload = {
             sub: usuarioId,
             email,
             role,
@@ -27,12 +27,12 @@ export class JwtService {
         return this.sign(payload, { expiresIn: '15m' });
     }
 
-    sign(payload: JwtPayload, options?: JwtSignOptions): string {
+    sign(payload: UsuarioPayload, options?: JwtSignOptions): string {
         return this.nestJwtService.sign(payload, options);
     }
 
     async gerarRefreshToken(
-        payload: JwtPayload,
+        payload: UsuarioPayload,
         diasValidade: number = 7,
     ): Promise<string> {
         return this.nestJwtService.sign(payload, {
@@ -41,7 +41,7 @@ export class JwtService {
         });
     }
 
-    async validarRefreshToken(token: string): Promise<JwtPayload> {
+    async validarRefreshToken(token: string): Promise<UsuarioPayload> {
         return this.nestJwtService.verify(token, {
             secret: process.env.JWT_REFRESH_SECRET,
             ignoreExpiration: true,

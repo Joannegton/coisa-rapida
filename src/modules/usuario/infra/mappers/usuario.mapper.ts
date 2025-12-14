@@ -26,9 +26,9 @@ export class UsuarioMapper {
                 endereco: model.endereco
                     ? this.enderecoMapper.modelToDomain(model.endereco)
                     : undefined,
-                comprovanteResidencia: model.comprovanteResidencia
-                    ? this.comprovanteResidenciaMapper.modelToDomain(
-                          model.comprovanteResidencia,
+                comprovantesResidencia: model.comprovantesResidencia
+                    ? this.comprovanteResidenciaMapper.modelToDomainList(
+                          model.comprovantesResidencia,
                       )
                     : undefined,
             },
@@ -50,9 +50,9 @@ export class UsuarioMapper {
             endereco: domain.endereco
                 ? this.enderecoMapper.domainToModel(domain.endereco)
                 : undefined,
-            comprovanteResidencia: domain.comprovanteResidencia
-                ? this.comprovanteResidenciaMapper.domainToModel(
-                      domain.comprovanteResidencia,
+            comprovantesResidencia: domain.comprovantesResidencia
+                ? this.comprovanteResidenciaMapper.domainToModelList(
+                      domain.comprovantesResidencia,
                   )
                 : undefined,
         });

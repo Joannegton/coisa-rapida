@@ -31,8 +31,25 @@ export class ComprovanteResidenciaMapper {
             tipoComprovante: domain.tipoComprovante,
             observacoesUsuario: domain.observacoesUsuario,
             usuarioId: domain.usuarioId,
+            status: domain.status,
+            moderadorId: domain.moderadorId,
+            observacoesModerador: domain.observacoesModerador,
+            motivoRejeicao: domain.motivoRejeicao,
+            dataConclusao: domain.dataConclusao,
         });
 
         return comprovanteModel;
+    }
+
+    modelToDomainList(
+        models: ComprovanteResidenciaModel[],
+    ): ComprovanteResidencia[] {
+        return models.map((model) => this.modelToDomain(model));
+    }
+
+    domainToModelList(
+        domains: ComprovanteResidencia[],
+    ): ComprovanteResidenciaModel[] {
+        return domains.map((domain) => this.domainToModel(domain));
     }
 }

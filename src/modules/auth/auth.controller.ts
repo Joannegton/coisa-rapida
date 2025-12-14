@@ -11,7 +11,7 @@ import {
 import { RegistrarUsecase } from './application/usecases/registrar.usecase';
 import { RegistrarDto } from './application/dtos/registrar.dto';
 import { Publico } from 'src/common/decorators/public.decorator';
-import type { JwtPayload } from './infra/services/jwt.service';
+import type { UsuarioPayload } from './infra/services/jwt.service';
 import {
     LimitadorUsuario,
     LimitarResetSenha,
@@ -120,7 +120,7 @@ export class AuthController {
     @ApiAccessToken()
     @HttpCode(HttpStatus.OK)
     @Get('me')
-    async me(@usuarioAtual() usuario: JwtPayload) {
+    async me(@usuarioAtual() usuario: UsuarioPayload) {
         return {
             usuarioId: usuario.sub,
             email: usuario.email,
@@ -161,7 +161,6 @@ export class AuthController {
     @Post('logout')
     async logout(@Req() request: Request) {
         const authHeader = request.headers.authorization;
-        console.log('Auth Header:', authHeader);
         const token = authHeader!.split(' ')[1];
 
         await this.revogarTokenUsecase.execute(token);

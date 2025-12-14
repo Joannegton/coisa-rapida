@@ -20,16 +20,17 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import {
     EnviarCodigoSMSDto,
     VerificarCodigoSMSDto,
-} from '../application/dtos/verificacao-sms.dto';
+} from '../application/dtos/verificacao/verificacao-sms.dto';
 import { ApiAccessToken } from 'src/common/decorators/swagger.decorators';
-import type { JwtPayload } from 'src/modules/auth/infra/services/jwt.service';
+import type { UsuarioPayload } from 'src/modules/auth/infra/services/jwt.service';
 import {
     AuditarEnvioSms,
     AuditarVerificacaoSms,
     LimitarEnvioSMS,
+    LimitarUpload,
     usuarioAtual,
 } from 'src/common/decorators';
-import { EnviarComprovanteResidenciaDto } from '../application/dtos/comprovante-residencia.dto';
+import { EnviarComprovanteResidenciaDto } from '../application/dtos/verificacao/comprovante-residencia.dto';
 import { SalvarComprovanteResidenciaUseCase } from '../application/usecases/verificacao/salvar-comprovante-residencia.usecase';
 
 @ApiTags('verificacao')
@@ -76,7 +77,7 @@ export class VerificacaoController {
     @HttpCode(HttpStatus.OK)
     @Post('sms/verificar')
     async verificarCodigoSMS(
-        @usuarioAtual() usuario: JwtPayload,
+        @usuarioAtual() usuario: UsuarioPayload,
         @Body() props: VerificarCodigoSMSDto,
     ) {
         await this.verificarCodigoSMSUseCase.execute({
@@ -98,10 +99,11 @@ export class VerificacaoController {
     @ApiBody({ type: EnviarComprovanteResidenciaDto })
     @ApiAccessToken()
     @UseInterceptors(FileInterceptor('arquivo'))
+    @LimitarUpload()
     @HttpCode(HttpStatus.OK)
     @Post('comprovante-residencia')
     async enviarComprovanteResidencia(
-        @usuarioAtual() usuario: JwtPayload,
+        @usuarioAtual() usuario: UsuarioPayload,
         @UploadedFile() arquivo: Express.Multer.File,
         @Body() props: EnviarComprovanteResidenciaDto,
     ) {

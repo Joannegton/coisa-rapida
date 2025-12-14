@@ -17,6 +17,9 @@ export enum AuditoriaAcao {
 
     // Segurança
     LIMITE_EXCEDIDO = 'limite_excedido',
+
+    // Usuário
+    ALTERAR_ENDERECO = 'alterar_endereco',
 }
 
 /**
@@ -29,4 +32,5 @@ export const ACOES_COMPLIANCE = [
     AuditoriaAcao.RESETAR_SENHA,
     AuditoriaAcao.SOLICITAR_RECUPERACAO_SENHA,
     AuditoriaAcao.VALIDAR_CODIGO_RECUPERACAO,
+    AuditoriaAcao.ALTERAR_ENDERECO,
 ] as const;

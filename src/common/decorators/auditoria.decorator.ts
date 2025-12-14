@@ -52,21 +52,9 @@ export const AuditarVerificacaoSms = () =>
         nivel: 'medio',
     });
 
-export const AuditarCritico = (
-    acao: string,
-    recurso: string,
-    descricao?: string,
-) =>
-    Auditar(acao, recurso, {
-        nivel: 'critico',
-        descricao,
-    });
-
-export const AuditarFinanceiro = (acao: string, descricao?: string) =>
-    AuditarCritico(acao, 'financeiro', descricao || 'Transação financeira');
-
-export const AuditarModeracao = (acao: string, descricao?: string) =>
-    Auditar(acao, 'moderacao', {
-        nivel: 'alto',
-        descricao: descricao || 'Ação de moderação',
+export const AuditarAlteracaoEndereco = () =>
+    Auditar(AuditoriaAcao.ALTERAR_ENDERECO, 'alteracao_endereco', {
+        descricao:
+            'Alterar endereço, revogar comprovante de residência e permissoes',
+        nivel: 'medio',
     });

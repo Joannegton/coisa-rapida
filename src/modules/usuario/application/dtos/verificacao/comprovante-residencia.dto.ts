@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsNotEmpty, IsString, IsOptional, IsEnum } from 'class-validator';
-import { TipoComprovante } from '../../infra/models/comprovante-residencia.model';
+import { TipoComprovante } from '../../../infra/models/comprovante-residencia.model';
 
 export class EnviarComprovanteResidenciaDto {
     @ApiProperty({

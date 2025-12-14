@@ -15,7 +15,7 @@ type UsuarioProps = {
     atualizadoEm?: Date;
 
     endereco?: Endereco;
-    comprovanteResidencia?: ComprovanteResidencia;
+    comprovantesResidencia?: ComprovanteResidencia[];
 };
 
 export class Usuario {
@@ -39,7 +39,7 @@ export class Usuario {
         domain.props.criadoEm = props.criadoEm;
         domain.props.atualizadoEm = props.atualizadoEm;
         domain.props.endereco = props.endereco;
-        domain.props.comprovanteResidencia = props.comprovanteResidencia;
+        domain.props.comprovantesResidencia = props.comprovantesResidencia;
         return domain;
     }
 
@@ -55,11 +55,21 @@ export class Usuario {
     }
 
     aprovarComprovanteResidencia(): void {
-        if (!this.props.comprovanteResidencia)
+        if (
+            !this.props.comprovantesResidencia ||
+            this.props.comprovantesResidencia.length === 0
+        )
             throw new UsuarioException(
                 'Usuário não possui comprovante de residência',
             );
-        this.props.comprovanteResidencia.aprovarComprovante();
+        this.props.comprovantesResidencia.forEach((comprovante) => {
+            if (
+                comprovante.status === ModeracaoStatus.EM_ANALISE ||
+                comprovante.status === ModeracaoStatus.PENDENTE
+            ) {
+                comprovante.aprovarComprovante();
+            }
+        });
         this.verificarUsuario();
     }
 
@@ -71,10 +81,26 @@ export class Usuario {
             this.props.telefoneVerificado &&
             this.props.cpf &&
             this.props.cpf.trim() !== '' &&
-            this.props.comprovanteResidencia?.status ===
-                ModeracaoStatus.APROVADO
+            this.props.comprovantesResidencia?.some(
+                (c) => c.status === ModeracaoStatus.APROVADO,
+            )
         )
             this.setVerificado(true);
+    }
+
+    definirEndereco(endereco: Endereco): void {
+        if (!endereco) throw new UsuarioException('Endereço é obrigatório');
+        this.setEndereco(endereco);
+        console.log(this.props.comprovantesResidencia);
+
+        if (this.props.comprovantesResidencia)
+            this.props.comprovantesResidencia.forEach((comprovante) =>
+                comprovante.revogarComprovante(
+                    'Endereço alterado pelo usuário',
+                ),
+            );
+
+        this.setVerificado(false);
     }
 
     get id(): string {
@@ -121,8 +147,8 @@ export class Usuario {
         return this.props.endereco;
     }
 
-    get comprovanteResidencia(): ComprovanteResidencia | undefined {
-        return this.props.comprovanteResidencia;
+    get comprovantesResidencia(): ComprovanteResidencia[] | undefined {
+        return this.props.comprovantesResidencia;
     }
 
     private setNome(nome: string): void {
@@ -159,13 +185,13 @@ export class Usuario {
         if (fotoUrl) this.props.fotoUrl = fotoUrl;
     }
 
-    private setEndereco(endereco: any): void {
+    private setEndereco(endereco: Endereco): void {
         this.props.endereco = endereco;
     }
 
-    private setComprovanteResidencia(
-        comprovanteResidencia: ComprovanteResidencia | undefined,
+    private setComprovantesResidencia(
+        comprovantesResidencia: ComprovanteResidencia[] | undefined,
     ): void {
-        this.props.comprovanteResidencia = comprovanteResidencia;
+        this.props.comprovantesResidencia = comprovantesResidencia;
     }
 }

@@ -46,9 +46,6 @@ export const LimitarCriacaoAluguel = () =>
             'Você atingiu o limite de criação de aluguéis. Aguarde 1 hora.',
     });
 
-/**
- * Decorator para limitar upload de arquivos (20 por hora)
- */
 export const LimitarUpload = () =>
     LimitadorUsuario(20, 3600, {
         mensagem: 'Você atingiu o limite de uploads. Aguarde 1 hora.',

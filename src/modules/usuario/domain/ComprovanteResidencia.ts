@@ -62,6 +62,20 @@ export class ComprovanteResidencia {
         this.setDataConclusao(new Date());
     }
 
+    rejeitarComprovante(motivoRejeicao: string): void {
+        this.setStatus(ModeracaoStatus.REJEITADO);
+        this.setMotivoRejeicao(motivoRejeicao);
+        this.setDataConclusao(new Date());
+    }
+
+    revogarComprovante(
+        motivo: string = 'Comprovante revogado pelo usuário',
+    ): void {
+        this.setStatus(ModeracaoStatus.REJEITADO);
+        this.setMotivoRejeicao(motivo);
+        this.setDataConclusao(new Date());
+    }
+
     get id(): string {
         return this._id;
     }
@@ -96,6 +110,10 @@ export class ComprovanteResidencia {
 
     get motivoRejeicao(): string | undefined {
         return this.props.motivoRejeicao;
+    }
+
+    get dataConclusao(): Date | undefined {
+        return this.props.dataConclusao;
     }
 
     get createdAt(): Date {

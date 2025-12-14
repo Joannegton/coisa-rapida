@@ -8,6 +8,7 @@ import {
     UpdateDateColumn,
     OneToOne,
     JoinColumn,
+    OneToMany,
 } from 'typeorm';
 import { EnderecoModel } from './endereco.value-objct';
 import { UsuarioAuthModel } from '../../../auth/infra/models/usuario-auth.model';
@@ -62,11 +63,12 @@ export class UsuarioModel {
     @Column(() => EnderecoModel, { prefix: false })
     endereco: EnderecoModel;
 
-    @OneToOne(
+    @OneToMany(
         () => ComprovanteResidenciaModel,
         (comprovante) => comprovante.usuario,
+        { cascade: true },
     )
-    comprovanteResidencia?: ComprovanteResidenciaModel;
+    comprovantesResidencia?: ComprovanteResidenciaModel[];
 
     static criar(props: Partial<UsuarioModel>): UsuarioModel {
         const usuario = new UsuarioModel();

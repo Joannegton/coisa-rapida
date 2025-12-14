@@ -7,7 +7,7 @@ export class CreateComprovanteResidenciaTable1733961800000
         await queryRunner.query(`
             CREATE TABLE IF NOT EXISTS usuario.comprovante_residencia (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                usuario_id UUID NOT NULL UNIQUE,
+                usuario_id UUID NOT NULL,
                 comprovante_url TEXT NOT NULL,
                 tipo_comprovante usuario.tipo_comprovante NOT NULL,
                 status usuario.moderacao_status NOT NULL DEFAULT 'em_analise',
