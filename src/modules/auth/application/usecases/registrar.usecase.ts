@@ -31,11 +31,24 @@ export class RegistrarUsecase {
     }> {
         const inicioExecucao = Date.now();
         try {
-            const usuarioExistente = await this.authRepository.buscarPorEmail(
+            const usuarioExistentePromise = this.authRepository.buscarPorEmail(
                 dto.email,
             );
-            if (usuarioExistente) {
+            const usuarioCpfExistentePromise =
+                this.authRepository.buscarUsuarioPorCpf(dto.cpf);
+
+            const [usuarioExistenteResult, usuarioCpfExistenteResult] =
+                await Promise.all([
+                    usuarioExistentePromise,
+                    usuarioCpfExistentePromise,
+                ]);
+
+            if (usuarioExistenteResult) {
                 throw new ConflictException('Email já cadastrado');
+            }
+
+            if (usuarioCpfExistenteResult) {
+                throw new ConflictException('CPF já cadastrado');
             }
 
             const hashSenha = await this.bcryptService.hashSenha(dto.senha);
@@ -45,6 +58,7 @@ export class RegistrarUsecase {
                     email: dto.email,
                     hashSenha,
                     nome: dto.nome,
+                    cpf: dto.cpf,
                 });
 
             const accessToken = await this.jwtService.gerarAccessToken(

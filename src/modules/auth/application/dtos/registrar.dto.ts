@@ -46,4 +46,14 @@ export class RegistrarDto {
         },
     )
     senha: string;
+
+    @ApiProperty({
+        description: 'CPF do usuário (somente números)',
+        example: '12345678901',
+    })
+    @Transform(({ value }) => value?.replaceAll(/\D/g, ''))
+    @IsString()
+    @IsNotEmpty({ message: 'O CPF é obrigatório.' })
+    @Matches(/^\d{11}$/, { message: 'O CPF deve conter 11 dígitos numéricos.' })
+    cpf: string;
 }

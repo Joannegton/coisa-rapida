@@ -30,6 +30,7 @@ export class AuthRepository {
         email: string;
         hashSenha: string;
         nome: string;
+        cpf: string;
     }): Promise<{
         usuarioAuth: UsuarioAuthModel;
         usuario: UsuarioModel;
@@ -45,12 +46,14 @@ export class AuthRepository {
                     email: dados.email,
                     hashSenha: dados.hashSenha,
                     dataUltimoLogin: new Date(),
+                    role: 'USER',
                 },
             );
 
             const usuario = await queryRunner.manager.save(UsuarioModel, {
                 nome: dados.nome,
                 auth: usuarioAuth,
+                cpf: dados.cpf,
                 telefoneVerificado: false,
                 emailVerificado: false,
                 verificado: false,
@@ -117,6 +120,21 @@ export class AuthRepository {
                 error.stack,
             );
             throw new RepositoryException('Erro ao buscar usuário');
+        }
+    }
+
+    async buscarUsuarioPorCpf(cpf: string): Promise<UsuarioModel | null> {
+        try {
+            const usuario = await this.dataSource
+                .getRepository(UsuarioModel)
+                .findOne({ where: { cpf } });
+            return usuario || null;
+        } catch (error) {
+            this.logger.error(
+                `Erro ao buscar usuário por CPF: ${error.message}`,
+                error.stack,
+            );
+            throw new RepositoryException('Erro ao buscar usuário por CPF');
         }
     }
 
