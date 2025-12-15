@@ -9,29 +9,29 @@
 ### 👤 Usuários
 
 - **[1. Cadastro e Autenticação](#1-cadastro-e-autenticação)**
-  - [1.1 Verificação de Identidade](#11-processo-de-verificação-de-identidade)
-    - [Verificação de Telefone (SMS)](#verificação-de-telefone-sms)
-    - [Verificação de Residência](#verificação-de-residência-comprovante)
-    - [Verificação de Identidade (Documento)](#verificação-de-identidade-documento-com-foto)
+    - [1.1 Verificação de Identidade](#11-processo-de-verificação-de-identidade)
+        - [Verificação de Telefone (SMS)](#verificação-de-telefone-sms)
+        - [Verificação de Residência](#verificação-de-residência-comprovante)
+        - [Verificação de Identidade (Documento)](#verificação-de-identidade-documento-com-foto)
 - **[2. Sistema de Avaliação e Reputação](#2-sistema-de-avaliação-e-reputação)**
 
 ### 🏠 Aluguéis (Core Business)
 
 - **[3. Aluguéis - Gestão do Ciclo de Vida](#3-aluguéis---gestão-do-ciclo-de-vida)** ⭐
-  - [3.1 Máquina de Estados](#31-máquina-de-estados-do-aluguel)
-  - [3.1.1 Cenários de Fluxo](#311-cenários-de-fluxo)
-  - [3.2 Criação e Aprovação](#32-criação-e-aprovação)
-  - [3.3 Sistema de Caução (Escrow)](#33-sistema-de-caução-escrow) 💰
-  - [3.4.1 Validações de Transição](#341-validações-de-transição-de-estados)
-  - [3.5 Período de Aluguel](#35-período-de-aluguel)
-  - [3.6 Devolução e Finalização](#36-devolução-e-finalização)
+    - [3.1 Máquina de Estados](#31-máquina-de-estados-do-aluguel)
+    - [3.1.1 Cenários de Fluxo](#311-cenários-de-fluxo)
+    - [3.2 Criação e Aprovação](#32-criação-e-aprovação)
+    - [3.3 Sistema de Caução (Escrow)](#33-sistema-de-caução-escrow) 💰
+    - [3.4.1 Validações de Transição](#341-validações-de-transição-de-estados)
+    - [3.5 Período de Aluguel](#35-período-de-aluguel)
+    - [3.6 Devolução e Finalização](#36-devolução-e-finalização)
 
 ### 💳 Financeiro
 
 - **[4. Pagamentos e Finanças](#4-pagamentos-e-finanças)**
-  - [4.1 Integração Mercado Pago](#41-integração-mercado-pago)
-  - [4.2 Cálculos Financeiros](#42-cálculos-financeiros)
-  - [4.3 Tabela de Transferências](#43-tabela-de-transferências-auditoria)
+    - [4.1 Integração Mercado Pago](#41-integração-mercado-pago)
+    - [4.2 Cálculos Financeiros](#42-cálculos-financeiros)
+    - [4.3 Tabela de Transferências](#43-tabela-de-transferências-auditoria)
 
 ### ⚖️ Gestão e Suporte
 
@@ -81,21 +81,21 @@ O Coisa Rápida é uma plataforma de compartilhamento e aluguel peer-to-peer que
 
 ## **1. Cadastro e Autenticação**
 
-| Regra                                | Descrição                                                                                                    | Prioridade |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------ | ---------- |
-| **Idade Mínima**                     | O usuário deve ter 18 anos ou mais para se cadastrar e utilizar a plataforma.                                | Alta       |
-| **Senha Forte**                      | Mínimo 8 caracteres com pelo menos 1 maiúscula, 1 minúscula, 1 número e 1 caractere especial.                | Alta       |
-| **Validação de E-mail**              | E-mail único na plataforma. Confirmação obrigatória via link enviado. Prazo de 24h para ativação.            | Alta       |
-| **Validação de Telefone**            | Telefone único por usuário, confirmado via SMS com código de 6 dígitos válido por 10 minutos.                | Alta       |
-| **Comprovante de Endereço**          | Documento oficial (conta de serviço, contrato) em nome do usuário com endereço legível. Válido por 12 meses. | Alta       |
-| **Verificação de Identidade**        | Documento de identidade (RG, CNH ou Passaporte) com foto legível e válida.                                   | Média      |
-| **Bloqueio por Tentativas de Login** | Após 5 tentativas falhadas, conta bloqueada por 30 minutos. Notificação enviada por e-mail.                  | Alta       |
-| **Bloqueio por Suspeita de Fraude**  | Sistema monitora padrões anormais. Bloqueio preventivo com verificação adicional antes de desbloqueio.       | Alta       |
-| **Transações Restritas**             | Apenas usuários com todas as validações completas podem fazer transações.                                    | Alta       |
-| **Exclusão de Conta**                | Dados mantidos por 30 dias após exclusão (conformidade LGPD). Permanentemente excluídos após esse período.   | Média      |
-| **Reativação de Conta**              | Usuários podem reativar conta deletada em até 7 dias. Após isso, é necessário novo cadastro.                 | Baixa      |
-| **Status da Conta**                  | Conta pode estar: `ativa`, `bloqueada_temporaria`, `suspensa`, `excluida_soft`, `banida_permanente`.         | Alta       |
-| **Verificações Necessárias**         | Para ANUNCIAR itens: Email + Telefone + Endereço verificados. Para ALUGAR: apenas Email + Telefone.          | Alta       |
+| Check | Regra                                | Descrição                                                                                                    | Prioridade |
+| ----- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------ | ---------- |
+| [ ]   | **Idade Mínima**                     | O usuário deve ter 18 anos ou mais para se cadastrar e utilizar a plataforma.                                | Alta       |
+| [x]   | **Senha Forte**                      | Mínimo 8 caracteres com pelo menos 1 maiúscula, 1 minúscula, 1 número e 1 caractere especial.                | Alta       |
+| [x]   | **Validação de E-mail**              | E-mail único na plataforma. Confirmação obrigatória via link enviado. Prazo de 3h para ativação.             | Alta       |
+| [x]   | **Validação de Telefone**            | Telefone único por usuário, confirmado via SMS com código de 6 dígitos válido por 10 minutos.                | Alta       |
+| [x]   | **Comprovante de Endereço**          | Documento oficial (conta de serviço, contrato) em nome do usuário com endereço legível. Válido por 12 meses. | Alta       |
+| [ ]   | **Verificação de Identidade**        | Documento de identidade (RG, CNH ou Passaporte) com foto legível e válida.                                   | Média      |
+| [x]   | **Bloqueio por Tentativas de Login** | Após 5 tentativas falhadas, conta bloqueada por 30 minutos. Notificação enviada por e-mail.                  | Alta       |
+| [ ]   | **Bloqueio por Suspeita de Fraude**  | Sistema monitora padrões anormais. Bloqueio preventivo com verificação adicional antes de desbloqueio.       | Alta       |
+| [x]   | **Transações Restritas**             | Apenas usuários com todas as validações completas podem fazer transações (falta validação de identidade).    | Alta       |
+| [ ]   | **Exclusão de Conta**                | Dados mantidos por 30 dias após exclusão (conformidade LGPD). Permanentemente excluídos após esse período.   | Média      |
+| [ ]   | **Reativação de Conta**              | Usuários podem reativar conta deletada em até 7 dias. Após isso, é necessário novo cadastro.                 | Baixa      |
+| [ ]   | **Status da Conta**                  | Conta pode estar: `ativa`, `bloqueada_temporaria`, `suspensa`, `excluida_soft`, `banida_permanente`.         | Alta       |
+| [ ]   | **Verificações Necessárias**         | Para ANUNCIAR itens: Email + Telefone + Endereço verificados. Para ALUGAR: apenas Email + Telefone.          | Alta       |
 
 ---
 
@@ -103,46 +103,46 @@ O Coisa Rápida é uma plataforma de compartilhamento e aluguel peer-to-peer que
 
 ### **Verificação de Telefone (SMS)**
 
-| Regra              | Descrição                                                                                 | Prioridade |
-| ------------------ | ----------------------------------------------------------------------------------------- | ---------- |
-| **Código SMS**     | Código de 6 dígitos enviado via serviço de SMS (ex: Twilio). Válido por 10 minutos.       | Alta       |
-| **Tentativas**     | Máximo 3 tentativas de código incorreto. Após isso, aguardar 15 minutos para novo envio.  | Alta       |
-| **Unicidade**      | Um telefone só pode ser vinculado a uma conta ativa.                                      | Alta       |
-| **Re-verificação** | Necessária a cada 12 meses ou se o telefone for alterado.                                 | Média      |
-| **Status**         | `pendente`, `verificado`, `expirado`, `rejeitado`. Armazenado em `verificacoes_telefone`. | Alta       |
+| Check | Regra              | Descrição                                                                                 | Prioridade |
+| ----- | ------------------ | ----------------------------------------------------------------------------------------- | ---------- |
+| [ ]   | **Código SMS**     | Código de 6 dígitos enviado via serviço de SMS (ex: Twilio). Válido por 10 minutos.       | Alta       |
+| [ ]   | **Tentativas**     | Máximo 3 tentativas de código incorreto. Após isso, aguardar 15 minutos para novo envio.  | Alta       |
+| [ ]   | **Unicidade**      | Um telefone só pode ser vinculado a uma conta ativa.                                      | Alta       |
+| [ ]   | **Re-verificação** | Necessária a cada 12 meses ou se o telefone for alterado.                                 | Média      |
+| [ ]   | **Status**         | `pendente`, `verificado`, `expirado`, `rejeitado`. Armazenado em `verificacoes_telefone`. | Alta       |
 
 ### **Verificação de Residência (Comprovante)**
 
-| Regra                   | Descrição                                                                                                           | Prioridade |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------- | ---------- |
-| **Documentos Aceitos**  | Conta de luz/água/gás, contrato de aluguel, extrato bancário, boleto de IPTU. Máx 90 dias de emissão.               | Alta       |
-| **Validação Manual**    | Moderador analisa em até 48h úteis. Verifica nome do usuário, endereço legível e data do documento.                 | Alta       |
-| **Status de Moderação** | `pendente`, `em_analise`, `aprovado`, `rejeitado`, `cancelado`.                                                     | Alta       |
-| **Motivos de Rejeição** | Documento ilegível, documento vencido, nome não corresponde, endereço incompleto, documento adulterado.             | Alta       |
-| **Reenvio**             | Se rejeitado, usuário pode reenviar novo documento. Máximo 3 tentativas. Após isso, análise por especialista.       | Média      |
-| **Validade**            | Comprovante válido por 12 meses. Sistema notifica 15 dias antes do vencimento.                                      | Alta       |
-| **Dados Armazenados**   | `comprovanteUrl`, `tipoComprovante`, `observacoesUsuario`, `motivoRejeicao`, `observacoesModerador`, `moderadorId`. | Alta       |
+| Check | Regra                   | Descrição                                                                                                           | Prioridade |
+| ----- | ----------------------- | ------------------------------------------------------------------------------------------------------------------- | ---------- |
+| [ ]   | **Documentos Aceitos**  | Conta de luz/água/gás, contrato de aluguel, extrato bancário, boleto de IPTU. Máx 90 dias de emissão.               | Alta       |
+| [ ]   | **Validação Manual**    | Moderador analisa em até 48h úteis. Verifica nome do usuário, endereço legível e data do documento.                 | Alta       |
+| [ ]   | **Status de Moderação** | `pendente`, `em_analise`, `aprovado`, `rejeitado`, `cancelado`.                                                     | Alta       |
+| [ ]   | **Motivos de Rejeição** | Documento ilegível, documento vencido, nome não corresponde, endereço incompleto, documento adulterado.             | Alta       |
+| [ ]   | **Reenvio**             | Se rejeitado, usuário pode reenviar novo documento. Máximo 3 tentativas. Após isso, análise por especialista.       | Média      |
+| [ ]   | **Validade**            | Comprovante válido por 12 meses. Sistema notifica 15 dias antes do vencimento.                                      | Alta       |
+| [ ]   | **Dados Armazenados**   | `comprovanteUrl`, `tipoComprovante`, `observacoesUsuario`, `motivoRejeicao`, `observacoesModerador`, `moderadorId`. | Alta       |
 
 ### **Verificação de Identidade (Documento com Foto)**
 
-| Regra                    | Descrição                                                                                     | Prioridade |
-| ------------------------ | --------------------------------------------------------------------------------------------- | ---------- |
-| **Documentos Aceitos**   | RG, CNH, Passaporte, RNE (Registro Nacional de Estrangeiros).                                 | Alta       |
-| **Validação**            | OCR + análise manual. Sistema extrai nome e CPF do documento e compara com dados cadastrados. | Média      |
-| **Selfie com Documento** | Opcional (futuro): Usuário tira selfie segurando documento para validação biométrica.         | Baixa      |
-| **Status**               | Armazenado junto com `verificacoes_residencia` ou em tabela separada se necessário.           | Média      |
+| Check | Regra                    | Descrição                                                                                     | Prioridade |
+| ----- | ------------------------ | --------------------------------------------------------------------------------------------- | ---------- |
+| [ ]   | **Documentos Aceitos**   | RG, CNH, Passaporte, RNE (Registro Nacional de Estrangeiros).                                 | Alta       |
+| [ ]   | **Validação**            | OCR + análise manual. Sistema extrai nome e CPF do documento e compara com dados cadastrados. | Média      |
+| [ ]   | **Selfie com Documento** | Opcional (futuro): Usuário tira selfie segurando documento para validação biométrica.         | Baixa      |
+| [ ]   | **Status**               | Armazenado junto com `verificacoes_residencia` ou em tabela separada se necessário.           | Média      |
 
 ---
 
 ## **2. Sistema de Avaliação e Reputação**
 
-| Regra                            | Descrição                                                                                                          | Prioridade |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ---------- |
-| **Avaliação Obrigatória**        | Ambas as partes devem avaliar a transação em até 7 dias após conclusão.                                            | Alta       |
-| **Escala de Classificação**      | Avaliação em estrelas (1-5) com comentário opcional. Comentários ofensivos são removidos automaticamente.          | Alta       |
-| **Bloqueio por Baixa Reputação** | Usuários com média abaixo de 3.0 estrelas têm funcionalidades limitadas (anuncia itens, mas com aprovação manual). | Média      |
-| **Histórico Público**            | Últimas 10 transações com avaliações são visíveis no perfil. Avaliações com mais de 2 anos são arquivadas.         | Média      |
-| **Resposta a Avaliações**        | Usuários podem responder a avaliações dentro de 30 dias.                                                           | Baixa      |
+| Check | Regra                            | Descrição                                                                                                          | Prioridade |
+| ----- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ---------- |
+| [ ]   | **Avaliação Obrigatória**        | Ambas as partes devem avaliar a transação em até 7 dias após conclusão.                                            | Alta       |
+| [ ]   | **Escala de Classificação**      | Avaliação em estrelas (1-5) com comentário opcional. Comentários ofensivos são removidos automaticamente.          | Alta       |
+| [ ]   | **Bloqueio por Baixa Reputação** | Usuários com média abaixo de 3.0 estrelas têm funcionalidades limitadas (anuncia itens, mas com aprovação manual). | Média      |
+| [ ]   | **Histórico Público**            | Últimas 10 transações com avaliações são visíveis no perfil. Avaliações com mais de 2 anos são arquivadas.         | Média      |
+| [ ]   | **Resposta a Avaliações**        | Usuários podem responder a avaliações dentro de 30 dias.                                                           | Baixa      |
 
 ---
 
@@ -216,16 +216,16 @@ O sistema de aluguel segue uma máquina de estados rigorosa. Cada transição de
 
 ### **3.2 Criação e Aprovação**
 
-| Regra                            | Descrição                                                                                                                                 | Prioridade |
-| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| **Fluxo de Solicitação**         | Locatário solicita aluguel especificando datas de início/fim. Sistema calcula automaticamente: dias, valor total, taxa plataforma.        | Alta       |
-| **Validação de Disponibilidade** | verificação se item está disponível nas datas solicitadas.                                                                                | Alta       |
-| **Aprovação Automática**         | Se locador configurou `aprovacaoAutomatica=true` no item, aluguel é aprovado instantaneamente. Caso contrário, requer aprovação manual.   | Alta       |
-| **Janela de Resposta**           | Locador tem 24h para aprovar/recusar. Após isso, solicitação expira automaticamente.                                                      | Alta       |
-| **Aprovação Condicional**        | **[FUTURO]** Locador pode aprovar com condições (ex: adiantamento, caução extra). Locatário tem 12h para aceitar.                         | Média      |
-| **Cancelamento pelo Locatário**  | Antes de `CONFIRMADO`: cancelamento gratuito. Após `CONFIRMADO`: multa de 10% do valor se < 48h antes da data início.                     | Alta       |
-| **Recusa pelo Locador**          | Obrigatório fornecer motivo. Opções: `indisponivel`, `perfil_inadequado`, `problema_datas`, `outro`. Armazenado em `motivoRecusaLocador`. | Alta       |
-| **Criação de Contrato**          | Ao aprovar, sistema gera contrato digital com termos, valores, datas e assinaturas digitais. Armazenado em tabela `contratos`.            | Alta       |
+| Check | Regra                            | Descrição                                                                                                                                 | Prioridade |
+| ----- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| [ ]   | **Fluxo de Solicitação**         | Locatário solicita aluguel especificando datas de início/fim. Sistema calcula automaticamente: dias, valor total, taxa plataforma.        | Alta       |
+| [ ]   | **Validação de Disponibilidade** | verificação se item está disponível nas datas solicitadas.                                                                                | Alta       |
+| [ ]   | **Aprovação Automática**         | Se locador configurou `aprovacaoAutomatica=true` no item, aluguel é aprovado instantaneamente. Caso contrário, requer aprovação manual.   | Alta       |
+| [ ]   | **Janela de Resposta**           | Locador tem 24h para aprovar/recusar. Após isso, solicitação expira automaticamente.                                                      | Alta       |
+| [ ]   | **Aprovação Condicional**        | **[FUTURO]** Locador pode aprovar com condições (ex: adiantamento, caução extra). Locatário tem 12h para aceitar.                         | Média      |
+| [ ]   | **Cancelamento pelo Locatário**  | Antes de `CONFIRMADO`: cancelamento gratuito. Após `CONFIRMADO`: multa de 10% do valor se < 48h antes da data início.                     | Alta       |
+| [ ]   | **Recusa pelo Locador**          | Obrigatório fornecer motivo. Opções: `indisponivel`, `perfil_inadequado`, `problema_datas`, `outro`. Armazenado em `motivoRecusaLocador`. | Alta       |
+| [ ]   | **Criação de Contrato**          | Ao aprovar, sistema gera contrato digital com termos, valores, datas e assinaturas digitais. Armazenado em tabela `contratos`.            | Alta       |
 
 ### **3.3 Sistema de Caução (Escrow)**
 
@@ -246,13 +246,13 @@ O sistema de caução é o coração financeiro da plataforma. A caução funcio
 2. **Locatário paga**: Apenas R$ 200 (via Mercado Pago)
 3. **Valor fica retido**: R$ 200 em escrow durante o aluguel
 4. **Na devolução sem danos**:
-   - Sistema desconta: R$ 100 (aluguel) + R$ 10 (taxa) = R$ 110
-   - Locatário recebe de volta: R$ 90
-   - Locador recebe: R$ 90 (o aluguel menos a taxa)
+    - Sistema desconta: R$ 100 (aluguel) + R$ 10 (taxa) = R$ 110
+    - Locatário recebe de volta: R$ 90
+    - Locador recebe: R$ 90 (o aluguel menos a taxa)
 5. **Na devolução com danos (ex: R$ 50)**:
-   - Sistema desconta: R$ 100 + R$ 10 + R$ 50 = R$ 160
-   - Locatário recebe de volta: R$ 40
-   - Locador recebe: R$ 140 (aluguel + indenização, menos taxa)
+    - Sistema desconta: R$ 100 + R$ 10 + R$ 50 = R$ 160
+    - Locatário recebe de volta: R$ 40
+    - Locador recebe: R$ 140 (aluguel + indenização, menos taxa)
 
 #### **Cenário 1: COM CAUÇÃO (Recomendado para itens de alto valor)**
 
@@ -292,11 +292,11 @@ Na finalização do aluguel, a caução é distribuída da seguinte forma:
 
 - **Taxa da Plataforma (10%)**: Retida automaticamente na conta Mercado Pago do admin
 - **Pagamento ao Locador**: Valor do aluguel menos a taxa (manual via Pix)
-  - Sistema gera instruções com chave Pix do locador
-  - Admin realiza transferência manualmente
+    - Sistema gera instruções com chave Pix do locador
+    - Admin realiza transferência manualmente
 - **Devolução ao Locatário**: Caução menos (aluguel + taxa + indenização se houver)
-  - Automático via Mercado Pago Refund API
-  - Processado imediatamente após confirmação da devolução
+    - Automático via Mercado Pago Refund API
+    - Processado imediatamente após confirmação da devolução
 
 **Exemplo Prático (SEM DANOS):**
 
@@ -331,10 +331,10 @@ Na finalização do aluguel, a caução é distribuída da seguinte forma:
 
 - **Mínimo absoluto**: R$ 50,00
 - **Mínimo obrigatório**: `valorAluguel + taxaApp` (garante cobertura do aluguel)
-  - Exemplo: Aluguel R$ 100 → Caução mínima = R$ 100 + (R$ 100 × 10%) = R$ 110
+    - Exemplo: Aluguel R$ 100 → Caução mínima = R$ 100 + (R$ 100 × 10%) = R$ 110
 - **Máximo**: R$ 10.000,00
 - **Recomendado**: 100-150% do valor do aluguel (cobre aluguel + possíveis danos)
-  - Exemplo: Aluguel R$ 100 → Caução recomendada = R$ 100 a R$ 150
+    - Exemplo: Aluguel R$ 100 → Caução recomendada = R$ 100 a R$ 150
 - **Definida pelo locador** ao publicar o item
 - **Validação no backend**: Sistema bloqueia criação de aluguel se `caucao < (valorAluguel + taxaApp)`
 
@@ -850,17 +850,17 @@ lib/features/{feature}/
 **Estratégia:**
 
 1. **Autenticação:** Firebase Auth é source of truth
-   - User criado no Firebase → Webhook/Cloud Function → Backend cria em PostgreSQL
-   - `firebaseUid` = `usuarios.id` (UUID no PostgreSQL)
+    - User criado no Firebase → Webhook/Cloud Function → Backend cria em PostgreSQL
+    - `firebaseUid` = `usuarios.id` (UUID no PostgreSQL)
 
 2. **Chat:** Firestore para real-time, PostgreSQL para auditoria
-   - Mensagens escritas no Firestore
-   - Cloud Function ou backend syncroniza para PostgreSQL diariamente
+    - Mensagens escritas no Firestore
+    - Cloud Function ou backend syncroniza para PostgreSQL diariamente
 
 3. **Itens:** Híbrido
-   - Dados mestres no PostgreSQL
-   - Cache/busca no Firestore para performance
-   - Atualização: PostgreSQL → Firestore
+    - Dados mestres no PostgreSQL
+    - Cache/busca no Firestore para performance
+    - Atualização: PostgreSQL → Firestore
 
 **Fluxo de Autenticação:**
 
