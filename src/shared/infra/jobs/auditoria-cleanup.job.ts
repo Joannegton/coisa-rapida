@@ -6,7 +6,7 @@ import * as path from 'node:path';
 import * as zlib from 'node:zlib';
 import { promisify } from 'node:util';
 import { AuditoriaRepository } from '../repositories/auditoria.repository';
-import { AuditoriaConfig } from 'src/shared/config/auditoria.config';
+import { AuditoriaConfig } from 'src/shared/configs/auditoria.config';
 import { AuditoriaModel } from '../models/auditoria.model';
 import { AuditoriaAcao } from 'src/shared/constants/auditoria-actions';
 

@@ -2,7 +2,7 @@ import { Inject, Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { EnderecoDto } from '../../dtos/endereco.dto';
 import type { UsuarioRepository } from 'src/modules/usuario/domain/repositories/usuario.repository';
 import { Endereco } from 'src/modules/usuario/domain/Endereco';
-import { GeocodingService } from 'src/shared/services/geocoding.service';
+import { GeocodingService } from 'src/shared/infra/services/geocoding.service';
 
 export interface AdicionarEnderecoProps {
     usuarioId: string;

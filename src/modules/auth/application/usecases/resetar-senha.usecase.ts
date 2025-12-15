@@ -1,8 +1,8 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { AuthRepository } from '../../infra/repositories/auth.repository';
 import { BcryptService } from '../../infra/services/bcrypt.service';
-import { CacheService } from 'src/shared/services/cache.service';
-import { AuditoriaService } from 'src/shared/services/auditoria.service';
+import { CacheService } from 'src/shared/infra/services/cache.service';
+import { AuditoriaService } from 'src/shared/infra/services/auditoria.service';
 import { AuditoriaAcao } from 'src/shared/constants/auditoria-actions';
 
 @Injectable()

@@ -4,6 +4,7 @@ import { ComprovanteResidencia } from './ComprovanteResidencia';
 import { ModeracaoStatus } from '../infra/models/comprovante-residencia.model';
 
 type UsuarioProps = {
+    usuarioAuthId: string;
     nome: string;
     cpf?: string;
     telefone?: string;
@@ -29,6 +30,7 @@ export class Usuario {
 
     static carregar(props: UsuarioProps, id: string): Usuario {
         const domain = new Usuario(id);
+        domain.props.usuarioAuthId = props.usuarioAuthId;
         domain.props.nome = props.nome;
         domain.props.cpf = props.cpf;
         domain.props.telefone = props.telefone;
@@ -49,8 +51,8 @@ export class Usuario {
         this.verificarUsuario();
     }
 
-    verificarEmail(emailVerificado: boolean): void {
-        this.setEmailVerificado(emailVerificado);
+    verificarEmail(): void {
+        this.setEmailVerificado(true);
         this.verificarUsuario();
     }
 
@@ -105,6 +107,10 @@ export class Usuario {
 
     get id(): string {
         return this._id;
+    }
+
+    get usuarioAuthId(): string {
+        return this.props.usuarioAuthId;
     }
 
     get nome(): string {

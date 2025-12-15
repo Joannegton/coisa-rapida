@@ -14,6 +14,7 @@ export class UsuarioMapper {
     modelToDomain(model: UsuarioModel): Usuario {
         const usuario = Usuario.carregar(
             {
+                usuarioAuthId: model.usuarioAuthId,
                 nome: model.nome,
                 cpf: model.cpf,
                 telefone: model.telefone,

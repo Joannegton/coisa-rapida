@@ -12,7 +12,7 @@ import { AUDITORIA_KEY } from './decorators/auditoria.decorator';
 import {
     AuditoriaService,
     LogAuditoria,
-} from '../shared/services/auditoria.service';
+} from '../shared/infra/services/auditoria.service';
 import { IpUtils } from '../shared/utils/ip.utils';
 
 interface MetadadosAuditoria {

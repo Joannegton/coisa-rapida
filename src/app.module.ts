@@ -2,6 +2,7 @@ import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PassportModule } from '@nestjs/passport';
 import { ScheduleModule } from '@nestjs/schedule';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { OrmConfig } from './config/orm/ormConfig';
 import { LoggerMiddleware, RateLimitMiddleware } from './common/middlewares';
 import { AuthModule } from './modules/auth/auth.module';
@@ -16,6 +17,7 @@ import { AppProviders } from './app.providers';
         TypeOrmModule.forRoot({ ...OrmConfig }),
         PassportModule.register({ defaultStrategy: 'jwt' }),
         ScheduleModule.forRoot(),
+        EventEmitterModule.forRoot(),
         SharedModule,
         AuthModule,
         UsuarioModule,

@@ -1,11 +1,13 @@
 import { ConflictException, Injectable } from '@nestjs/common';
+import { EventBus } from '@nestjs/cqrs';
 import { AuthRepository } from '../../infra/repositories/auth.repository';
 import { BcryptService } from '../../infra/services/bcrypt.service';
 import { JwtService } from '../../infra/services/jwt.service';
 import { RegistrarDto } from '../dtos/registrar.dto';
 import { AuditoriaAcao } from 'src/shared/constants/auditoria-actions';
 import { RefreshTokenRepository } from '../../infra/repositories/refresh-token.repository';
-import { AuditoriaService } from 'src/shared/services/auditoria.service';
+import { AuditoriaService } from 'src/shared/infra/services/auditoria.service';
+import { UsuarioRegistradoEvent } from '../events/usuario-registrado';
 
 @Injectable()
 export class RegistrarUsecase {
@@ -15,6 +17,7 @@ export class RegistrarUsecase {
         private readonly jwtService: JwtService,
         private readonly auditoriaService: AuditoriaService,
         private readonly refreshTokenRepository: RefreshTokenRepository,
+        private readonly eventBus: EventBus,
     ) {}
 
     async execute(
@@ -102,6 +105,14 @@ export class RegistrarUsecase {
                     duracaoMs,
                 });
             }
+
+            this.eventBus.publish(
+                new UsuarioRegistradoEvent(
+                    usuario.id,
+                    usuarioAuth.email,
+                    usuario.nome,
+                ),
+            );
 
             return {
                 access_token: accessToken,

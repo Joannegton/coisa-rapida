@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { LIMITADOR_USUARIO_KEY } from '../decorators/limitador-usuario.decorator';
-import { CacheService } from '../../shared/services/cache.service';
+import { CacheService } from '../../shared/infra/services/cache.service';
 import { IpUtils } from '../../shared/utils/ip.utils';
 
 interface ConfigLimitadorUsuario {

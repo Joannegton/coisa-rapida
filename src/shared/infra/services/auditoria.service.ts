@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { AuditoriaRepository } from '../infra/repositories/auditoria.repository';
+import { AuditoriaRepository } from '../repositories/auditoria.repository';
 
 export interface LogAuditoria {
     id?: number;

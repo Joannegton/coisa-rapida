@@ -37,6 +37,21 @@ export const LimitarEnvioSMS = () =>
         duracaoBloqueio: 15,
     });
 
+export const LimitarUpload = () =>
+    LimitadorUsuario(20, 3600, {
+        mensagem: 'Você atingiu o limite de uploads. Aguarde 1 hora.',
+        bloquearApos: 5,
+        duracaoBloqueio: 60,
+    });
+
+export const LimitarVerificacaoEmail = () =>
+    LimitadorUsuario(3, 3600, {
+        mensagem:
+            'Você atingiu o limite de verificações de email. Aguarde 1 hora.',
+        bloquearApos: 5,
+        duracaoBloqueio: 120,
+    });
+
 /**
  * Decorator para limitar criação de aluguéis (10 por hora)
  */
@@ -44,13 +59,6 @@ export const LimitarCriacaoAluguel = () =>
     LimitadorUsuario(10, 3600, {
         mensagem:
             'Você atingiu o limite de criação de aluguéis. Aguarde 1 hora.',
-    });
-
-export const LimitarUpload = () =>
-    LimitadorUsuario(20, 3600, {
-        mensagem: 'Você atingiu o limite de uploads. Aguarde 1 hora.',
-        bloquearApos: 5,
-        duracaoBloqueio: 60,
     });
 
 /**

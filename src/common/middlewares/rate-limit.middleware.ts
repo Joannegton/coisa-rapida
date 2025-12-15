@@ -5,8 +5,8 @@ import {
     HttpStatus,
 } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
-import { CacheService } from '../../shared/services/cache.service';
-import { AuditoriaService } from '../../shared/services/auditoria.service';
+import { CacheService } from '../../shared/infra/services/cache.service';
+import { AuditoriaService } from '../../shared/infra/services/auditoria.service';
 import { AuditoriaAcao } from '../../shared/constants/auditoria-actions';
 import { IpUtils } from '../../shared/utils/ip.utils';
 

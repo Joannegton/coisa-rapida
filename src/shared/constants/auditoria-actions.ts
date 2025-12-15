@@ -14,6 +14,7 @@ export enum AuditoriaAcao {
     // Verificação
     ENVIAR_CODIGO_SMS = 'enviar_codigo_sms',
     VERIFICAR_CODIGO_SMS = 'verificar_codigo_sms',
+    VERIFICAR_LINK_EMAIL = 'verificar_link_email',
 
     // Segurança
     LIMITE_EXCEDIDO = 'limite_excedido',

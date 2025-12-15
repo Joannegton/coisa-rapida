@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { AuthRepository } from '../../infra/repositories/auth.repository';
 import { randomBytes } from 'node:crypto';
-import { AuditoriaService } from 'src/shared/services/auditoria.service';
+import { AuditoriaService } from 'src/shared/infra/services/auditoria.service';
 import { AuditoriaAcao } from 'src/shared/constants/auditoria-actions';
 
 @Injectable()
