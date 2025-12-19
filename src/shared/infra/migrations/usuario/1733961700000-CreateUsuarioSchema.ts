@@ -5,7 +5,7 @@ export class CreateUsuarioSchema1733961700000 implements MigrationInterface {
         await queryRunner.query(`CREATE SCHEMA IF NOT EXISTS usuario`);
 
         await queryRunner.query(`
-            CREATE EXTENSION IF NOT EXISTS "uuid-ossp" SCHEMA usuario;
+            CREATE EXTENSION IF NOT EXISTS pgcrypto;
         `);
 
         await queryRunner.query(`

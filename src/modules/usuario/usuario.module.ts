@@ -50,6 +50,6 @@ import { EmailVerificadoHandler } from './application/email-verificado.handler';
             useClass: ComprovanteResidenciaRepositoryImpl,
         },
     ],
-    exports: [],
+    exports: ['UsuarioRepository'],
 })
 export class UsuarioModule {}

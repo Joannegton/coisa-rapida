@@ -1,0 +1,210 @@
+import { InvalidPropsException } from 'src/common/exceptions/invalidProps.exception';
+import { DisponibilidadeException } from './exceptions/disponibilidade.exception';
+
+export interface DisponibilidadeProps {
+    disponivel: boolean;
+    dataDisponibilidade?: Date;
+    diasMinimosAluguel: number;
+    diasMaximosAluguel: number;
+    permitAluguelsConsecutivos: boolean;
+    aprovacaoAutomatica: boolean;
+    datasBloqueadas?: Date[];
+    permiteAluguelPorHora?: boolean;
+    horasMinimosAluguel?: number;
+    horasMaximosAluguel?: number;
+}
+
+type CriarDisponibilidadeProps = {
+    diasMinimosAluguel?: number;
+    diasMaximosAluguel?: number;
+    permitAluguelsConsecutivos?: boolean;
+    aprovacaoAutomatica?: boolean;
+    permiteAluguelPorHora?: boolean;
+    horasMinimosAluguel?: number;
+    horasMaximosAluguel?: number;
+};
+
+export class Disponibilidade {
+    private readonly _id;
+    private readonly props: DisponibilidadeProps;
+
+    constructor(id?: string) {
+        if (id) this._id = id;
+        this.props = {} as DisponibilidadeProps;
+    }
+
+    static criar(props: CriarDisponibilidadeProps): Disponibilidade {
+        const domain = new Disponibilidade();
+        domain.setDisponivel(true);
+        domain.setDiasMinimosAluguel(props.diasMinimosAluguel || 1);
+        domain.setDiasMaximosAluguel(props.diasMaximosAluguel || 365);
+        domain.setPermitAluguelsConsecutivos(props.permitAluguelsConsecutivos);
+        domain.setAprovacaoAutomatica(props.aprovacaoAutomatica || false);
+        if (props.permiteAluguelPorHora !== undefined) {
+            domain.setPermiteAluguelPorHora(props.permiteAluguelPorHora);
+            domain.setHorasMinimosAluguel(props.horasMinimosAluguel || 1);
+            domain.setHorasMaximosAluguel(props.horasMaximosAluguel || 24);
+        }
+        return domain;
+    }
+
+    static carregar(props: DisponibilidadeProps, id: string): Disponibilidade {
+        const domain = new Disponibilidade(id);
+        domain.setDisponivel(props.disponivel);
+        domain.setDataDisponibilidade(props.dataDisponibilidade);
+        domain.setDiasMinimosAluguel(props.diasMinimosAluguel);
+        domain.setDiasMaximosAluguel(props.diasMaximosAluguel);
+        domain.setPermitAluguelsConsecutivos(props.permitAluguelsConsecutivos);
+        domain.setAprovacaoAutomatica(props.aprovacaoAutomatica);
+        domain.setDatasBloqueadas(props.datasBloqueadas);
+        domain.setPermiteAluguelPorHora(!!props.permiteAluguelPorHora);
+        domain.setHorasMinimosAluguel(props.horasMinimosAluguel);
+        domain.setHorasMaximosAluguel(props.horasMaximosAluguel);
+        return domain;
+    }
+
+    // estaDisponivel(dataInicio: Date, dataFim: Date): boolean {
+    //     if (dataInicio >= dataFim) {
+    //         throw new DisponibilidadeException(
+    //             'dataInicio deve ser anterior a dataFim',
+    //         );
+    //     }
+    //     if (!this.disponivel) {
+    //         return false;
+    //     }
+
+    //     const duracaoMs = dataFim.getTime() - dataInicio.getTime();
+
+    //     if (this.permiteAluguelPorHora) {
+    //         const duracaoHoras = duracaoMs / (1000 * 60 * 60);
+    //         const minHoras = this.horasMinimosAluguel!;
+    //         const maxHoras = this.horasMaximosAluguel!;
+    //         if (duracaoHoras < minHoras || duracaoHoras > maxHoras)
+    //             return false;
+    //     } else {
+    //         const duracaoDias = duracaoMs / (1000 * 60 * 60 * 24);
+    //         if (
+    //             duracaoDias < this.diasMinimosAluguel ||
+    //             duracaoDias > this.diasMaximosAluguel
+    //         ) {
+    //             return false;
+    //         }
+    //     }
+
+    //     for (const dataBloqueada of this.datasBloqueadas) {
+    //         if (dataBloqueada >= dataInicio && dataBloqueada <= dataFim) {
+    //             return false;
+    //         }
+    //     }
+
+    //     return true;
+    // }
+
+    get id(): string {
+        return this._id;
+    }
+
+    get disponivel(): boolean {
+        return this.props.disponivel;
+    }
+
+    get dataDisponibilidade(): Date | undefined {
+        return this.props.dataDisponibilidade;
+    }
+
+    get diasMinimosAluguel(): number {
+        return this.props.diasMinimosAluguel;
+    }
+
+    get diasMaximosAluguel(): number {
+        return this.props.diasMaximosAluguel;
+    }
+
+    get permitAluguelsConsecutivos(): boolean {
+        return this.props.permitAluguelsConsecutivos;
+    }
+
+    get aprovacaoAutomatica(): boolean {
+        return this.props.aprovacaoAutomatica;
+    }
+
+    get datasBloqueadas(): Date[] | undefined {
+        return this.props.datasBloqueadas;
+    }
+
+    get permiteAluguelPorHora(): boolean {
+        return !!this.props.permiteAluguelPorHora;
+    }
+
+    get horasMinimosAluguel(): number | undefined {
+        return this.props.horasMinimosAluguel;
+    }
+
+    get horasMaximosAluguel(): number | undefined {
+        return this.props.horasMaximosAluguel;
+    }
+
+    private setDisponivel(value: boolean) {
+        if (value === undefined || value === null)
+            throw new InvalidPropsException('disponivel é obrigatório');
+        this.props.disponivel = value;
+    }
+
+    private setDataDisponibilidade(value?: Date) {
+        this.props.dataDisponibilidade = value;
+    }
+
+    private setDiasMinimosAluguel(value: number) {
+        if (value === undefined || value === null)
+            throw new InvalidPropsException('diasMinimosAluguel é obrigatório');
+        this.props.diasMinimosAluguel = value;
+    }
+
+    private setDiasMaximosAluguel(value: number) {
+        if (value === undefined || value === null)
+            throw new InvalidPropsException('diasMaximosAluguel é obrigatório');
+        this.props.diasMaximosAluguel = value;
+    }
+
+    private setPermitAluguelsConsecutivos(value?: boolean) {
+        if (value === undefined || value === null)
+            throw new InvalidPropsException(
+                'permitAluguelsConsecutivos é obrigatório',
+            );
+        this.props.permitAluguelsConsecutivos = value;
+    }
+
+    private setAprovacaoAutomatica(value: boolean) {
+        if (value === undefined || value === null)
+            throw new InvalidPropsException(
+                'aprovacaoAutomatica é obrigatório',
+            );
+        this.props.aprovacaoAutomatica = value;
+    }
+
+    private setDatasBloqueadas(value?: Date[]) {
+        this.props.datasBloqueadas = value;
+    }
+
+    private setPermiteAluguelPorHora(value: boolean) {
+        this.props.permiteAluguelPorHora = value;
+    }
+
+    private setHorasMinimosAluguel(value?: number) {
+        if (value !== undefined && value !== null && value < 1) {
+            throw new InvalidPropsException(
+                'horasMinimosAluguel deve ser maior que zero',
+            );
+        }
+        this.props.horasMinimosAluguel = value;
+    }
+
+    private setHorasMaximosAluguel(value?: number) {
+        if (value !== undefined && value !== null && value < 1) {
+            throw new InvalidPropsException(
+                'horasMaximosAluguel deve ser maior que zero',
+            );
+        }
+        this.props.horasMaximosAluguel = value;
+    }
+}

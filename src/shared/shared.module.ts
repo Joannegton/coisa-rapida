@@ -8,7 +8,9 @@ import { AuditoriaRepository } from './infra/repositories/auditoria.repository';
 import { AuditoriaCleanupJob } from './infra/jobs/auditoria-cleanup.job';
 import { AuditoriaAdminController } from './controllers/auditoria-admin.controller';
 import { sharedServices } from './infra/services';
-import { EmailProcessor } from './infra/services/email.processor';
+import { EmailProcessor } from './infra/jobs/email.processor.worker';
+import { VerificacaoVirusFilaService } from './infra/services/verificacao-virus.fila.service';
+import { VerificacaoVirusProcessor } from './infra/jobs/verificacao-virus.processor.worker';
 
 @Module({
     imports: [
@@ -31,12 +33,22 @@ import { EmailProcessor } from './infra/services/email.processor';
         BullModule.registerQueue({
             name: 'email',
         }),
+        BullModule.registerQueue({
+            name: 'verificacao-virus',
+        }),
         TypeOrmModule.forFeature([AuditoriaModel]),
         ScheduleModule.forRoot(),
         CqrsModule.forRoot(),
     ],
     controllers: [AuditoriaAdminController],
-    providers: [AuditoriaRepository, ...sharedServices, AuditoriaCleanupJob, EmailProcessor],
+    providers: [
+        AuditoriaRepository,
+        ...sharedServices,
+        AuditoriaCleanupJob,
+        EmailProcessor,
+        VerificacaoVirusFilaService,
+        VerificacaoVirusProcessor,
+    ],
     exports: [...sharedServices],
 })
 export class SharedModule {}

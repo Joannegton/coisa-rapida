@@ -26,7 +26,9 @@ import { UsuarioRegistradoHandler } from './application/event-handlers/usuario-r
         ]),
         JwtModule.register({
             secret: process.env.JWT_SECRET,
-            signOptions: { expiresIn: '15m' },
+            signOptions: {
+                expiresIn: Number(process.env.JWT_SECRET_EXPIRES_IN),
+            },
         }),
         CqrsModule,
         SharedModule,

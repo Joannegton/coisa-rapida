@@ -3,7 +3,10 @@ import { InvalidPropsException } from 'src/common/exceptions/invalidProps.except
 import { ComprovanteResidencia } from 'src/modules/usuario/domain/ComprovanteResidencia';
 import type { ComprovanteResidenciaRepository } from 'src/modules/usuario/domain/repositories/comprovante-residencia.repository';
 import { TipoComprovante } from 'src/modules/usuario/infra/models/comprovante-residencia.model';
-import { CloudinaryService } from 'src/shared/infra/services/Cloudinary.service';
+import {
+    CloudinaryService,
+    TipoUploadCloudinary,
+} from 'src/shared/infra/services/Cloudinary.service';
 
 export type SalvarComprovanteResidenciaProps = {
     usuarioId: string;
@@ -38,6 +41,8 @@ export class SalvarComprovanteResidenciaUseCase {
         const uploadResult = await this.cloudinaryService.uploadNoCloudinary({
             file: props.arquivo,
             pasta: 'comprovantes_residencia',
+            usuarioId: props.usuarioId,
+            tipoUpload: TipoUploadCloudinary.COMPROVANTE_RESIDENCIA,
         });
 
         const comprovanteDomain = ComprovanteResidencia.criar({

@@ -9,7 +9,7 @@ import { AuditoriaCleanupJob } from '../infra/jobs/auditoria-cleanup.job';
  * Controller para gerenciamento e manutenção de auditoria
  * Apenas para administradores
  */
-@ApiTags('Auditoria - Admin')
+@ApiTags('auditoria')
 @ApiBearerAuth('access-token')
 @Controller('admin/auditoria')
 @UseGuards(JwtAuthGuard, RolesGuard)

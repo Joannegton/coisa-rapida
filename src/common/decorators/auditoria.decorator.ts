@@ -58,3 +58,9 @@ export const AuditarAlteracaoEndereco = () =>
             'Alterar endereço, revogar comprovante de residência e permissoes',
         nivel: 'medio',
     });
+
+export const AuditarCriacaoItem = () =>
+    Auditar(AuditoriaAcao.CRIAR_ITEM, 'item', {
+        descricao: 'Criação de novo item',
+        nivel: 'medio',
+    });

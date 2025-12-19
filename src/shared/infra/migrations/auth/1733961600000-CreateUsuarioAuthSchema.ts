@@ -7,7 +7,7 @@ export class CreateUsuarioAuthSchema1733961600000
         await queryRunner.query(`CREATE SCHEMA IF NOT EXISTS auth`);
 
         await queryRunner.query(`
-            CREATE EXTENSION IF NOT EXISTS "uuid-ossp" SCHEMA auth;
+            CREATE EXTENSION IF NOT EXISTS pgcrypto;
         `);
 
         await queryRunner.query(`

@@ -3,7 +3,7 @@ import {
     EmailVerificationToken,
     UsuarioEmailService,
 } from '../../domain/services';
-import { EmailService } from 'src/shared/infra/services/email.service';
+import { EmailFilaService } from 'src/shared/infra/services/email.service';
 import { TemplateService } from 'src/shared/infra/services/template.service';
 import { JwtService as NestJwtService } from '@nestjs/jwt';
 import { ServiceException } from 'src/common/exceptions/service.exception';
@@ -13,7 +13,7 @@ import { EmailVerificationUtils } from 'src/shared/utils/email-verification.util
 export class UsuarioEmailServiceImpl implements UsuarioEmailService {
     private readonly logger = new Logger(UsuarioEmailServiceImpl.name);
     constructor(
-        private readonly emailService: EmailService,
+        private readonly emailService: EmailFilaService,
         private readonly templateService: TemplateService,
         private readonly nestJwtService: NestJwtService,
     ) {}

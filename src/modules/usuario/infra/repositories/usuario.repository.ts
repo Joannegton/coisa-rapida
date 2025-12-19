@@ -6,6 +6,7 @@ import { RepositoryException } from 'src/common/exceptions/repository.exception'
 import { UsuarioMapper } from '../mappers/usuario.mapper';
 import { Usuario } from '../../domain/usuario';
 import { UsuarioRepository } from '../../domain/repositories/usuario.repository';
+import { EnderecoModel } from '../models/endereco.value-objct';
 
 @Injectable()
 export class UsuarioRepositoryImpl implements UsuarioRepository {
@@ -56,6 +57,43 @@ export class UsuarioRepositoryImpl implements UsuarioRepository {
                 error.stack,
             );
             throw new RepositoryException(`Erro ao buscar usuário`);
+        }
+    }
+
+    // Queries
+    async buscarVerificacaoEEndereco(
+        id: string,
+    ): Promise<{ verificado: boolean; endereco?: EnderecoModel } | null> {
+        try {
+            const usuario = await this.repository.findOne({
+                where: { id },
+                select: [
+                    'verificado',
+                    'endereco.cep',
+                    'endereco.rua',
+                    'endereco.numero',
+                    'endereco.complemento',
+                    'endereco.bairro',
+                    'endereco.cidade',
+                    'endereco.estado',
+                    'endereco.pais',
+                    'endereco.latitude',
+                    'endereco.longitude',
+                ] as any,
+            });
+
+            if (!usuario) return null;
+
+            return {
+                verificado: usuario.verificado,
+                endereco: usuario.endereco,
+            };
+        } catch (error) {
+            this.logger.error(
+                `Erro ao buscar verificação e endereço: ${error.message}`,
+                error.stack,
+            );
+            throw new RepositoryException(`Erro ao buscar dados do usuário`);
         }
     }
 }

@@ -3,8 +3,8 @@ import { InjectQueue } from '@nestjs/bull';
 import type { Queue } from 'bull';
 
 @Injectable()
-export class EmailService {
-    private readonly logger = new Logger(EmailService.name);
+export class EmailFilaService {
+    private readonly logger = new Logger(EmailFilaService.name);
 
     constructor(@InjectQueue('email') private readonly emailQueue: Queue) {}
 

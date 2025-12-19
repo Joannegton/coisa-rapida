@@ -11,12 +11,14 @@ const PREFIX_API = 'api/v1';
 
 function setupSwagger(app: INestApplication<any>) {
     const tags = [
-        { name: 'auth', description: 'Endpoints de autenticação' },
+        { name: 'auth', description: 'Gerenciamento de autenticação' },
+        { name: 'usuario', description: 'Gerenciamento de usuários' },
         {
             name: 'verificacao',
-            description: 'Endpoints de verificações do usuario',
+            description: 'Gerenciamento de Verificações do usuario',
         },
-        // { name: 'usuario', description: 'Gerenciamento de usuários' },
+        { name: 'item', description: 'Gerenciamento de itens' },
+        { name: 'auditoria', description: 'Logs de auditoria' },
     ];
 
     let configBuilder = new DocumentBuilder()

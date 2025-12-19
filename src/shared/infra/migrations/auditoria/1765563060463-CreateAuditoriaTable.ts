@@ -8,7 +8,7 @@ export class CreateAuditoriaTable1765563060463 implements MigrationInterface {
     public async up(queryRunner: QueryRunner): Promise<void> {
         // Criar tabela particionada
         await queryRunner.query(`
-            CREATE TABLE auditoria (
+            CREATE TABLE public.auditoria (
                 id SERIAL NOT NULL,
                 timestamp TIMESTAMP NOT NULL DEFAULT NOW(),
                 usuario_id VARCHAR(255),
@@ -35,7 +35,7 @@ export class CreateAuditoriaTable1765563060463 implements MigrationInterface {
 
         // Dezembro 2025 (mês atual)
         await queryRunner.query(`
-            CREATE TABLE auditoria_2025_dez PARTITION OF auditoria
+            CREATE TABLE public.auditoria_2025_dez PARTITION OF public.auditoria
             FOR VALUES FROM ('2025-12-01') TO ('2026-01-01');
         `);
 
@@ -59,35 +59,35 @@ export class CreateAuditoriaTable1765563060463 implements MigrationInterface {
             const nextYear = month.name === 'dez' ? 2027 : 2026;
 
             await queryRunner.query(`
-                CREATE TABLE auditoria_2026_${month.name} PARTITION OF auditoria
+                CREATE TABLE public.auditoria_2026_${month.name} PARTITION OF public.auditoria
                 FOR VALUES FROM ('2026-${month.start}') TO ('${nextYear}-${nextMonth}');
             `);
         }
 
         await queryRunner.query(`
             CREATE INDEX IF NOT EXISTS idx_auditoria_timestamp 
-            ON auditoria(timestamp DESC);
+            ON public.auditoria(timestamp DESC);
         `);
 
         await queryRunner.query(`
             CREATE INDEX IF NOT EXISTS idx_auditoria_usuario_id 
-            ON auditoria(usuario_id);
+            ON public.auditoria(usuario_id);
         `);
 
         await queryRunner.query(`
             CREATE INDEX IF NOT EXISTS idx_auditoria_timestamp_acao 
-            ON auditoria(timestamp DESC, acao);
+            ON public.auditoria(timestamp DESC, acao);
         `);
 
         await queryRunner.query(`
             CREATE INDEX IF NOT EXISTS idx_auditoria_nivel 
-            ON auditoria(nivel) 
+            ON public.auditoria(nivel) 
             WHERE nivel IN ('alto', 'critico');
         `);
 
         await queryRunner.query(`
             CREATE INDEX IF NOT EXISTS idx_auditoria_modulo_timestamp 
-            ON auditoria(modulo, timestamp DESC);
+            ON public.auditoria(modulo, timestamp DESC);
         `);
 
         // função para auto-criar partições
@@ -117,7 +117,7 @@ export class CreateAuditoriaTable1765563060463 implements MigrationInterface {
 
         // Comentários para documentação
         await queryRunner.query(`
-            COMMENT ON TABLE auditoria IS 'Tabela particionada de auditoria. Novas partições são criadas mensalmente.';
+            COMMENT ON TABLE public.auditoria IS 'Tabela particionada de auditoria. Novas partições são criadas mensalmente.';
         `);
     }
 
@@ -126,6 +126,6 @@ export class CreateAuditoriaTable1765563060463 implements MigrationInterface {
             `DROP FUNCTION IF EXISTS criar_particao_auditoria();`,
         );
 
-        await queryRunner.query(`DROP TABLE IF EXISTS auditoria CASCADE;`);
+        await queryRunner.query(`DROP TABLE IF EXISTS public.auditoria CASCADE;`);
     }
 }

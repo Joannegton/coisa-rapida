@@ -1,80 +1,130 @@
 import { Injectable, Logger } from '@nestjs/common';
-import axios from 'axios';
+import { ConfigService } from '@nestjs/config';
+import axios, { AxiosError } from 'axios';
 import FormData from 'form-data';
 import { ServiceException } from 'src/common/exceptions/service.exception';
+import * as crypto from 'crypto';
 
-type ArquivoVerificado = {
+interface EstatisticasVirusTotal {
+    malicious: number;
+    suspicious: number;
+    harmless: number;
+    undetected: number;
+}
+
+interface ResultadoAnalise {
+    data: {
+        attributes: {
+            status: string;
+            stats?: EstatisticasVirusTotal;
+            last_analysis_stats?: EstatisticasVirusTotal;
+        };
+    };
+}
+
+interface ArquivoVerificado {
     limpo: boolean;
     hash: string;
-};
+}
+
+// verificar se poder dar throw error, se é usado na fila
 
 @Injectable()
 export class VirusTotalService {
-    private readonly apiKey: string | undefined;
-    private readonly url: string;
-    private readonly logger = new Logger(VirusTotalService.name);
+    private readonly chaveApi: string;
+    private readonly urlBase: string = 'https://www.virustotal.com/api/v3';
+    private readonly TIMEOUT_REQUISICAO_MS = 30000;
 
     constructor() {
-        this.apiKey = process.env.VIRUS_TOTAL_API_KEY;
-        this.url = 'https://www.virustotal.com/api/v3/files';
+        const chaveApi = process.env.VIRUS_TOTAL_API_KEY;
+        if (!chaveApi) {
+            throw new Error(
+                'VIRUS_TOTAL_API_KEY não está definida no ambiente',
+            );
+        }
+        this.chaveApi = chaveApi;
     }
 
-    async verificarVirus(
-        file: Express.Multer.File,
-    ): Promise<ArquivoVerificado> {
+    async enviarArquivo(arquivo: Express.Multer.File): Promise<string> {
         const formData = new FormData();
-        formData.append('file', file.buffer, file.originalname);
+        formData.append('file', arquivo.buffer, arquivo.originalname);
 
-        const headers = {
+        const cabecalhos = {
             ...formData.getHeaders(),
-            'x-apikey': this.apiKey,
+            'x-apikey': this.chaveApi,
         };
 
-        try {
-            const response = await axios.post(this.url, formData, { headers });
-            if (response.status !== 200)
-                throw new ServiceException(
-                    'Erro ao enviar arquivo para análise',
-                );
+        const resposta = await axios.post(`${this.urlBase}/files`, formData, {
+            headers: cabecalhos,
+            timeout: this.TIMEOUT_REQUISICAO_MS * 2, // Dobro do timeout para upload
+        });
 
-            const analiseResult = await axios.get(
-                `https://www.virustotal.com/api/v3/analyses/${response.data.data.id}`,
+        if (
+            (resposta.status !== 200 && resposta.status !== 201) ||
+            !resposta.data?.data?.id
+        ) {
+            throw new ServiceException('Erro ao enviar arquivo para análise');
+        }
+
+        return resposta.data.data.id;
+    }
+
+    async consultarAnalise(idAnalise: string): Promise<{
+        status: string;
+        infectado: boolean;
+        estatisticas?: EstatisticasVirusTotal;
+    }> {
+        const cabecalhos = this.obterCabecalhos();
+
+        try {
+            const resposta = await axios.get<ResultadoAnalise>(
+                `${this.urlBase}/analyses/${idAnalise}`,
                 {
-                    headers: {
-                        accept: 'application/json',
-                        'x-apikey': this.apiKey,
-                    },
+                    headers: cabecalhos,
+                    timeout: this.TIMEOUT_REQUISICAO_MS,
                 },
             );
-            if (analiseResult.status !== 200)
-                throw new ServiceException(
-                    'Erro ao obter resultado da análise',
-                );
 
-            const { attributes } = analiseResult.data.data;
-            const { sha256 } = analiseResult.data.meta.file_info;
+            if (resposta.status === 200 && resposta.data?.data?.attributes) {
+                const { status, stats, last_analysis_stats } =
+                    resposta.data.data.attributes;
+                const estatisticas = stats || last_analysis_stats;
 
-            const stats = attributes.stats;
-            const infectado = stats.malicious > 0 || stats.suspicious > 0;
-
-            if (infectado) {
-                throw new ServiceException('Arquivo infectado detectado');
+                return {
+                    status,
+                    infectado: this.estaInfectado(estatisticas),
+                    estatisticas,
+                };
             }
 
-            return { limpo: true, hash: sha256 };
+            throw new ServiceException('Resposta inválida do VirusTotal');
         } catch (error) {
-            if (error.status === 401) {
-                this.logger.error(
-                    'Erro de autenticação na API do VirusTotal:',
-                    error,
-                );
-                throw new ServiceException(
-                    'Erro de autenticação na API do VirusTotal',
-                );
+            if (axios.isAxiosError(error) && error.response?.status === 404) {
+                throw new ServiceException('Análise não encontrada');
             }
 
-            this.logger.error('Erro ao verificar o arquivo:', error);
-            throw new ServiceException('Erro ao verificar o arquivo');
+            if (axios.isAxiosError(error)) {
+                const mensagem =
+                    error.response?.data?.error?.message ||
+                    'Erro na comunicação com VirusTotal';
+                throw new ServiceException(mensagem);
+            }
+
+            throw error;
         }
+    }
+
+    private obterCabecalhos(): { [key: string]: string } {
+        return {
+            'x-apikey': this.chaveApi,
+            accept: 'application/json',
+        };
+    }
+
+    private estaInfectado(estatisticas?: EstatisticasVirusTotal): boolean {
+        if (!estatisticas) {
+            return false;
+        }
+        return estatisticas.malicious > 0 || estatisticas.suspicious > 0;
     }
 }

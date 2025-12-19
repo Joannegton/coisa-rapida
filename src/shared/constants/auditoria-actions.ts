@@ -16,8 +16,15 @@ export enum AuditoriaAcao {
     VERIFICAR_CODIGO_SMS = 'verificar_codigo_sms',
     VERIFICAR_LINK_EMAIL = 'verificar_link_email',
 
+    // Itens
+    CRIAR_ITEM = 'criar_item',
+    ATUALIZAR_ITEM = 'atualizar_item',
+    DELETAR_ITEM = 'deletar_item',
+    MODERAR_ITEM = 'moderar_item',
+
     // Segurança
     LIMITE_EXCEDIDO = 'limite_excedido',
+    ARQUIVO_INFECTADO_DETECTADO = 'arquivo_infectado_detectado',
 
     // Usuário
     ALTERAR_ENDERECO = 'alterar_endereco',

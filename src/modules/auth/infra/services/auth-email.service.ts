@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { EmailService } from 'src/shared/infra/services/email.service';
+import { EmailFilaService } from 'src/shared/infra/services/email.service';
 import { TemplateService } from 'src/shared/infra/services/template.service';
 import { JwtService as NestJwtService } from '@nestjs/jwt';
 import { EmailVerificationUtils } from 'src/shared/utils/email-verification.utils';
@@ -9,7 +9,7 @@ export class AuthEmailService {
     private readonly logger = new Logger(AuthEmailService.name);
 
     constructor(
-        private readonly emailService: EmailService,
+        private readonly emailService: EmailFilaService,
         private readonly templateService: TemplateService,
         private readonly nestJwtService: NestJwtService,
     ) {}

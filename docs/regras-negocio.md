@@ -103,25 +103,24 @@ O Coisa Rápida é uma plataforma de compartilhamento e aluguel peer-to-peer que
 
 ### **Verificação de Telefone (SMS)**
 
-| Check | Regra              | Descrição                                                                                 | Prioridade |
-| ----- | ------------------ | ----------------------------------------------------------------------------------------- | ---------- |
-| [ ]   | **Código SMS**     | Código de 6 dígitos enviado via serviço de SMS (ex: Twilio). Válido por 10 minutos.       | Alta       |
-| [ ]   | **Tentativas**     | Máximo 3 tentativas de código incorreto. Após isso, aguardar 15 minutos para novo envio.  | Alta       |
-| [ ]   | **Unicidade**      | Um telefone só pode ser vinculado a uma conta ativa.                                      | Alta       |
-| [ ]   | **Re-verificação** | Necessária a cada 12 meses ou se o telefone for alterado.                                 | Média      |
-| [ ]   | **Status**         | `pendente`, `verificado`, `expirado`, `rejeitado`. Armazenado em `verificacoes_telefone`. | Alta       |
+| Check | Regra              | Descrição                                                                                | Prioridade |
+| ----- | ------------------ | ---------------------------------------------------------------------------------------- | ---------- |
+| [x]   | **Código SMS**     | Código de 6 dígitos enviado via serviço de SMS (ex: Twilio). Válido por 10 minutos.      | Alta       |
+| [x]   | **Tentativas**     | Máximo 3 tentativas de código incorreto. Após isso, aguardar 15 minutos para novo envio. | Alta       |
+| [ ]   | **Unicidade**      | Um telefone só pode ser vinculado a uma conta ativa.                                     | Alta       |
+| [ ]   | **Re-verificação** | Necessária a cada 12 meses ou se o telefone for alterado.                                | Média      |
 
 ### **Verificação de Residência (Comprovante)**
 
-| Check | Regra                   | Descrição                                                                                                           | Prioridade |
-| ----- | ----------------------- | ------------------------------------------------------------------------------------------------------------------- | ---------- |
-| [ ]   | **Documentos Aceitos**  | Conta de luz/água/gás, contrato de aluguel, extrato bancário, boleto de IPTU. Máx 90 dias de emissão.               | Alta       |
-| [ ]   | **Validação Manual**    | Moderador analisa em até 48h úteis. Verifica nome do usuário, endereço legível e data do documento.                 | Alta       |
-| [ ]   | **Status de Moderação** | `pendente`, `em_analise`, `aprovado`, `rejeitado`, `cancelado`.                                                     | Alta       |
-| [ ]   | **Motivos de Rejeição** | Documento ilegível, documento vencido, nome não corresponde, endereço incompleto, documento adulterado.             | Alta       |
-| [ ]   | **Reenvio**             | Se rejeitado, usuário pode reenviar novo documento. Máximo 3 tentativas. Após isso, análise por especialista.       | Média      |
-| [ ]   | **Validade**            | Comprovante válido por 12 meses. Sistema notifica 15 dias antes do vencimento.                                      | Alta       |
-| [ ]   | **Dados Armazenados**   | `comprovanteUrl`, `tipoComprovante`, `observacoesUsuario`, `motivoRejeicao`, `observacoesModerador`, `moderadorId`. | Alta       |
+| Check | Regra                     | Descrição                                                                                                     | Prioridade |
+| ----- | ------------------------- | ------------------------------------------------------------------------------------------------------------- | ---------- |
+| [ ]   | **Alteração de endereço** | Se alterar o endereço, precisa alterar o endereço de todos os produtos desse usuario                          | Alta       |
+| [x]   | **Documentos Aceitos**    | Conta de luz/água/gás, contrato de aluguel, extrato bancário, boleto de IPTU. Máx 90 dias de emissão.         | Alta       |
+| [ ]   | **Validação Manual**      | Moderador analisa em até 48h úteis. Verifica nome do usuário, endereço legível e data do documento.           | Alta       |
+| [ ]   | **Status de Moderação**   | `pendente`, `em_analise`, `aprovado`, `rejeitado`, `cancelado`.                                               | Alta       |
+| [ ]   | **Motivos de Rejeição**   | Documento ilegível, documento vencido, nome não corresponde, endereço incompleto, documento adulterado.       | Alta       |
+| [ ]   | **Reenvio**               | Se rejeitado, usuário pode reenviar novo documento. Máximo 3 tentativas. Após isso, análise por especialista. | Média      |
+| [ ]   | **Validade**              | Comprovante válido por 12 meses. Sistema notifica 15 dias antes do vencimento.                                | Alta       |
 
 ### **Verificação de Identidade (Documento com Foto)**
 
@@ -383,29 +382,29 @@ Cada transição de estado possui validações específicas que devem ser cumpri
 
 ### **3.5 Período de Aluguel**
 
-| Regra                     | Descrição                                                                                                                            | Prioridade |
-| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ---------- |
-| **Contagem de Tempo**     | Inicia quando `status = ATIVO`. Data/hora registrada em `dataInicio` do aluguel.                                                     | Alta       |
-| **Data de Fim**           | Data de término registrada em `dataFim`. Sistema monitora via cron job diário.                                                       | Alta       |
-| **Extensão do Aluguel**   | **[FUTURO]** Locatário pode solicitar extensão até 24h antes do fim. Locador tem 12h para aprovar. Cria novo pagamento proporcional. | Média      |
-| **Atraso de Devolução**   | Multa calculada: `50% do precoPorDia * dias de atraso`. Máximo 5 dias. Após isso, `DISPUTADO` é aberto automaticamente.              | Alta       |
-| **Lembretes Automáticos** | Cron job envia notificações push/email em: 48h, 24h e 2h antes do `dataFim`.                                                         | Média      |
-| **Upload de Fotos**       | Locatário DEVE fazer upload de fotos do item no início (após aprovação) e no fim (antes da devolução). Tabela `verificacoes_fotos`.  | Alta       |
+| Check | Regra                     | Descrição                                                                                                                            | Prioridade |
+| ----- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ---------- |
+| [ ]   | **Contagem de Tempo**     | Inicia quando `status = ATIVO`. Data/hora registrada em `dataInicio` do aluguel.                                                     | Alta       |
+| [ ]   | **Data de Fim**           | Data de término registrada em `dataFim`. Sistema monitora via cron job diário.                                                       | Alta       |
+| [ ]   | **Extensão do Aluguel**   | **[FUTURO]** Locatário pode solicitar extensão até 24h antes do fim. Locador tem 12h para aprovar. Cria novo pagamento proporcional. | Média      |
+| [ ]   | **Atraso de Devolução**   | Multa calculada: `50% do precoPorDia * dias de atraso`. Máximo 5 dias. Após isso, `DISPUTADO` é aberto automaticamente.              | Alta       |
+| [ ]   | **Lembretes Automáticos** | Cron job envia notificações push/email em: 48h, 24h e 2h antes do `dataFim`.                                                         | Média      |
+| [ ]   | **Upload de Fotos**       | Locatário DEVE fazer upload de fotos do item no início (após aprovação) e no fim (antes da devolução). Tabela `verificacoes_fotos`.  | Alta       |
 
 ### **3.6 Devolução e Finalização**
 
-| Regra                        | Descrição                                                                                                                                                                                          | Prioridade |
-| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| **Solicitação de Devolução** | Locatário clica em "Solicitar Devolução" no app. Upload de fotos finais obrigatório. Campo `observacoes` opcional.                                                                                 | Alta       |
-| **Status de Transição**      | `ATIVO` → `DEVOLVIDO` (locatário marca como devolvido, aguardando confirmação do locador).                                                                                                         | Alta       |
-| **Inspeção do Locador**      | Locador tem até 48h para: (1) Aprovar sem problemas, (2) Reportar danos e abrir disputa.                                                                                                           | Alta       |
-| **Aprovação SEM DANO**       | Locador aprova. Backend executa `FinalizarAluguelUseCase` sem indenização. Calcula: `retornoLocatario = caucao - valorAluguel - taxaApp`. Status: `CONCLUIDO`. Caução: `DEVOLVIDA` (parcialmente). | Alta       |
-| **Aprovação COM DANO**       | Locador reporta danos. Status: `DISPUTADO`. Sistema registra evidências e aguarda mediação. Indenização especificada.                                                                              | Alta       |
-| **Resolução de Disputa**     | Após análise/mediação, sistema processa. Calcula: `retornoLocatario = caucao - valorAluguel - taxaApp - indenizacao`. Status: `DISPUTADO` → `CONCLUIDO`. Transferências processadas.               | Alta       |
-| **Rejeição (Disputa)**       | Locador rejeita devolução. Motivo e fotos obrigatórios. Sistema cria registro de disputa. Pagamento retido até resolução.                                                                          | Alta       |
-| **Timeout de Aprovação**     | Se locador não responder em 48h, sistema aprova automaticamente SEM DANO. Notificação enviada ao locador alertando sobre auto-aprovação.                                                           | Média      |
-| **Finalização Prévia**       | Se locador confirma devolução antes do locatário solicitar, sistema vai direto para `CONCLUIDO`. Recomendado para entregas presenciais.                                                            | Média      |
-| **Cálculo de Indenização**   | Definido pelo locador ou mediador. Máximo: valor total da caução. Descontado da caução antes da devolução.                                                                                         | Alta       |
+| Check | Regra                        | Descrição                                                                                                                                                                                          | Prioridade |
+| ----- | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| [ ]   | **Solicitação de Devolução** | Locatário clica em "Solicitar Devolução" no app. Upload de fotos finais obrigatório. Campo `observacoes` opcional.                                                                                 | Alta       |
+| [ ]   | **Status de Transição**      | `ATIVO` → `DEVOLVIDO` (locatário marca como devolvido, aguardando confirmação do locador).                                                                                                         | Alta       |
+| [ ]   | **Inspeção do Locador**      | Locador tem até 48h para: (1) Aprovar sem problemas, (2) Reportar danos e abrir disputa.                                                                                                           | Alta       |
+| [ ]   | **Aprovação SEM DANO**       | Locador aprova. Backend executa `FinalizarAluguelUseCase` sem indenização. Calcula: `retornoLocatario = caucao - valorAluguel - taxaApp`. Status: `CONCLUIDO`. Caução: `DEVOLVIDA` (parcialmente). | Alta       |
+| [ ]   | **Aprovação COM DANO**       | Locador reporta danos. Status: `DISPUTADO`. Sistema registra evidências e aguarda mediação. Indenização especificada.                                                                              | Alta       |
+| [ ]   | **Resolução de Disputa**     | Após análise/mediação, sistema processa. Calcula: `retornoLocatario = caucao - valorAluguel - taxaApp - indenizacao`. Status: `DISPUTADO` → `CONCLUIDO`. Transferências processadas.               | Alta       |
+| [ ]   | **Rejeição (Disputa)**       | Locador rejeita devolução. Motivo e fotos obrigatórios. Sistema cria registro de disputa. Pagamento retido até resolução.                                                                          | Alta       |
+| [ ]   | **Timeout de Aprovação**     | Se locador não responder em 48h, sistema aprova automaticamente SEM DANO. Notificação enviada ao locador alertando sobre auto-aprovação.                                                           | Média      |
+| [ ]   | **Finalização Prévia**       | Se locador confirma devolução antes do locatário solicitar, sistema vai direto para `CONCLUIDO`. Recomendado para entregas presenciais.                                                            | Média      |
+| [ ]   | **Cálculo de Indenização**   | Definido pelo locador ou mediador. Máximo: valor total da caução. Descontado da caução antes da devolução.                                                                                         | Alta       |
 
 ---
 
@@ -439,22 +438,22 @@ Cada transição de estado possui validações específicas que devem ser cumpri
 
 ### **4.2 Cálculos Financeiros**
 
-| Regra                                | Descrição                                                                                                                                       | Prioridade |
-| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| **Cálculo de Preço Base**            | `valorAluguel = precoPorDia × numeroDeDias`. Dias calculados: `(dataFim - dataInicio).dias + 1`. Mínimo 1 dia.                                  | Alta       |
-| **Taxa da Plataforma**               | `taxaApp = valorAluguel × taxaAppPercentual`. Padrão: 10% (0.1). Configurável por aluguel (futuro: por categoria).                              | Alta       |
-| **Valor Líquido Locador**            | `valorLiquidoLocador = valorAluguel - taxaApp`. Este é o valor que o locador deve receber.                                                      | Alta       |
-| **Valor Total COM Caução**           | `valorTotal = valorAluguel + caucao`. Locatário paga isso no checkout.                                                                          | Alta       |
-| **Valor Total SEM Caução**           | `valorTotal = valorAluguel`. Locatário paga apenas o aluguel.                                                                                   | Alta       |
-| **Valor de Caução**                  | Definido pelo locador ao publicar item. Mínimo R$50, Máximo R$10.000. Recomendado: 20-50% do valor do item (não do aluguel).                    | Alta       |
-| **Multa por Atraso**                 | `multaAtraso = (precoPorDia × 0.5) × diasDeAtraso`. Máximo: 5 dias. Após isso, problema escalado.                                               | Alta       |
-| **Cálculo de Retorno ao Locatário**  | `retorno = caucao - valorAluguel - indenizacao - multaAtraso`. Se negativo, locatário deve pagar diferença.                                     | Alta       |
-| **Liberação de Caução**              | Processada IMEDIATAMENTE após finalização do aluguel. Reembolso via Mercado Pago: 1-3 dias úteis para aparecer na conta.                        | Alta       |
-| **Saldo Negativo**                   | Se `retorno < 0`, sistema cria nova preferência de pagamento para cobrar diferença. Locatário tem 5 dias para pagar. Após isso, conta suspensa. | Alta       |
-| **Deep Links de Pagamento**          | Após pagamento no Mercado Pago, usuário é redirecionado via deep link: `coisarapida://payment/success?aluguelId=X&status=approved`.             | Média      |
-| **Retenção em Disputa**              | Se aluguel está em `DISPUTADO`, todos os valores ficam retidos até resolução (máximo 30 dias). Após isso, liberação padrão.                     | Alta       |
-| **Métodos de Pagamento (Locatário)** | Cartão crédito/débito, Pix, Boleto, Mercado Pago Account Money. Configurado no Mercado Pago Checkout.                                           | Alta       |
-| **Métodos de Recebimento (Locador)** | Pix (chave CPF, email, telefone ou aleatória). Dados armazenados em `Usuario`: `chavePix`, `cpfPix`, `telefonePix`.                             | Alta       |
+| Check | Regra                                | Descrição                                                                                                                                       | Prioridade |
+| ----- | ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| [ ]   | **Cálculo de Preço Base**            | `valorAluguel = precoPorDia × numeroDeDias`. Dias calculados: `(dataFim - dataInicio).dias + 1`. Mínimo 1 dia.                                  | Alta       |
+| [ ]   | **Taxa da Plataforma**               | `taxaApp = valorAluguel × taxaAppPercentual`. Padrão: 10% (0.1). Configurável por aluguel (futuro: por categoria).                              | Alta       |
+| [ ]   | **Valor Líquido Locador**            | `valorLiquidoLocador = valorAluguel - taxaApp`. Este é o valor que o locador deve receber.                                                      | Alta       |
+| [ ]   | **Valor Total COM Caução**           | `valorTotal = valorAluguel + caucao`. Locatário paga isso no checkout.                                                                          | Alta       |
+| [ ]   | **Valor Total SEM Caução**           | `valorTotal = valorAluguel`. Locatário paga apenas o aluguel.                                                                                   | Alta       |
+| [ ]   | **Valor de Caução**                  | Definido pelo locador ao publicar item. Mínimo R$50, Máximo R$10.000. Recomendado: 20-50% do valor do item (não do aluguel).                    | Alta       |
+| [ ]   | **Multa por Atraso**                 | `multaAtraso = (precoPorDia × 0.5) × diasDeAtraso`. Máximo: 5 dias. Após isso, problema escalado.                                               | Alta       |
+| [ ]   | **Cálculo de Retorno ao Locatário**  | `retorno = caucao - valorAluguel - indenizacao - multaAtraso`. Se negativo, locatário deve pagar diferença.                                     | Alta       |
+| [ ]   | **Liberação de Caução**              | Processada IMEDIATAMENTE após finalização do aluguel. Reembolso via Mercado Pago: 1-3 dias úteis para aparecer na conta.                        | Alta       |
+| [ ]   | **Saldo Negativo**                   | Se `retorno < 0`, sistema cria nova preferência de pagamento para cobrar diferença. Locatário tem 5 dias para pagar. Após isso, conta suspensa. | Alta       |
+| [ ]   | **Deep Links de Pagamento**          | Após pagamento no Mercado Pago, usuário é redirecionado via deep link: `coisarapida://payment/success?aluguelId=X&status=approved`.             | Média      |
+| [ ]   | **Retenção em Disputa**              | Se aluguel está em `DISPUTADO`, todos os valores ficam retidos até resolução (máximo 30 dias). Após isso, liberação padrão.                     | Alta       |
+| [ ]   | **Métodos de Pagamento (Locatário)** | Cartão crédito/débito, Pix, Boleto, Mercado Pago Account Money. Configurado no Mercado Pago Checkout.                                           | Alta       |
+| [ ]   | **Métodos de Recebimento (Locador)** | Pix (chave CPF, email, telefone ou aleatória). Dados armazenados em `Usuario`: `chavePix`, `cpfPix`, `telefonePix`.                             | Alta       |
 
 ### **4.3 Tabela de Transferências (Auditoria)**
 
@@ -512,20 +511,20 @@ Diferenciamos **Problemas** (resolvidos entre usuários) e **Disputas** (escalad
 
 ### **5.2 Fluxo de Disputa**
 
-| Regra                          | Descrição                                                                                                                                          | Prioridade |
-| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| **Abertura de Problema**       | Qualquer parte pode abrir problema durante aluguel ou até 7 dias após finalização. Status do aluguel vai para `DISPUTADO`.                         | Alta       |
-| **Evidências Iniciais**        | Ao abrir, usuário deve anexar: descrição (mín 50 caracteres), categoria, fotos/vídeos (máx 10 arquivos, 5MB cada). Armazenado em JSONB.            | Alta       |
-| **Notificação da Outra Parte** | Sistema notifica a outra parte via push + email. Ela tem 48h para responder com sua versão e evidências.                                           | Alta       |
-| **Tentativa de Acordo**        | Ambas as partes podem negociar via chat do aluguel. Se entrarem em acordo, qualquer uma pode marcar problema como `RESOLVIDO`.                     | Média      |
-| **Escalação para Admin**       | Se não houver acordo em 3 dias OU se qualquer parte solicitar, problema é escalado para `EM_ANALISE` por admin.                                    | Alta       |
-| **Análise do Admin**           | Equipe de suporte analisa: (1) Evidências, (2) Histórico dos usuários, (3) Políticas da plataforma. Prazo: 5 dias úteis.                           | Alta       |
-| **Decisão Final**              | Admin decide: (1) Indenização total/parcial ao locador, (2) Reembolso ao locatário, (3) Responsabilizar uma das partes. Registrado em `resolucao`. | Alta       |
-| **Aplicação da Decisão**       | Se indenização, valor é abatido da caução ou cobrado separadamente. Sistema executa transferências conforme decisão.                               | Alta       |
-| **Apelação**                   | Parte insatisfeita pode apelar em até 7 dias com novas evidências. Máximo 2 apelações. Após isso, decisão é final e irrevogável.                   | Média      |
-| **Retenção de Pagamento**      | Enquanto `DISPUTADO`, todos os valores ficam congelados. Não há reembolso nem transferência até resolução.                                         | Alta       |
-| **Bloqueio Preventivo**        | Usuário com >3 disputas em 6 meses tem conta marcada para `REVISAO_CONFORMIDADE`. Admin analisa padrão de comportamento.                           | Média      |
-| **Penalidades**                | Se usuário é responsabilizado, pode receber: aviso, suspensão temporária (7-30 dias) ou banimento permanente.                                      | Alta       |
+| Check | Regra                          | Descrição                                                                                                                                          | Prioridade |
+| ----- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| [ ]   | **Abertura de Problema**       | Qualquer parte pode abrir problema durante aluguel ou até 7 dias após finalização. Status do aluguel vai para `DISPUTADO`.                         | Alta       |
+| [ ]   | **Evidências Iniciais**        | Ao abrir, usuário deve anexar: descrição (mín 50 caracteres), categoria, fotos/vídeos (máx 10 arquivos, 5MB cada). Armazenado em JSONB.            | Alta       |
+| [ ]   | **Notificação da Outra Parte** | Sistema notifica a outra parte via push + email. Ela tem 48h para responder com sua versão e evidências.                                           | Alta       |
+| [ ]   | **Tentativa de Acordo**        | Ambas as partes podem negociar via chat do aluguel. Se entrarem em acordo, qualquer uma pode marcar problema como `RESOLVIDO`.                     | Média      |
+| [ ]   | **Escalação para Admin**       | Se não houver acordo em 3 dias OU se qualquer parte solicitar, problema é escalado para `EM_ANALISE` por admin.                                    | Alta       |
+| [ ]   | **Análise do Admin**           | Equipe de suporte analisa: (1) Evidências, (2) Histórico dos usuários, (3) Políticas da plataforma. Prazo: 5 dias úteis.                           | Alta       |
+| [ ]   | **Decisão Final**              | Admin decide: (1) Indenização total/parcial ao locador, (2) Reembolso ao locatário, (3) Responsabilizar uma das partes. Registrado em `resolucao`. | Alta       |
+| [ ]   | **Aplicação da Decisão**       | Se indenização, valor é abatido da caução ou cobrado separadamente. Sistema executa transferências conforme decisão.                               | Alta       |
+| [ ]   | **Apelação**                   | Parte insatisfeita pode apelar em até 7 dias com novas evidências. Máximo 2 apelações. Após isso, decisão é final e irrevogável.                   | Média      |
+| [ ]   | **Retenção de Pagamento**      | Enquanto `DISPUTADO`, todos os valores ficam congelados. Não há reembolso nem transferência até resolução.                                         | Alta       |
+| [ ]   | **Bloqueio Preventivo**        | Usuário com >3 disputas em 6 meses tem conta marcada para `REVISAO_CONFORMIDADE`. Admin analisa padrão de comportamento.                           | Média      |
+| [ ]   | **Penalidades**                | Se usuário é responsabilizado, pode receber: aviso, suspensão temporária (7-30 dias) ou banimento permanente.                                      | Alta       |
 
 ### **5.3 Sistema de Denúncias**
 
@@ -557,17 +556,17 @@ Separado de problemas de aluguel. Para denunciar comportamento grave.
 
 ## **6. Segurança e Verificação**
 
-| Regra                             | Descrição                                                                                                                            | Prioridade |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ---------- |
-| **Sistema de Denúncias**          | Usuários podem denunciar comportamento inadequado, fraude ou violações de segurança.                                                 | Alta       |
-| **Denúncia Anônima**              | Denúncias podem ser anônimas, mas requerem detalhes específicos e evidências.                                                        | Média      |
-| **Tipos de Denúncia**             | Não devolução, Atraso repetitivo, Danos recorrentes, Uso indevido, Comportamento inadequado, Fraude, Abuso sexual/violência, Outros. | Alta       |
-| **Investigação de Denúncia**      | Equipe de segurança investiga em até 3 dias úteis.                                                                                   | Alta       |
-| **Ações Punitivas**               | Aviso, redução de capacidade, suspensão temporária (7-30 dias) ou banimento permanente.                                              | Alta       |
-| **Upload de Evidências de Fotos** | Locatário pode fazer upload de fotos do item no início (após aprovação) e no fim (na devolução).                                     | Alta       |
-| **Verificação de Fotos**          | Sistema de IA detecta alterações nas fotos. Discrepâncias geram alerta para análise.                                                 | Baixa      |
-| **Proteção de Dados**             | Endereço exato é oculto até confirmação mútua de datas. Apenas coordenadas aproximadas são mostradas.                                | Alta       |
-| **Bloqueio de Usuário**           | Usuários podem bloquear contatos indesejados. Bloqueados não podem enviar solicitações de aluguel.                                   | Média      |
+| Check | Regra                             | Descrição                                                                                                                            | Prioridade |
+| ----- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ---------- |
+| [ ]   | **Sistema de Denúncias**          | Usuários podem denunciar comportamento inadequado, fraude ou violações de segurança.                                                 | Alta       |
+| [ ]   | **Denúncia Anônima**              | Denúncias podem ser anônimas, mas requerem detalhes específicos e evidências.                                                        | Média      |
+| [ ]   | **Tipos de Denúncia**             | Não devolução, Atraso repetitivo, Danos recorrentes, Uso indevido, Comportamento inadequado, Fraude, Abuso sexual/violência, Outros. | Alta       |
+| [ ]   | **Investigação de Denúncia**      | Equipe de segurança investiga em até 3 dias úteis.                                                                                   | Alta       |
+| [ ]   | **Ações Punitivas**               | Aviso, redução de capacidade, suspensão temporária (7-30 dias) ou banimento permanente.                                              | Alta       |
+| [ ]   | **Upload de Evidências de Fotos** | Locatário pode fazer upload de fotos do item no início (após aprovação) e no fim (na devolução).                                     | Alta       |
+| [ ]   | **Verificação de Fotos**          | Sistema de IA detecta alterações nas fotos. Discrepâncias geram alerta para análise.                                                 | Baixa      |
+| [ ]   | **Proteção de Dados**             | Endereço exato é oculto até confirmação mútua de datas. Apenas coordenadas aproximadas são mostradas.                                | Alta       |
+| [ ]   | **Bloqueio de Usuário**           | Usuários podem bloquear contatos indesejados. Bloqueados não podem enviar solicitações de aluguel.                                   | Média      |
 
 ---
 
@@ -577,19 +576,19 @@ Separado de problemas de aluguel. Para denunciar comportamento grave.
 
 **Implementação:** Firestore para real-time + PostgreSQL para auditoria
 
-| Regra                       | Descrição                                                                                                                | Prioridade |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ---------- |
-| **Chat por Aluguel**        | Cada aluguel tem uma conversa dedicada em Firestore collection `conversas/{conversaId}/mensagens`.                       | Alta       |
-| **Criação da Conversa**     | Conversa criada automaticamente quando aluguel é criado. `conversaId = aluguelId`.                                       | Alta       |
-| **Participantes**           | Apenas locador e locatário podem enviar/ler mensagens. Admin pode ler se houver disputa.                                 | Alta       |
-| **Tipos de Mensagem**       | `TEXTO`, `IMAGEM`, `DOCUMENTO`, `LOCALIZACAO`, `SISTEMA` (mensagens automáticas).                                        | Alta       |
-| **Anexos**                  | Imagens: máx 5MB, formatos jpg/png. Documentos: máx 10MB, formatos pdf/doc/docx. Upload via Firebase Storage.            | Média      |
-| **Mensagens de Sistema**    | Geradas automaticamente em eventos: "Aluguel aprovado", "Pagamento confirmado", "Devolução solicitada", etc.             | Alta       |
-| **Acesso ao Perfil**        | Ambos podem clicar no nome/foto e ver perfil público: avaliações, histórico, reputação, tempo na plataforma.             | Alta       |
-| **Retenção de Mensagens**   | Firestore: mantido enquanto usuários ativos. PostgreSQL: backup permanente em tabela `mensagens` para auditoria/disputa. | Média      |
-| **Moderação Automática**    | Filtro de palavras ofensivas (lista customizável). Mensagens flagradas são bloqueadas e admin é notificado.              | Média      |
-| **Indicador de Leitura**    | Firebase realtime: `lida: true/false` por mensagem. Atualizado quando usuário abre o chat.                               | Baixa      |
-| **Notificação de Mensagem** | Se destinatário não leu em 5min, envia push notification. Agrupa múltiplas mensagens: "João enviou 3 mensagens".         | Alta       |
+| Check | Regra                       | Descrição                                                                                                                | Prioridade |
+| ----- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------ | ---------- |
+| [ ]   | **Chat por Aluguel**        | Cada aluguel tem uma conversa dedicada em Firestore collection `conversas/{conversaId}/mensagens`.                       | Alta       |
+| [ ]   | **Criação da Conversa**     | Conversa criada automaticamente quando aluguel é criado. `conversaId = aluguelId`.                                       | Alta       |
+| [ ]   | **Participantes**           | Apenas locador e locatário podem enviar/ler mensagens. Admin pode ler se houver disputa.                                 | Alta       |
+| [ ]   | **Tipos de Mensagem**       | `TEXTO`, `IMAGEM`, `DOCUMENTO`, `LOCALIZACAO`, `SISTEMA` (mensagens automáticas).                                        | Alta       |
+| [ ]   | **Anexos**                  | Imagens: máx 5MB, formatos jpg/png. Documentos: máx 10MB, formatos pdf/doc/docx. Upload via Firebase Storage.            | Média      |
+| [ ]   | **Mensagens de Sistema**    | Geradas automaticamente em eventos: "Aluguel aprovado", "Pagamento confirmado", "Devolução solicitada", etc.             | Alta       |
+| [ ]   | **Acesso ao Perfil**        | Ambos podem clicar no nome/foto e ver perfil público: avaliações, histórico, reputação, tempo na plataforma.             | Alta       |
+| [ ]   | **Retenção de Mensagens**   | Firestore: mantido enquanto usuários ativos. PostgreSQL: backup permanente em tabela `mensagens` para auditoria/disputa. | Média      |
+| [ ]   | **Moderação Automática**    | Filtro de palavras ofensivas (lista customizável). Mensagens flagradas são bloqueadas e admin é notificado.              | Média      |
+| [ ]   | **Indicador de Leitura**    | Firebase realtime: `lida: true/false` por mensagem. Atualizado quando usuário abre o chat.                               | Baixa      |
+| [ ]   | **Notificação de Mensagem** | Se destinatário não leu em 5min, envia push notification. Agrupa múltiplas mensagens: "João enviou 3 mensagens".         | Alta       |
 
 ### **7.2 Sistema de Notificações**
 
@@ -653,21 +652,21 @@ Tabela `usuario_preferencias_notificacao`:
 
 ### **8.1 Publicação e Moderação**
 
-| Regra                             | Descrição                                                                                                                   | Prioridade |
-| --------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| **Requisitos para Publicar**      | Usuário deve ter: email verificado + telefone verificado + endereço verificado.                                             | Alta       |
-| **Dados Obrigatórios**            | Nome, descrição, categoria, mín 3 fotos, precoPorDia, valorCaucao (opcional), localizacao.                                  | Alta       |
-| **Fotos do Anúncio**              | Mínimo 3 fotos, máximo 15. Formatos: JPG/PNG. Tamanho máx: 5MB cada. Armazenadas no Firebase Storage.                       | Alta       |
-| **Descrição**                     | Mínimo 50 caracteres, máximo 2000. Deve incluir: estado do item, funcionalidades, limitações, o que está incluso.           | Alta       |
-| **Preço**                         | `precoPorDia`: obrigatório, mínimo R$5. `precoPorHora`: opcional (futuro). Máximo: R$10.000/dia.                            | Alta       |
-| **Caução**                        | `valorCaucao`: opcional mas recomendado. Se não definido, sistema sugere 30% do valor do item. Mín R$50, máx R$10.000.      | Média      |
-| **Localização**                   | Coordenadas (lat/lng) extraídas do endereço via Google Maps API. Endereço completo oculto até aprovação do aluguel.         | Alta       |
-| **Moderação Automática**          | Sistema detecta palavras proibidas, links externos, números de telefone. Item fica em `status: PENDENTE` até revisão.       | Alta       |
-| **Ativação Manual**               | Se locador tem: (1) < 1 mês na plataforma OU (2) reputação < 3.0, item requer aprovação manual. Prazo: 24h úteis.           | Alta       |
-| **Status do Item**                | `RASCUNHO`, `PENDENTE`, `ATIVO`, `INATIVO`, `ARQUIVADO`, `BLOQUEADO`, `EXCLUIDO`.                                           | Alta       |
-| **Remoção de Anúncio**            | Locador pode inativar/excluir a qualquer momento. Se há aluguéis ativos, não pode excluir (apenas inativar).                | Alta       |
-| **Arquivamento Automático**       | Itens sem visualizações em 90 dias: status → `ARQUIVADO`. Notificação enviada ao locador. Pode reativar editando o anúncio. | Média      |
-| **Calendário de Disponibilidade** | Tabela `disponibilidades`: Locador pode bloquear datas específicas. Sistema valida ao criar aluguel.                        | Alta       |
+| Check | Regra                             | Descrição                                                                                                                   | Prioridade |
+| ----- | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| [ ]   | **Requisitos para Publicar**      | Usuário deve ter: email verificado + telefone verificado + endereço verificado.                                             | Alta       |
+| [ ]   | **Dados Obrigatórios**            | Nome, descrição, categoria, mín 3 fotos, precoPorDia, valorCaucao (opcional), localizacao.                                  | Alta       |
+| [ ]   | **Fotos do Anúncio**              | Mínimo 3 fotos, máximo 15. Formatos: JPG/PNG. Tamanho máx: 5MB cada. Armazenadas no Firebase Storage.                       | Alta       |
+| [ ]   | **Descrição**                     | Mínimo 50 caracteres, máximo 2000. Deve incluir: estado do item, funcionalidades, limitações, o que está incluso.           | Alta       |
+| [ ]   | **Preço**                         | `precoPorDia`: obrigatório, mínimo R$5. `precoPorHora`: opcional (futuro). Máximo: R$10.000/dia.                            | Alta       |
+| [ ]   | **Caução**                        | `valorCaucao`: opcional mas recomendado. Se não definido, sistema sugere 30% do valor do item. Mín R$50, máx R$10.000.      | Média      |
+| [ ]   | **Localização**                   | Coordenadas (lat/lng) extraídas do endereço via Google Maps API. Endereço completo oculto até aprovação do aluguel.         | Alta       |
+| [ ]   | **Moderação Automática**          | Sistema detecta palavras proibidas, links externos, números de telefone. Item fica em `status: PENDENTE` até revisão.       | Alta       |
+| [ ]   | **Ativação Manual**               | Se locador tem: (1) < 1 mês na plataforma OU (2) reputação < 3.0, item requer aprovação manual. Prazo: 24h úteis.           | Alta       |
+| [ ]   | **Status do Item**                | `RASCUNHO`, `PENDENTE`, `ATIVO`, `INATIVO`, `ARQUIVADO`, `BLOQUEADO`, `EXCLUIDO`.                                           | Alta       |
+| [ ]   | **Remoção de Anúncio**            | Locador pode inativar/excluir a qualquer momento. Se há aluguéis ativos, não pode excluir (apenas inativar).                | Alta       |
+| [ ]   | **Arquivamento Automático**       | Itens sem visualizações em 90 dias: status → `ARQUIVADO`. Notificação enviada ao locador. Pode reativar editando o anúncio. | Média      |
+| [ ]   | **Calendário de Disponibilidade** | Tabela `disponibilidades`: Locador pode bloquear datas específicas. Sistema valida ao criar aluguel.                        | Alta       |
 
 ### **8.2 Categorias e Tipos**
 
@@ -699,25 +698,25 @@ Tabela `usuario_preferencias_notificacao`:
 
 ### **8.3 Busca e Recomendação**
 
-| Regra                | Descrição                                                                                               | Prioridade |
-| -------------------- | ------------------------------------------------------------------------------------------------------- | ---------- |
-| **Busca por Texto**  | ElasticSearch ou PostgreSQL Full-Text Search em `nome`, `descricao`, `categoria`.                       | Alta       |
-| **Busca Geográfica** | PostGIS: `ST_DWithin` para buscar itens dentro de X km do usuário. Padrão: 10km.                        | Alta       |
-| **Filtros**          | Categoria, preço (min/max), disponibilidade (datas), distância, avaliação mínima, aprovação automática. | Alta       |
-| **Ordenação**        | Relevância, preço (crescente/decrescente), distância, avaliação, mais alugados.                         | Média      |
-| **Recomendações**    | **[FUTURO]** Baseado em histórico de buscas/aluguéis. ML para sugestões personalizadas.                 | Baixa      |
+| Check | Regra                | Descrição                                                                                               | Prioridade |
+| ----- | -------------------- | ------------------------------------------------------------------------------------------------------- | ---------- |
+| [ ]   | **Busca por Texto**  | ElasticSearch ou PostgreSQL Full-Text Search em `nome`, `descricao`, `categoria`.                       | Alta       |
+| [ ]   | **Busca Geográfica** | PostGIS: `ST_DWithin` para buscar itens dentro de X km do usuário. Padrão: 10km.                        | Alta       |
+| [ ]   | **Filtros**          | Categoria, preço (min/max), disponibilidade (datas), distância, avaliação mínima, aprovação automática. | Alta       |
+| [ ]   | **Ordenação**        | Relevância, preço (crescente/decrescente), distância, avaliação, mais alugados.                         | Média      |
+| [ ]   | **Recomendações**    | **[FUTURO]** Baseado em histórico de buscas/aluguéis. ML para sugestões personalizadas.                 | Baixa      |
 
 ---
 
 ## **9. Conformidade e Política**
 
-| Regra                                     | Descrição                                                                                                     | Prioridade |
-| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ---------- |
-| **LGPD - Lei Geral de Proteção de Dados** | Conformidade total com LGPD. Usuários podem solicitar relatório de dados a qualquer tempo.                    | Alta       |
-| **Termos de Uso**                         | Todos os usuários devem aceitar Termos de Uso e Política de Privacidade antes de transações.                  | Alta       |
-| **Proibições Gerais**                     | Itens ilegais, perigosos, falsificados ou que violem direitos autorais são proibidos.                         | Alta       |
-| **Timeout de Inatividade**                | Sessão expira após 30 minutos de inatividade. Re-autenticação necessária para continuar.                      | Média      |
-| **Limite de Transações**                  | Novo usuário começa com limite de 3 transações simultâneas. Aumenta para 10 após 10 transações bem-sucedidas. | Média      |
+| Check | Regra                                     | Descrição                                                                                                     | Prioridade |
+| ----- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ---------- |
+| [ ]   | **LGPD - Lei Geral de Proteção de Dados** | Conformidade total com LGPD. Usuários podem solicitar relatório de dados a qualquer tempo.                    | Alta       |
+| [ ]   | **Termos de Uso**                         | Todos os usuários devem aceitar Termos de Uso e Política de Privacidade antes de transações.                  | Alta       |
+| [ ]   | **Proibições Gerais**                     | Itens ilegais, perigosos, falsificados ou que violem direitos autorais são proibidos.                         | Alta       |
+| [ ]   | **Timeout de Inatividade**                | Sessão expira após 30 minutos de inatividade. Re-autenticação necessária para continuar.                      | Média      |
+| [ ]   | **Limite de Transações**                  | Novo usuário começa com limite de 3 transações simultâneas. Aumenta para 10 após 10 transações bem-sucedidas. | Média      |
 
 ---
 
@@ -1025,14 +1024,14 @@ ADMIN_EMAIL=admin@coisarapida.com
 
 ## **15. Suporte ao Usuário**
 
-| Regra                     | Descrição                                                                                                              | Prioridade |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ---------- |
-| **Canais de Suporte**     | E-mail (suporte@coisarapida.com), chat in-app (Intercom/Zendesk), WhatsApp Business. Disponível 24/7 para emergências. | Alta       |
-| **Tempo de Resposta**     | E-mail: 24h. Chat: 2h durante horário comercial (9h-18h BRT). WhatsApp: 4h para problemas críticos.                    | Alta       |
-| **FAQ e Help Center**     | Central de ajuda com artigos detalhados. Chatbot (Dialogflow) responde 70% das perguntas automaticamente.              | Média      |
-| **Escalação**             | Problemas não resolvidos em 48h são escalados para especialista. SLA: resolução em 5 dias úteis.                       | Alta       |
-| **Contato de Emergência** | Telefone de emergência para situações críticas (acidentes, itens roubados): 0800-XXX-XXXX.                             | Alta       |
-| **Suporte via Admin**     | Equipe de admin pode acessar aluguéis, ver chats (apenas em disputas), e tomar ações como suspender contas.            | Alta       |
+| Check | Regra                     | Descrição                                                                                                              | Prioridade |
+| ----- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------- | ---------- |
+| [ ]   | **Canais de Suporte**     | E-mail (suporte@coisarapida.com), chat in-app (Intercom/Zendesk), WhatsApp Business. Disponível 24/7 para emergências. | Alta       |
+| [ ]   | **Tempo de Resposta**     | E-mail: 24h. Chat: 2h durante horário comercial (9h-18h BRT). WhatsApp: 4h para problemas críticos.                    | Alta       |
+| [ ]   | **FAQ e Help Center**     | Central de ajuda com artigos detalhados. Chatbot (Dialogflow) responde 70% das perguntas automaticamente.              | Média      |
+| [ ]   | **Escalação**             | Problemas não resolvidos em 48h são escalados para especialista. SLA: resolução em 5 dias úteis.                       | Alta       |
+| [ ]   | **Contato de Emergência** | Telefone de emergência para situações críticas (acidentes, itens roubados): 0800-XXX-XXXX.                             | Alta       |
+| [ ]   | **Suporte via Admin**     | Equipe de admin pode acessar aluguéis, ver chats (apenas em disputas), e tomar ações como suspender contas.            | Alta       |
 
 ---
 

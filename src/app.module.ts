@@ -11,6 +11,7 @@ import { AuthController } from './modules/auth/auth.controller';
 import { UsuarioController } from './modules/usuario/presentation/usuario.controller';
 import { SharedModule } from './shared/shared.module';
 import { AppProviders } from './app.providers';
+import { ItemModule } from './modules/item/item.module';
 
 @Module({
     imports: [
@@ -21,6 +22,7 @@ import { AppProviders } from './app.providers';
         SharedModule,
         AuthModule,
         UsuarioModule,
+        ItemModule,
     ],
     controllers: [],
     providers: [...AppProviders],

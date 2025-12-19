@@ -14,7 +14,7 @@ import { ApiAccessToken } from 'src/common/decorators/swagger.decorators';
  * - GET /usuario/public/:id (pública)
  */
 @Controller('usuario')
-@ApiTags('Usuário')
+@ApiTags('usuario')
 export class UsuarioController {
     constructor(
         private readonly adicionarEnderecoUsecase: AdicionarEnderecoUsecase,
