@@ -19,6 +19,7 @@ export class FotoMapper {
 
     toModel(domain: Foto): FotosItemModel {
         const model = FotosItemModel.criar({
+            id: domain.id,
             url: domain.url,
             ordem: domain.ordem,
             principal: domain.principal,

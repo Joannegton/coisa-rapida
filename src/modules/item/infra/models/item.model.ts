@@ -119,14 +119,14 @@ export class ItemModel {
     aluguelsTotais: number;
 
     @OneToMany(() => FotosItemModel, (foto) => foto.item, {
-        cascade: true,
-        lazy: true,
+        cascade: ['insert', 'update'],
+        eager: false,
     })
     fotos: FotosItemModel[];
 
     @OneToOne(() => ModeracaoItemModel, (moderacao) => moderacao.item, {
-        cascade: true,
-        lazy: true,
+        cascade: ['insert', 'update'],
+        eager: false,
     })
     moderacao?: ModeracaoItemModel;
 
@@ -134,8 +134,8 @@ export class ItemModel {
         () => DisponibilidadeItemModel,
         (disponibilidade) => disponibilidade.item,
         {
-            cascade: true,
-            lazy: true,
+            cascade: ['insert', 'update'],
+            eager: false,
         },
     )
     disponibilidade?: DisponibilidadeItemModel;

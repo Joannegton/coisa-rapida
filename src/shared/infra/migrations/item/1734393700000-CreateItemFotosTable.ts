@@ -4,7 +4,7 @@ export class CreateItemFotosTable1734393700000 implements MigrationInterface {
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`
             CREATE TABLE IF NOT EXISTS item.item_fotos (
-                id UUID NOT NULL PRIMARY KEY,
+                id VARCHAR(500) NOT NULL PRIMARY KEY,
                 item_id UUID NOT NULL REFERENCES item.item(id) ON DELETE CASCADE,
                 url TEXT NOT NULL,
                 ordem INTEGER DEFAULT 0 NOT NULL,

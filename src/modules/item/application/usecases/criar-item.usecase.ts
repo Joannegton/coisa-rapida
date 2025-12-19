@@ -46,11 +46,6 @@ export class CriarItemUseCase {
             throw new InvalidPropsException('Você não está verificado.');
         }
 
-        const imagens = await this.criarFotosDomain(
-            props.fotos,
-            props.usuarioId,
-        );
-
         if (!usuario.endereco)
             throw new InvalidPropsException('Complete seu endereço.');
 
@@ -96,6 +91,11 @@ export class CriarItemUseCase {
             requerAprovacaoManual: false,
             dataResolucao: new Date(),
         });
+
+        const imagens = await this.criarFotosDomain(
+            props.fotos,
+            props.usuarioId,
+        );
 
         const itemDomain = Item.criar({
             nome: props.nome,
@@ -161,10 +161,13 @@ export class CriarItemUseCase {
 
         const imagens: Foto[] = [];
         for (const foto of uploadFotoResult) {
+            const nomeArquivo =
+                foto.publicId.split('/').pop() || 'imagem-desconhecida';
+
             const imagem = Foto.criar({
                 id: foto.publicId,
                 url: foto.secure_url,
-                nomeArquivo: foto.original_filename,
+                nomeArquivo: nomeArquivo,
                 tamanhoBytes: foto.bytes,
                 principal: false,
                 ordem: imagens.length + 1,

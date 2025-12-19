@@ -89,8 +89,8 @@ export class CloudinaryService {
                 },
             );
 
-            // Fire-and-forget: execute envio ao VirusTotal em background com retries.
-            // Garantir que nunca se agende uma verificação sem o idAnaliseVirusTotal.
+            // // Fire-and-forget: execute envio ao VirusTotal em background com retries.
+            // // Garantir que nunca se agende uma verificação sem o idAnaliseVirusTotal.
             void (async () => {
                 const maxAttempts = 5;
                 let attempt = 0;

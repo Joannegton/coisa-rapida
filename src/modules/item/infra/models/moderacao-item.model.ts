@@ -3,7 +3,7 @@ import {
     Entity,
     Index,
     PrimaryGeneratedColumn,
-    ManyToOne,
+    OneToOne,
     JoinColumn,
     CreateDateColumn,
     UpdateDateColumn,
@@ -29,7 +29,7 @@ export class ModeracaoItemModel {
     @Column({ name: 'item_id', type: 'uuid' })
     itemId: string;
 
-    @ManyToOne(() => ItemModel, (item) => item.moderacao, {
+    @OneToOne(() => ItemModel, (item) => item.moderacao, {
         onDelete: 'CASCADE',
     })
     @JoinColumn({ name: 'item_id' })

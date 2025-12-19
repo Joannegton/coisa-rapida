@@ -26,7 +26,7 @@ export class UploadImagemServiceImpl implements UploadImagemService {
             bytes: uploadResult.bytes,
             format: uploadResult.format,
             original_filename: uploadResult.original_filename,
-            publicId: uploadResult.publicId,
+            publicId: uploadResult.public_id,
             resource_type: uploadResult.resource_type,
             secure_url: uploadResult.secure_url,
             type: uploadResult.type,

@@ -13,7 +13,7 @@ import { ItemModel } from './item.model';
 @Index('idx_item_fotos_item_id', ['itemId'])
 @Index('idx_item_fotos_principal', ['itemId', 'principal'])
 export class FotosItemModel {
-    @PrimaryColumn('uuid')
+    @PrimaryColumn('varchar', { length: 500 })
     id: string;
 
     @Column({ name: 'item_id', type: 'uuid' })
@@ -32,10 +32,19 @@ export class FotosItemModel {
     @Column({ type: 'boolean', default: false })
     principal: boolean;
 
-    @Column({ type: 'varchar', length: 100, nullable: true })
+    @Column({
+        name: 'nome_arquivo',
+        type: 'varchar',
+        length: 100,
+        nullable: true,
+    })
     nomeArquivo?: string;
 
-    @Column({ type: 'integer', nullable: true })
+    @Column({
+        name: 'tamanho_bytes',
+        type: 'integer',
+        nullable: true,
+    })
     tamanhoBytes?: number;
 
     @CreateDateColumn({ name: 'criado_em', type: 'timestamp' })

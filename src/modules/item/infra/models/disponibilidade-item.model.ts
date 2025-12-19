@@ -3,7 +3,7 @@ import {
     Entity,
     Index,
     PrimaryGeneratedColumn,
-    ManyToOne,
+    OneToOne,
     JoinColumn,
 } from 'typeorm';
 import { ItemModel } from './item.model';
@@ -18,7 +18,7 @@ export class DisponibilidadeItemModel {
     @Column({ name: 'item_id', type: 'uuid' })
     itemId: string;
 
-    @ManyToOne(() => ItemModel, (item) => item.disponibilidade, {
+    @OneToOne(() => ItemModel, (item) => item.disponibilidade, {
         onDelete: 'CASCADE',
     })
     @JoinColumn({ name: 'item_id' })
