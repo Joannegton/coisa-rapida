@@ -20,6 +20,7 @@ import { ItemModeradoEventHandler } from './application/event-handlers/item-mode
 import { ItemMappers } from './infra/mappers';
 import { SharedModule } from 'src/shared/shared.module';
 import { ItemUsecases } from './application/usecases';
+import { ItemQueries } from './application/queries';
 
 @Module({
     imports: [
@@ -41,6 +42,7 @@ import { ItemUsecases } from './application/usecases';
     ],
     controllers: [ItemController],
     providers: [
+        ...ItemQueries,
         ...ItemUsecases,
         ...ItemMappers,
         {

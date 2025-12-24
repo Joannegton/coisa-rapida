@@ -13,7 +13,7 @@ import {
     AuditoriaService,
     LogAuditoria,
 } from '../shared/infra/services/auditoria.service';
-import { IpUtils } from '../shared/utils/ip.utils';
+import { Utils } from '../shared/utils/utils';
 
 interface MetadadosAuditoria {
     acao: string;
@@ -147,7 +147,7 @@ export class AuditoriaInterceptor implements NestInterceptor {
     }
 
     private obterIp(request: any): string {
-        return IpUtils.normalizarIp(IpUtils.obterIpCliente(request));
+        return Utils.normalizarIp(Utils.obterIpCliente(request));
     }
 
     private obterEmojiNivel(nivel: string): string {

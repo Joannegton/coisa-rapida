@@ -1,2 +1,2 @@
-export * from './ip.utils';
+export * from './utils';
 export * from './resultado';

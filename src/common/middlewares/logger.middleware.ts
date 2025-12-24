@@ -1,6 +1,6 @@
 import { Injectable, NestMiddleware, Logger } from '@nestjs/common';
 import { Request, Response, NextFunction } from 'express';
-import { IpUtils } from '../../shared/utils/ip.utils';
+import { Utils } from '../../shared/utils/utils';
 
 @Injectable()
 export class LoggerMiddleware implements NestMiddleware {
@@ -8,7 +8,7 @@ export class LoggerMiddleware implements NestMiddleware {
 
     use(req: Request, res: Response, next: NextFunction): void {
         const { method, originalUrl } = req;
-        const ip = IpUtils.normalizarIp(IpUtils.obterIpCliente(req));
+        const ip = Utils.normalizarIp(Utils.obterIpCliente(req));
         const userAgent = req.get('user-agent') || '';
         const tempoInicio = Date.now();
 

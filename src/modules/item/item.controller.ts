@@ -6,19 +6,31 @@ import {
     Body,
     UseInterceptors,
     UploadedFiles,
+    Get,
+    Query,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
-import { AuditarCriacaoItem, usuarioAtual } from 'src/common/decorators';
+import {
+    AuditarCriacaoItem,
+    Publico,
+    usuarioAtual,
+} from 'src/common/decorators';
 import { CriarItemUseCase } from './application/usecases/criar-item.usecase';
 import { ApiAccessToken } from 'src/common/decorators/swagger.decorators';
 import type { UsuarioPayload } from '../auth/infra/services/jwt.service';
 import { CriarItemDto } from './application/dtos/criar-item.dto';
+import { BuscarPorProximidadeDto } from './application/dtos/buscar-por-proximidade.dto';
+import { BuscarItensProximidadeQuery } from './application/queries/buscar-itens-proximidade.query';
+import { ItemComDistanciaDto } from './application/dtos/responses/item-distancia.dto';
 
 @ApiTags('item')
 @Controller('item')
 export class ItemController {
-    constructor(private readonly criarItemUseCase: CriarItemUseCase) {}
+    constructor(
+        private readonly criarItemUseCase: CriarItemUseCase,
+        private readonly buscarItensProximidadeQuery: BuscarItensProximidadeQuery,
+    ) {}
 
     @ApiOperation({
         summary: 'Criar um novo item',
@@ -46,78 +58,30 @@ export class ItemController {
         });
     }
 
-    // /**
-    //  * Busca itens por proximidade geográfica dentro de um raio específico.
-    //  *
-    //  * Exemplos de uso:
-    //  * - GET /itens/buscar/proximidade?latitude=-23.5505&longitude=-46.6333&raioMetros=5000
-    //  * - GET /itens/buscar/proximidade?latitude=-23.5505&longitude=-46.6333&raioMetros=10000&categorias=ELETRONICOS&categorias=FERRAMENTAS&ordenarPor=preco
-    //  *
-    //  * @param dto - Query params com coordenadas, raio e filtros
-    //  * @returns Lista de itens com distância calculada
-    //  */
-    // @Publico()
-    // @Get('buscar/proximidade')
-    // @HttpCode(HttpStatus.OK)
-    // @ApiOperation({
-    //     summary: 'Buscar itens por proximidade geográfica',
-    //     description:
-    //         'Retorna itens dentro de um raio específico (em metros) a partir de coordenadas lat/lng. Utiliza PostGIS para consultas espaciais otimizadas com índice GiST.',
-    // })
-    // @ApiResponse({
-    //     status: 200,
-    //     description: 'Lista de itens encontrados com distância calculada',
-    //     type: [ItemComDistanciaDto],
-    // })
-    // @ApiQuery({
-    //     name: 'latitude',
-    //     required: true,
-    //     type: Number,
-    //     example: -23.5505,
-    // })
-    // @ApiQuery({
-    //     name: 'longitude',
-    //     required: true,
-    //     type: Number,
-    //     example: -46.6333,
-    // })
-    // @ApiQuery({
-    //     name: 'raioMetros',
-    //     required: false,
-    //     type: Number,
-    //     example: 5000,
-    //     description: 'Raio de busca em metros (padrão: 5000m)',
-    // })
-    // @ApiQuery({
-    //     name: 'categorias',
-    //     required: false,
-    //     isArray: true,
-    //     example: ['ELETRONICOS', 'FERRAMENTAS'],
-    // })
-    // @ApiQuery({
-    //     name: 'precoMaximoPorDia',
-    //     required: false,
-    //     type: Number,
-    //     example: 100,
-    // })
-    // @ApiQuery({
-    //     name: 'estadoMinimo',
-    //     required: false,
-    //     example: 'BOM',
-    // })
-    // @ApiQuery({
-    //     name: 'ordenarPor',
-    //     required: false,
-    //     enum: ['distancia', 'preco', 'popularidade'],
-    //     example: 'distancia',
-    // })
-    // @ApiQuery({ name: 'limite', required: false, type: Number, example: 20 })
-    // @ApiQuery({ name: 'offset', required: false, type: Number, example: 0 })
-    // async buscarPorProximidade(
-    //     @Query() dto: BuscarPorProximidadeDTO,
-    // ): Promise<ItemComDistanciaDTO[]> {
-    //     return this.buscaGeograficaService.buscarPorProximidade(dto);
-    // }
+    @ApiOperation({
+        summary: 'Buscar itens (proximidade ou populares)',
+        description:
+            'Endpoint inteligente que se adapta:\n\n' +
+            '- **Com latitude/longitude**: Retorna itens próximos usando PostGIS (busca geográfica otimizada)\n' +
+            '- **Sem latitude/longitude**: Retorna itens populares (ordenado por número de aluguéis)\n\n' +
+            'Ideal para novos usuários sem endereço cadastrado.',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Lista de itens encontrados com distância calculada',
+    })
+    @ApiAccessToken()
+    @HttpCode(HttpStatus.OK)
+    @Get()
+    async buscarPorProximidade(
+        @usuarioAtual() usuario: UsuarioPayload,
+        @Query() dto: BuscarPorProximidadeDto,
+    ) {
+        return this.buscarItensProximidadeQuery.execute({
+            ...dto,
+            usuarioId: usuario.sub,
+        });
+    }
 
     // /**
     //  * Busca os N itens mais próximos de um ponto (sem limite de raio).

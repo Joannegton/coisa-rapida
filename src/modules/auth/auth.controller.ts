@@ -19,7 +19,7 @@ import {
 } from 'src/common/decorators';
 import { LoginUsecase } from './application/usecases/login.usecase';
 import { LoginDto } from './application/dtos/login.dto';
-import { IpUtils } from 'src/shared/utils/ip.utils';
+import { Utils } from 'src/shared/utils/utils';
 import type { Request } from 'express';
 import { RefreshTokenUsecase } from './application/usecases/refresh-token.usecase';
 import { RevogarTokenUsecase } from './application/usecases/revogar-token.usecase';
@@ -70,7 +70,7 @@ export class AuthController {
     @Post()
     async login(@Body() props: LoginDto, @Req() request: Request) {
         const requestData = {
-            ip: IpUtils.normalizarIp(IpUtils.obterIpCliente(request)),
+            ip: Utils.normalizarIp(Utils.obterIpCliente(request)),
             userAgent: request.headers['user-agent'],
             method: request.method,
             rota: request.route?.path || request.url,
@@ -96,7 +96,7 @@ export class AuthController {
     @Post('registrar')
     async registrar(@Body() props: RegistrarDto, @Req() request: Request) {
         const requestData = {
-            ip: IpUtils.normalizarIp(IpUtils.obterIpCliente(request)),
+            ip: Utils.normalizarIp(Utils.obterIpCliente(request)),
             userAgent: request.headers['user-agent'],
             method: request.method,
             rota: request.route?.path || request.url,

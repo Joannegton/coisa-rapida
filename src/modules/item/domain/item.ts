@@ -11,6 +11,7 @@ import { Foto } from './foto';
 import { Moderacao } from './moderacao';
 import { Disponibilidade } from './disponibilidade';
 import { ItemDto } from '../application/dtos/responses/item.dto';
+import { ItemCardDto } from '../application/dtos/responses/item-cards.dto';
 
 export type ItemProps = {
     usuarioId: string;
@@ -76,21 +77,21 @@ export class Item {
 
     static carregar(props: ItemProps, id: string): Item {
         const item = new Item(id);
-        item.setUsuarioId(props.usuarioId);
-        item.setNome(props.nome);
-        item.setDescricao(props.descricao);
-        item.setCategoria(props.categoria);
-        item.setEstado(props.estado);
-        item.setTipoAnuncio(props.tipoAnuncio);
-        item.setStatus(props.status);
-        item.setPrecos(props.precos);
-        item.setLocalizacao(props.localizacao);
-        item.setFotos(props.fotos);
-        item.setModeracao(props.moderacao);
-        item.setDisponibilidade(props.disponibilidade);
-        item.setAluguelsTotais(props.aluguelsTotais);
-        item.setDataArquivamento(props.dataArquivamento);
-        item.setDataExclusao(props.dataExclusao);
+        item.props.usuarioId = props.usuarioId;
+        item.props.nome = props.nome;
+        item.props.descricao = props.descricao;
+        item.props.categoria = props.categoria;
+        item.props.estado = props.estado;
+        item.props.tipoAnuncio = props.tipoAnuncio;
+        item.props.status = props.status;
+        item.props.precos = props.precos;
+        item.props.localizacao = props.localizacao;
+        item.props.fotos = props.fotos;
+        item.props.moderacao = props.moderacao;
+        item.props.disponibilidade = props.disponibilidade;
+        item.props.aluguelsTotais = props.aluguelsTotais;
+        item.props.dataArquivamento = props.dataArquivamento;
+        item.props.dataExclusao = props.dataExclusao;
         item.props.versao = props.versao;
         item.props.criadoEm = props.criadoEm;
         item.props.atualizadoEm = props.atualizadoEm;
@@ -305,6 +306,24 @@ export class Item {
             diasMaximosAluguel: this.disponibilidade?.diasMaximosAluguel ?? 30,
             criadoEm: this.criadoEm,
             atualizadoEm: this.atualizadoEm,
+        };
+    }
+
+    toCardDto(): ItemCardDto {
+        return {
+            id: this.id,
+            usuarioId: this.usuarioId,
+            nome: this.nome,
+            categoria: this.categoria,
+            estado: this.estado,
+            tipoAnuncio: this.tipoAnuncio,
+            status: this.status,
+            precoPorDia: this.precos.precoPorDia,
+            precoPorHora: this.precos.precoPorHora,
+            disponivel: this.disponibilidade?.disponivel ?? false,
+            fotoPrincipalUrl: this.fotos?.find((f) => f.principal)?.url,
+            permiteAluguelPorHora: this.disponibilidade?.permiteAluguelPorHora,
+            valorCaucao: this.precos.valorCaucao,
         };
     }
 }

@@ -12,6 +12,8 @@ import { UsuarioController } from './modules/usuario/presentation/usuario.contro
 import { SharedModule } from './shared/shared.module';
 import { AppProviders } from './app.providers';
 import { ItemModule } from './modules/item/item.module';
+import { ItemController } from './modules/item/item.controller';
+import { VerificacaoController } from './modules/usuario/presentation/verificacao.controller';
 
 @Module({
     imports: [
@@ -31,6 +33,11 @@ export class AppModule implements NestModule {
     configure(consumer: MiddlewareConsumer) {
         consumer
             .apply(LoggerMiddleware, RateLimitMiddleware)
-            .forRoutes(AuthController, UsuarioController);
+            .forRoutes(
+                AuthController,
+                VerificacaoController,
+                UsuarioController,
+                ItemController,
+            );
     }
 }

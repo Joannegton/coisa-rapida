@@ -8,7 +8,7 @@ import { Request, Response, NextFunction } from 'express';
 import { CacheService } from '../../shared/infra/services/cache.service';
 import { AuditoriaService } from '../../shared/infra/services/auditoria.service';
 import { AuditoriaAcao } from '../../shared/constants/auditoria-actions';
-import { IpUtils } from '../../shared/utils/ip.utils';
+import { Utils } from '../../shared/utils/utils';
 
 /**
  * Middleware de Rate Limiting global por IP.
@@ -39,7 +39,7 @@ export class RateLimitMiddleware implements NestMiddleware {
     ) {}
 
     async use(req: Request, res: Response, next: NextFunction): Promise<void> {
-        const ip = IpUtils.obterIpCliente(req);
+        const ip = Utils.obterIpCliente(req);
         const agora = Date.now();
         const chaveContador = `rate-limit:ip:${ip}`;
         const chaveBloqueio = `rate-limit:ip:${ip}:bloqueio`;
@@ -83,7 +83,7 @@ export class RateLimitMiddleware implements NestMiddleware {
                 nivel: 'critico',
                 metodo: req.method,
                 rota: req.url,
-                ip: IpUtils.normalizarIp(ip),
+                ip: Utils.normalizarIp(ip),
                 userAgent: req.headers['user-agent'],
                 statusCode: HttpStatus.TOO_MANY_REQUESTS,
                 erro: `Rate limit excedido. ${tentativas} tentativas em 60 segundos.`,

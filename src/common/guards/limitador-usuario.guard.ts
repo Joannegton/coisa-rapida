@@ -8,7 +8,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { LIMITADOR_USUARIO_KEY } from '../decorators/limitador-usuario.decorator';
 import { CacheService } from '../../shared/infra/services/cache.service';
-import { IpUtils } from '../../shared/utils/ip.utils';
+import { Utils } from '../../shared/utils/utils';
 
 interface ConfigLimitadorUsuario {
     limite: number;
@@ -134,7 +134,7 @@ export class LimitadorUsuarioGuard implements CanActivate {
     }
 
     private obterIp(request: any): string {
-        const ip = IpUtils.obterIpCliente(request);
-        return IpUtils.normalizarIp(ip);
+        const ip = Utils.obterIpCliente(request);
+        return Utils.normalizarIp(ip);
     }
 }

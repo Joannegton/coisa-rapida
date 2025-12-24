@@ -1,29 +1,9 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { ItemDto } from '../dtos/responses/item.dto';
-import { CategoriaItem, EstadoItem } from '../../infra/models/item.model';
 import type { ItemRepository } from '../../domain/repositories/item.repository';
 
-export type ItemComDistanciaProps = {
-    item: ItemDto;
-    distanciaMetros: number;
-    distanciaFormatada?: string;
-};
-
-export type BuscarMaisProximosDTO = {
+export type BuscarMaisProximosProps = {
     latitude: number;
     longitude: number;
-    limite?: number;
-    offset?: number;
-};
-
-export type BuscarPorProximidadeDTO = {
-    latitude: number;
-    longitude: number;
-    raioMetros?: number;
-    categorias?: CategoriaItem[];
-    precoMaximoPorDia?: number;
-    estadoMinimo?: EstadoItem;
-    ordenarPor?: OrdenacaoBuscaGeografica;
     limite?: number;
     offset?: number;
 };
@@ -41,70 +21,112 @@ export class BuscaGeograficaService {
         private readonly itemRepository: ItemRepository,
     ) {}
 
-    /**
-     * Busca itens dentro de um raio específico a partir de coordenadas.
-     * Utiliza índice GiST do PostGIS para performance otimizada.
-     *
-     * Regra de negócio:
-     * - Apenas itens com status ATIVO são retornados
-     * - Distância calculada em linha reta (great circle distance)
-     * - Resultados podem ser filtrados por categoria, preço e estado
-     * - Ordenação por distância, preço ou popularidade
-     */
-    async buscarPorProximidade(
-        props: BuscarPorProximidadeDTO,
-    ): Promise<ItemComDistanciaProps[]> {
-        const resultados = await this.itemRepository.buscarPorProximidade({
-            latitude: props.latitude,
-            longitude: props.longitude,
-            raioMetros: props.raioMetros ?? 5000,
-            categorias: props.categorias,
-            precoMaximoPorDia: props.precoMaximoPorDia,
-            estadoMinimo: props.estadoMinimo,
-            ordenarPor: props.ordenarPor,
-            limite: props.limite ?? 20,
-            offset: props.offset ?? 0,
-        });
+    // /**
+    //  * Busca itens por proximidade geográfica OU itens populares.
+    //  *
+    //  * Estratégia inteligente:
+    //  * - Se latitude/longitude fornecidos: busca por proximidade (PostGIS)
+    //  * - Se NÃO fornecidos: retorna itens populares (ordenado por aluguelsTotais)
+    //  *
+    //  * Regra de negócio:
+    //  * - Apenas itens com status ATIVO são retornados
+    //  * - Distância calculada em linha reta quando aplicável
+    //  * - Resultados podem ser filtrados por categoria, preço e estado
+    //  * - Degradação elegante: sem localização = popularidade
+    //  */
+    // async buscarPorProximidade(
+    //     props: BuscarPorProximidadeDTO,
+    // ): Promise<ItemComDistanciaDto[]> {
+    //     if (!props.latitude || !props.longitude) {
+    //         const itensPopulares = await this.itemRepository.buscarItensPopularesSemLocalizacao({
+    //             categorias: props.categorias,
+    //             precoMaximoPorDia: props.precoMaximoPorDia,
+    //             estadoMinimo: props.estadoMinimo,
+    //             limite: props.limite ?? 20,
+    //             offset: props.offset ?? 0,
+    //         });
 
-        return resultados.map((resultado) => ({
-            item: resultado.item.toDto(),
-            distanciaMetros: resultado.distanciaMetros,
-            distanciaFormatada: this.formatarDistancia(
-                resultado.distanciaMetros,
-            ),
-        }));
-    }
+    //         const itensPopularesLocalizacao: ItemComDistanciaDto[] =
+    //             itensPopulares.map((item) => ({
+    //                 item: item.toDto(),
+    //                 distanciaMetros: null,
+    //                 distanciaFormatada: null,
+    //             }));
 
-    /**
-     * Busca os N itens mais próximos de um ponto (sem limite de raio).
-     * Útil para "Itens perto de você" ou "Recomendações por proximidade".
-     *
-     * Regra de negócio:
-     * - Apenas itens ATIVO
-     * - Ordenação sempre por distância crescente
-     * - Limite padrão de 10 itens
-     *
-     * @param dto - Coordenadas e limite
-     * @returns Lista de itens mais próximos
-     */
-    async buscarMaisProximos(
-        dto: BuscarMaisProximosDTO,
-    ): Promise<ItemComDistanciaProps[]> {
-        const resultados = await this.itemRepository.buscarMaisProximos(
-            dto.latitude,
-            dto.longitude,
-            dto.limite ?? 10,
-            dto.offset ?? 0,
-        );
+    //         return itensPopularesLocalizacao;
+    //     }
 
-        return resultados.map((resultado) => ({
-            item: resultado.item.toDto(),
-            distanciaMetros: resultado.distanciaMetros,
-            distanciaFormatada: this.formatarDistancia(
-                resultado.distanciaMetros,
-            ),
-        }));
-    }
+    //     const itensComDistancia = await this.itemRepository.buscarPorProximidade({
+    //         latitude: props.latitude,
+    //         longitude: props.longitude,
+    //         raioMetros: props.raioMetros ?? 5000,
+    //         categorias: props.categorias,
+    //         precoMaximoPorDia: props.precoMaximoPorDia,
+    //         estadoMinimo: props.estadoMinimo,
+    //         ordenarPor: props.ordenarPor ?? 'distancia',
+    //         limite: props.limite ?? 20,
+    //         offset: props.offset ?? 0,
+    //     });
+
+    //     const itensComDistanciaDto: ItemComDistanciaDto[] =
+    //         itensComDistancia.map((resultado) => ({
+    //             item: resultado.item.toDto(),
+    //             distanciaMetros: resultado.distanciaMetros,
+    //             distanciaFormatada: this.formatarDistancia(
+    //                 resultado.distanciaMetros,
+    //             ),
+    //         }));
+
+    //     return itensComDistanciaDto;
+    // }
+
+    // /**
+    //  * Busca os N itens mais próximos de um ponto (sem limite de raio).
+    //  * Útil para "Itens perto de você" ou "Recomendações por proximidade".
+    //  *
+    //  * Regra de negócio:
+    //  * - Apenas itens ATIVO
+    //  * - Ordenação sempre por distância crescente
+    //  * - Limite padrão de 10 itens
+    //  *
+    //  * @param props - Coordenadas e limite
+    //  * @returns Lista de itens mais próximos
+    //  */
+    // async buscarMaisProximos(
+    //     props: BuscarMaisProximosProps,
+    // ): Promise<Paginacao<ItemComDistanciaDto>> {
+    //     let itens: Paginacao<Item> | Paginacao<ItemComDistanciaDto>;
+
+    //     if (!props.latitude || !props.longitude) {
+    //         itens = await this.itemRepository.buscarItensAleatorios(
+    //             props.limite ?? 10,
+    //             props.offset ?? 0,
+    //         );
+    //     } else {
+    //         itens = await this.itemRepository.buscarMaisProximos(
+    //             props.latitude,
+    //             props.longitude,
+    //             props.limite ?? 10,
+    //             props.offset ?? 0,
+    //         );
+    //     }
+
+    //     const paginacao: Paginacao<ItemComDistanciaDto> = {
+    //         total: itensComDistancia.total,
+    //         limite: itensComDistancia.limite,
+    //         pagina: itensComDistancia.pagina,
+    //         totalPaginas: itensComDistancia.totalPaginas,
+    //         data: ,
+    //     };
+
+    //     return itensComDistancia.map((resultado) => ({
+    //         item: resultado.item.toDto(),
+    //         distanciaMetros: resultado.distanciaMetros,
+    //         distanciaFormatada: this.formatarDistancia(
+    //             resultado.distanciaMetros,
+    //         ),
+    //     }));
+    // }
 
     /**
      * Calcula a distância entre um item específico e um ponto geográfico.
@@ -182,18 +204,5 @@ export class BuscaGeograficaService {
             const km = metros / 1000;
             return `${km.toFixed(1)} km`;
         }
-    }
-
-    /**
-     * Valida se coordenadas estão dentro dos limites válidos.
-     * Lat: -90 a 90, Lng: -180 a 180
-     */
-    validarCoordenadas(latitude: number, longitude: number): boolean {
-        return (
-            latitude >= -90 &&
-            latitude <= 90 &&
-            longitude >= -180 &&
-            longitude <= 180
-        );
     }
 }

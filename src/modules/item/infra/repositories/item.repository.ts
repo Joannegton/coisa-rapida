@@ -7,6 +7,7 @@ import {
     ItemRepository,
     FiltrosGeograficos,
     ResultadoBuscaGeografica,
+    BuscarItensPopularesSemLocalizacaoProps,
 } from '../../domain/repositories/item.repository';
 import { InjectRepository } from '@nestjs/typeorm';
 import { RepositoryException } from 'src/common/exceptions/repository.exception';
@@ -35,6 +36,56 @@ export class ItemRepositoryImpl implements ItemRepository {
         }
     }
 
+    async buscarItensPopularesSemLocalizacao(
+        props: BuscarItensPopularesSemLocalizacaoProps,
+    ): Promise<Item[]> {
+        try {
+            const queryBuilder = this.repository
+                .createQueryBuilder('item')
+                .where('item.status = :status', { status: StatusItem.ATIVO })
+                .orderBy('item.aluguelsTotais', 'DESC')
+                .addOrderBy('item.criadoEm', 'DESC'); // desempate por mais recente
+
+            if (props.categorias && props.categorias.length > 0) {
+                queryBuilder.andWhere('item.categoria IN (:...categorias)', {
+                    categorias: props.categorias,
+                });
+            }
+
+            if (props.precoMaximoPorDia) {
+                queryBuilder.andWhere(
+                    'item.precoPorDia <= :precoMaximoPorDia',
+                    {
+                        precoMaximoPorDia: props.precoMaximoPorDia,
+                    },
+                );
+            }
+
+            if (props.estadoMinimo) {
+                const estadosPermitidos = this.getEstadosAPartirDe(
+                    props.estadoMinimo,
+                );
+                queryBuilder.andWhere(
+                    'item.estado IN (:...estadosPermitidos)',
+                    {
+                        estadosPermitidos,
+                    },
+                );
+            }
+
+            queryBuilder.skip(props.offset).take(props.limite);
+
+            const models = await queryBuilder.getMany();
+            return models.map((m) => this.itemMapper.toDomain(m));
+        } catch (error) {
+            this.logger.error(
+                `Erro ao buscar itens populares sem localização: ${error.message}`,
+                error.stack,
+            );
+            throw new RepositoryException('Erro ao buscar itens populares');
+        }
+    }
+
     /**
      * Busca itens dentro de um raio específico (em metros) a partir de um ponto geográfico.
      * Utiliza PostGIS ST_DWithin para consulta otimizada com índice GiST.
@@ -54,108 +105,95 @@ export class ItemRepositoryImpl implements ItemRepository {
             offset = 0,
         } = filtros;
 
-        let query = this.repository
-            .createQueryBuilder('item')
-            .addSelect(
-                `ST_Distance(
+        try {
+            let query = this.repository
+                .createQueryBuilder('item')
+                .leftJoinAndSelect('item.fotos', 'fotos')
+                .addSelect(
+                    `ST_Distance(
                     item.ponto,
                     ST_SetSRID(ST_MakePoint(:longitude, :latitude), 4326)::geography
                 )`,
-                'distancia_metros',
-            )
-            .where(
-                `ST_DWithin(
+                    'distancia_metros',
+                )
+                .where(
+                    `ST_DWithin(
                     item.ponto,
                     ST_SetSRID(ST_MakePoint(:longitude, :latitude), 4326)::geography,
                     :raioMetros
                 )`,
-            )
-            .andWhere('item.status = :status', { status: 'ATIVO' })
-            .setParameters({
-                latitude,
-                longitude,
-                raioMetros,
-            });
+                )
+                .andWhere('item.status = :status', { status: 'ATIVO' })
+                .setParameters({
+                    latitude,
+                    longitude,
+                    raioMetros,
+                });
 
-        if (categorias && categorias.length > 0) {
-            query = query.andWhere('item.categoria IN (:...categorias)', {
-                categorias,
-            });
+            if (categorias && categorias.length > 0) {
+                query = query.andWhere('item.categoria IN (:...categorias)', {
+                    categorias,
+                });
+            }
+
+            if (precoMaximoPorDia) {
+                query = query.andWhere(
+                    'item.precoPorDia <= :precoMaximoPorDia',
+                    {
+                        precoMaximoPorDia,
+                    },
+                );
+            }
+
+            if (estadoMinimo) {
+                const estadosPermitidos =
+                    this.getEstadosAPartirDe(estadoMinimo);
+                query = query.andWhere(
+                    'item.estado IN (:...estadosPermitidos)',
+                    {
+                        estadosPermitidos,
+                    },
+                );
+            }
+
+            switch (ordenarPor) {
+                case 'distancia':
+                    query = query.orderBy('distancia_metros', 'ASC');
+                    break;
+                case 'preco':
+                    query = query
+                        .orderBy('item.precoPorDia', 'ASC')
+                        .addOrderBy('distancia_metros', 'ASC');
+                    break;
+                case 'popularidade':
+                    query = query
+                        .orderBy('item.aluguelsTotais', 'DESC')
+                        .addOrderBy('distancia_metros', 'ASC');
+                    break;
+            }
+
+            query = query.skip(offset).take(limite);
+
+            const rawAndEntities = await query.getRawAndEntities();
+
+            const resultados: ResultadoBuscaGeografica[] =
+                rawAndEntities.entities.map((model, index) => ({
+                    item: this.itemMapper.toDomain(model),
+                    distanciaMetros: Number.parseFloat(
+                        rawAndEntities.raw[index].distancia_metros,
+                    ),
+                }));
+
+            return resultados;
+        } catch (error) {
+            this.logger.error(
+                `Erro ao buscar itens por proximidade: ${error.message}`,
+                error.stack,
+            );
+            throw new RepositoryException(
+                'Erro ao buscar itens por proximidade',
+            );
         }
-
-        if (precoMaximoPorDia) {
-            query = query.andWhere('item.precoPorDia <= :precoMaximoPorDia', {
-                precoMaximoPorDia,
-            });
-        }
-
-        if (estadoMinimo) {
-            const estadosPermitidos = this.getEstadosAPartirDe(estadoMinimo);
-            query = query.andWhere('item.estado IN (:...estadosPermitidos)', {
-                estadosPermitidos,
-            });
-        }
-
-        switch (ordenarPor) {
-            case 'distancia':
-                query = query.orderBy('distancia_metros', 'ASC');
-                break;
-            case 'preco':
-                query = query
-                    .orderBy('item.precoPorDia', 'ASC')
-                    .addOrderBy('distancia_metros', 'ASC');
-                break;
-            case 'popularidade':
-                query = query
-                    .orderBy('item.aluguelsTotais', 'DESC')
-                    .addOrderBy('distancia_metros', 'ASC');
-                break;
-        }
-
-        query = query.skip(offset).take(limite);
-
-        const rawAndEntities = await query.getRawAndEntities();
-
-        return rawAndEntities.entities.map((model, index) => ({
-            item: this.itemMapper.toDomain(model),
-            distanciaMetros: Number.parseFloat(
-                rawAndEntities.raw[index].distancia_metros,
-            ),
-        }));
-    }
-
-    /**
-     * Busca itens ordenados por distância de um ponto (sem limite de raio).
-     */
-    async buscarMaisProximos(
-        latitude: number,
-        longitude: number,
-        limite: number = 20,
-        offset: number = 0,
-    ): Promise<ResultadoBuscaGeografica[]> {
-        const query = this.repository
-            .createQueryBuilder('item')
-            .addSelect(
-                `ST_Distance(
-                    item.ponto,
-                    ST_SetSRID(ST_MakePoint(:longitude, :latitude), 4326)::geography
-                )`,
-                'distancia_metros',
-            )
-            .where('item.status = :status', { status: 'ATIVO' })
-            .orderBy('distancia_metros', 'ASC')
-            .skip(offset)
-            .take(limite)
-            .setParameters({ latitude, longitude });
-
-        const rawAndEntities = await query.getRawAndEntities();
-
-        return rawAndEntities.entities.map((model, index) => ({
-            item: this.itemMapper.toDomain(model),
-            distanciaMetros: Number.parseFloat(
-                rawAndEntities.raw[index].distancia_metros,
-            ),
-        }));
     }
 
     /**

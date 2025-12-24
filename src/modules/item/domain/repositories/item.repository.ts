@@ -1,29 +1,6 @@
 import { Item } from '../item';
 
-export interface FiltrosBuscaItem {
-    termo?: string;
-    categoria?: string;
-    estado?: string;
-    status?: string;
-    precoPorDiaMin?: number;
-    precoPorDiaMax?: number;
-    lat?: number;
-    lng?: number;
-    distanciaKm?: number;
-    usuarioId?: string;
-    reputacaoMinimaLocador?: number;
-    pagina?: number;
-    limite?: number;
-    ordenarPor?:
-        | 'relevancia'
-        | 'preco'
-        | 'distancia'
-        | 'avaliacao'
-        | 'populares';
-    ordem?: 'asc' | 'desc';
-}
-
-export interface FiltrosGeograficos {
+export type FiltrosGeograficos = {
     latitude: number;
     longitude: number;
     raioMetros: number;
@@ -33,16 +10,28 @@ export interface FiltrosGeograficos {
     ordenarPor?: 'distancia' | 'preco' | 'popularidade';
     limite?: number;
     offset?: number;
-}
+};
 
-export interface ResultadoBuscaGeografica {
+export type BuscarItensPopularesSemLocalizacaoProps = {
+    categorias?: string[];
+    precoMaximoPorDia?: number;
+    estadoMinimo?: string;
+    limite: number;
+    offset: number;
+};
+
+export type ResultadoBuscaGeografica = {
     item: Item;
     distanciaMetros: number;
     distanciaFormatada?: string;
-}
+};
 
 export interface ItemRepository {
     criar(item: Item): Promise<Item>;
+
+    buscarItensPopularesSemLocalizacao(
+        props: BuscarItensPopularesSemLocalizacaoProps,
+    ): Promise<Item[]>;
 
     /**
      * Busca itens dentro de um raio específico (em metros) a partir de um ponto geográfico.
@@ -50,17 +39,6 @@ export interface ItemRepository {
      */
     buscarPorProximidade(
         filtros: FiltrosGeograficos,
-    ): Promise<ResultadoBuscaGeografica[]>;
-
-    /**
-     * Busca itens ordenados por distância de um ponto (sem limite de raio).
-     * Útil para listar "itens mais próximos" globalmente.
-     */
-    buscarMaisProximos(
-        latitude: number,
-        longitude: number,
-        limite?: number,
-        offset?: number,
     ): Promise<ResultadoBuscaGeografica[]>;
 
     /**
