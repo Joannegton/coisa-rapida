@@ -1,21 +1,25 @@
 import { Item } from '../item';
 
 export type FiltrosGeograficos = {
+    termo?: string;
     latitude: number;
     longitude: number;
     raioMetros: number;
     categorias?: string[];
+    estados?: string[];
+    precoMinimoPorDia?: number;
     precoMaximoPorDia?: number;
-    estadoMinimo?: string;
-    ordenarPor?: 'distancia' | 'preco' | 'popularidade';
+    ordenarPor?: 'distancia' | 'preco' | 'popularidade' | 'relevancia';
     limite?: number;
     offset?: number;
 };
 
 export type BuscarItensPopularesSemLocalizacaoProps = {
+    termo?: string;
     categorias?: string[];
+    estados?: string[];
+    precoMinimoPorDia?: number;
     precoMaximoPorDia?: number;
-    estadoMinimo?: string;
     limite: number;
     offset: number;
 };

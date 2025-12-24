@@ -23,6 +23,7 @@ import { CriarItemDto } from './application/dtos/criar-item.dto';
 import { BuscarPorProximidadeDto } from './application/dtos/buscar-por-proximidade.dto';
 import { BuscarItensProximidadeQuery } from './application/queries/buscar-itens-proximidade.query';
 import { ItemComDistanciaDto } from './application/dtos/responses/item-distancia.dto';
+import { ItemCardDto } from './application/dtos/responses/item-cards.dto';
 
 @ApiTags('item')
 @Controller('item')
@@ -59,16 +60,39 @@ export class ItemController {
     }
 
     @ApiOperation({
-        summary: 'Buscar itens (proximidade ou populares)',
+        summary: 'Buscar itens (proximidade, populares ou busca avançada)',
         description:
-            'Endpoint inteligente que se adapta:\n\n' +
-            '- **Com latitude/longitude**: Retorna itens próximos usando PostGIS (busca geográfica otimizada)\n' +
-            '- **Sem latitude/longitude**: Retorna itens populares (ordenado por número de aluguéis)\n\n' +
-            'Ideal para novos usuários sem endereço cadastrado.',
+            '🔍 **Endpoint inteligente e completo de busca de itens**\n\n' +
+            '### Modos de operação:\n\n' +
+            '1. **Busca por proximidade**: Com localização do usuário → PostGIS geográfico\n' +
+            '2. **Itens populares**: Sem localização → Ordenado por popularidade\n' +
+            '3. **Busca avançada**: Filtragem por termo, categoria, estado, preço\n\n' +
+            '### Filtros disponíveis:\n\n' +
+            '- `termo`: Busca em nome e descrição (mínimo 3 caracteres)\n' +
+            '- `categorias`: Array de categorias (ex: ELETRONICOS, FERRAMENTAS)\n' +
+            '- `estados`: Array de estados específicos (ex: NOVO, COMO_NOVO, BOM)\n' +
+            '- `precoMinimoPorDia` / `precoMaximoPorDia`: Faixa de preço\n' +
+            '- `raioMetros`: Raio de busca (padrão: 5000m)\n\n' +
+            '### Ordenação:\n\n' +
+            '- `distancia`: Mais próximos primeiro (requer localização)\n' +
+            '- `preco`: Menor preço primeiro\n' +
+            '- `popularidade`: Mais alugados primeiro\n' +
+            '- `relevancia`: Por relevância do termo de busca (requer termo)\n\n' +
+            '### Exemplos de uso:\n\n' +
+            '```\n' +
+            '// Busca geográfica básica\n' +
+            'GET /item?raioMetros=10000\n\n' +
+            '// Busca por termo\n' +
+            'GET /item?termo=furadeira&ordenarPor=relevancia\n\n' +
+            '// Busca avançada completa\n' +
+            'GET /item?termo=bicicleta&categorias=ESPORTES&estados=NOVO,COMO_NOVO&precoMaximoPorDia=50&ordenarPor=preco\n' +
+            '```',
     })
     @ApiResponse({
         status: 200,
         description: 'Lista de itens encontrados com distância calculada',
+        type: ItemComDistanciaDto,
+        isArray: true,
     })
     @ApiAccessToken()
     @HttpCode(HttpStatus.OK)
@@ -76,7 +100,7 @@ export class ItemController {
     async buscarPorProximidade(
         @usuarioAtual() usuario: UsuarioPayload,
         @Query() dto: BuscarPorProximidadeDto,
-    ) {
+    ): Promise<ItemComDistanciaDto[]> {
         return this.buscarItensProximidadeQuery.execute({
             ...dto,
             usuarioId: usuario.sub,

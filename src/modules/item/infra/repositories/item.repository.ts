@@ -42,9 +42,18 @@ export class ItemRepositoryImpl implements ItemRepository {
         try {
             const queryBuilder = this.repository
                 .createQueryBuilder('item')
+                .leftJoinAndSelect('item.fotos', 'fotos')
+                .leftJoinAndSelect('item.disponibilidade', 'disponibilidade')
                 .where('item.status = :status', { status: StatusItem.ATIVO })
                 .orderBy('item.aluguelsTotais', 'DESC')
-                .addOrderBy('item.criadoEm', 'DESC'); // desempate por mais recente
+                .addOrderBy('item.criadoEm', 'DESC');
+
+            if (props.termo) {
+                queryBuilder.andWhere(
+                    '(LOWER(item.nome) LIKE LOWER(:termo) OR LOWER(item.descricao) LIKE LOWER(:termo))',
+                    { termo: `%${props.termo}%` },
+                );
+            }
 
             if (props.categorias && props.categorias.length > 0) {
                 queryBuilder.andWhere('item.categoria IN (:...categorias)', {
@@ -52,23 +61,27 @@ export class ItemRepositoryImpl implements ItemRepository {
                 });
             }
 
+            // Filtro por estados específicos (prioridade sobre estadoMinimo)
+            if (props.estados && props.estados.length > 0) {
+                queryBuilder.andWhere('item.estado IN (:...estados)', {
+                    estados: props.estados,
+                });
+            }
+
+            if (props.precoMinimoPorDia) {
+                queryBuilder.andWhere(
+                    'item.precoPorDia >= :precoMinimoPorDia',
+                    {
+                        precoMinimoPorDia: props.precoMinimoPorDia,
+                    },
+                );
+            }
+
             if (props.precoMaximoPorDia) {
                 queryBuilder.andWhere(
                     'item.precoPorDia <= :precoMaximoPorDia',
                     {
                         precoMaximoPorDia: props.precoMaximoPorDia,
-                    },
-                );
-            }
-
-            if (props.estadoMinimo) {
-                const estadosPermitidos = this.getEstadosAPartirDe(
-                    props.estadoMinimo,
-                );
-                queryBuilder.andWhere(
-                    'item.estado IN (:...estadosPermitidos)',
-                    {
-                        estadosPermitidos,
                     },
                 );
             }
@@ -97,9 +110,11 @@ export class ItemRepositoryImpl implements ItemRepository {
             latitude,
             longitude,
             raioMetros,
+            termo,
             categorias,
+            estados,
+            precoMinimoPorDia,
             precoMaximoPorDia,
-            estadoMinimo,
             ordenarPor = 'distancia',
             limite = 50,
             offset = 0,
@@ -109,6 +124,7 @@ export class ItemRepositoryImpl implements ItemRepository {
             let query = this.repository
                 .createQueryBuilder('item')
                 .leftJoinAndSelect('item.fotos', 'fotos')
+                .leftJoinAndSelect('item.disponibilidade', 'disponibilidade')
                 .addSelect(
                     `ST_Distance(
                     item.ponto,
@@ -130,10 +146,32 @@ export class ItemRepositoryImpl implements ItemRepository {
                     raioMetros,
                 });
 
+            if (termo) {
+                query = query.andWhere(
+                    '(LOWER(item.nome) LIKE LOWER(:termo) OR LOWER(item.descricao) LIKE LOWER(:termo))',
+                    { termo: `%${termo}%` },
+                );
+            }
+
             if (categorias && categorias.length > 0) {
                 query = query.andWhere('item.categoria IN (:...categorias)', {
                     categorias,
                 });
+            }
+
+            if (estados && estados.length > 0) {
+                query = query.andWhere('item.estado IN (:...estados)', {
+                    estados,
+                });
+            }
+
+            if (precoMinimoPorDia) {
+                query = query.andWhere(
+                    'item.precoPorDia >= :precoMinimoPorDia',
+                    {
+                        precoMinimoPorDia,
+                    },
+                );
             }
 
             if (precoMaximoPorDia) {
@@ -141,17 +179,6 @@ export class ItemRepositoryImpl implements ItemRepository {
                     'item.precoPorDia <= :precoMaximoPorDia',
                     {
                         precoMaximoPorDia,
-                    },
-                );
-            }
-
-            if (estadoMinimo) {
-                const estadosPermitidos =
-                    this.getEstadosAPartirDe(estadoMinimo);
-                query = query.andWhere(
-                    'item.estado IN (:...estadosPermitidos)',
-                    {
-                        estadosPermitidos,
                     },
                 );
             }
@@ -169,6 +196,35 @@ export class ItemRepositoryImpl implements ItemRepository {
                     query = query
                         .orderBy('item.aluguelsTotais', 'DESC')
                         .addOrderBy('distancia_metros', 'ASC');
+                    break;
+                case 'relevancia':
+                    // Ordenação por relevância quando há termo de busca
+                    if (termo) {
+                        query = query
+                            .addSelect(
+                                `(
+                                CASE 
+                                    WHEN LOWER(item.nome) = LOWER(:termoExato) THEN 1
+                                    WHEN LOWER(item.nome) LIKE LOWER(:termoInicio) THEN 2
+                                    WHEN LOWER(item.nome) LIKE LOWER(:termo) THEN 3
+                                    ELSE 4
+                                END
+                            )`,
+                                'relevancia',
+                            )
+                            .setParameters({
+                                termoExato: termo,
+                                termoInicio: `${termo}%`,
+                            })
+                            .orderBy('relevancia', 'ASC')
+                            .addOrderBy('item.aluguelsTotais', 'DESC')
+                            .addOrderBy('distancia_metros', 'ASC');
+                    } else {
+                        // Sem termo, relevância = popularidade
+                        query = query
+                            .orderBy('item.aluguelsTotais', 'DESC')
+                            .addOrderBy('distancia_metros', 'ASC');
+                    }
                     break;
             }
 

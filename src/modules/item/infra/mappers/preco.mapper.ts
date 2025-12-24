@@ -4,12 +4,16 @@ import { PrecosItemModel } from '../models/precos-item.value-object';
 
 @Injectable()
 export class PrecoMapper {
-    toDomain(modoel: PrecosItemModel): Preco {
+    toDomain(model: PrecosItemModel): Preco {
         const domain = Preco.carregar({
-            caucaoObrigatoria: modoel.caucaoObrigatoria,
-            precoPorDia: Number(modoel.precoPorDia),
-            precoPorHora: modoel.precoPorHora,
-            valorCaucao: modoel.valorCaucao,
+            caucaoObrigatoria: model.caucaoObrigatoria ?? false,
+            precoPorDia: Number(model.precoPorDia),
+            precoPorHora: model.precoPorHora
+                ? Number(model.precoPorHora)
+                : undefined,
+            valorCaucao: model.valorCaucao
+                ? Number(model.valorCaucao)
+                : undefined,
         });
         return domain;
     }

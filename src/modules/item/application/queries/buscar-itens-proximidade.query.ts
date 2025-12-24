@@ -39,9 +39,11 @@ export class BuscarItensProximidadeQuery {
         if (!usuario.endereco?.latitude || !usuario.endereco?.longitude) {
             const itensPopulares =
                 await this.itemRepository.buscarItensPopularesSemLocalizacao({
+                    termo: props.termo,
                     categorias: props.categorias,
+                    estados: props.estados,
+                    precoMinimoPorDia: props.precoMinimoPorDia,
                     precoMaximoPorDia: props.precoMaximoPorDia,
-                    estadoMinimo: props.estadoMinimo,
                     limite: props.limite ?? 20,
                     offset: props.offset ?? 0,
                 });
@@ -61,9 +63,11 @@ export class BuscarItensProximidadeQuery {
                 latitude: usuario.endereco.latitude,
                 longitude: usuario.endereco.longitude,
                 raioMetros: props.raioMetros ?? 5000,
+                termo: props.termo,
                 categorias: props.categorias,
+                estados: props.estados,
+                precoMinimoPorDia: props.precoMinimoPorDia,
                 precoMaximoPorDia: props.precoMaximoPorDia,
-                estadoMinimo: props.estadoMinimo,
                 ordenarPor: props.ordenarPor ?? 'distancia',
                 limite: props.limite ?? 20,
                 offset: props.offset ?? 0,

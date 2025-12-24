@@ -19,7 +19,9 @@ export class ItemMapper {
 
     toDomain(model: ItemModel): Item {
         const preco = this.precoMapper.toDomain(model.precos);
-        const fotos = this.fotoMapper.toDomainList(model.fotos);
+        const fotos = model.fotos 
+            ? this.fotoMapper.toDomainList(model.fotos)
+            : [];
         const localizacao = this.localizacaoMapper.toDomain(model.localizacao);
         const disponibilidade = model.disponibilidade
             ? this.disponibilidadeMapper.toDomain(model.disponibilidade)
