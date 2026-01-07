@@ -1,101 +1,86 @@
 import {
-  Column,
-  CreateDateColumn,
-  Entity,
-  Index,
-  PrimaryGeneratedColumn,
-  UpdateDateColumn,
+    Column,
+    CreateDateColumn,
+    Entity,
+    Index,
+    OneToOne,
+    PrimaryGeneratedColumn,
+    UpdateDateColumn,
 } from 'typeorm';
+import { CaucaoModel } from './caucao.value-object';
+import { MultaModel } from './multa.value-object';
+import { ContratoModel } from './contrato.value-object';
+import { PessoaModel } from './pessoa.value-object';
+import { AluguelSnapshotModel } from './aluguel-snapshot.model';
 
 export enum AluguelStatus {
-  PAGAMENTO_PENDENTE = 'pagamento_pendente',
-  SOLICITADO = 'solicitado',
-  CONFIRMADO = 'confirmado',
-  ATIVO = 'ativo',
-  DEVOLVIDO = 'devolvido',
-  CONCLUIDO = 'concluido',
-  CANCELADO = 'cancelado',
-  DISPUTADO = 'disputado',
+    PAGAMENTO_PENDENTE = 'pagamento_pendente',
+    SOLICITADO = 'solicitado',
+    CONFIRMADO = 'confirmado',
+    ATIVO = 'ativo',
+    DEVOLVIDO = 'devolvido',
+    CONCLUIDO = 'concluido',
+    CANCELADO = 'cancelado',
+    DISPUTADO = 'disputado',
 }
 
 @Entity('aluguel', { schema: 'core' })
 @Index(['itemId'])
-@Index(['locadorId'])
-@Index(['locatarioId'])
-@Index(['status', 'createdAt'])
+@Index(['status', 'criadoEm'])
 @Index(['dataInicio', 'dataFim'])
 export class AluguelModel {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+    @PrimaryGeneratedColumn('uuid')
+    id: string;
 
-  @Column({ name: 'locador_id', type: 'uuid' })
-  locadorId: string;
+    @Column(() => PessoaModel, { prefix: 'locador' })
+    locador: PessoaModel;
 
-  @Column({ name: 'locatario_id', type: 'uuid' })
-  locatarioId: string;
+    @Column(() => PessoaModel, { prefix: 'locatario' })
+    locatario: PessoaModel;
 
-  @Column({ length: 255, name: 'locador_nome' })
-  locadorNome: string;
+    @Column({ name: 'item_id', type: 'uuid' })
+    itemId: string;
 
-  @Column({ length: 255, name: 'locatario_nome' })
-  locatarioNome: string;
+    @Column({
+        type: 'decimal',
+        precision: 10,
+        scale: 2,
+        name: 'preco_total',
+    })
+    precoTotal: number;
 
-  @Column({ name: 'item_id', type: 'uuid' })
-  itemId: string;
+    @Column(() => CaucaoModel, { prefix: false })
+    caucao?: CaucaoModel;
 
-  @Column({ type: 'text', name: 'snapshot_item_nome' })
-  snapshotItemNome: string;
+    @Column(() => MultaModel, { prefix: false })
+    multa: MultaModel;
 
-  @Column({ type: 'text', name: 'snapshot_item_foto_url', nullable: true })
-  snapshotItemFotoUrl?: string;
+    @Column(() => ContratoModel, { prefix: false })
+    contrato: ContratoModel;
 
-  @Column({
-    type: 'decimal',
-    precision: 10,
-    scale: 2,
-    name: 'snapshot_preco_diaria',
-  })
-  snapshotPrecoDiaria: number;
+    @Column({ type: 'timestamptz', name: 'data_inicio' })
+    dataInicio: Date;
 
-  @Column({
-    type: 'decimal',
-    precision: 10,
-    scale: 2,
-    name: 'preco_total',
-  })
-  precoTotal: number;
+    @Column({ type: 'timestamptz', name: 'data_fim' })
+    dataFim: Date;
 
-  @Column({ type: 'timestamptz', name: 'data_inicio' })
-  dataInicio: Date;
+    @Column({
+        type: 'enum',
+        enum: AluguelStatus,
+        name: 'status',
+        default: AluguelStatus.SOLICITADO,
+    })
+    status: AluguelStatus;
 
-  @Column({ type: 'timestamptz', name: 'data_fim', nullable: true })
-  dataFim?: Date;
+    @CreateDateColumn({ name: 'criado_em' })
+    criadoEm: Date;
 
-  @Column({
-    type: 'enum',
-    enum: AluguelStatus,
-    name: 'status',
-    default: AluguelStatus.SOLICITADO,
-  })
-  status: AluguelStatus;
+    @UpdateDateColumn({ name: 'atualizado_em' })
+    atualizadoEm: Date;
 
-  @Column({ type: 'text', name: 'observacoes_locatario', nullable: true })
-  observacoesLocatario?: string;
-
-  @Column({ type: 'text', name: 'motivo_recusa_locador', nullable: true })
-  motivoRecusaLocador?: string;
-
-  @Column({
-    type: 'uuid',
-    array: true,
-    name: 'participantes',
-    default: () => 'ARRAY[]::uuid[]',
-  })
-  participantes: string[];
-
-  @CreateDateColumn()
-  createdAt: Date;
-
-  @UpdateDateColumn()
-  updatedAt: Date;
+    @OneToOne(() => AluguelSnapshotModel, (snapshot) => snapshot.aluguel, {
+        cascade: true,
+        eager: false,
+    })
+    snapshot: AluguelSnapshotModel;
 }

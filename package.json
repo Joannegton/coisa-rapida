@@ -26,8 +26,10 @@
     "migration:shared:revert": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:revert -d ./src/config/orm/ormConfig.shared.ts",
     "migration:item:run": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d ./src/config/orm/ormConfig.item.ts",
     "migration:item:revert": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:revert -d ./src/config/orm/ormConfig.item.ts",
-    "migration:run:all": "npm run migration:auth:run && npm run migration:usuario:run && npm run migration:shared:run && npm run migration:item:run",
-    "migration:revert:all": "npm run migration:item:revert && npm run migration:shared:revert && npm run migration:usuario:revert && npm run migration:auth:revert"
+    "migration:core:run": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:run -d ./src/config/orm/ormConfig.core.ts",
+    "migration:core:revert": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:revert -d ./src/config/orm/ormConfig.core.ts",
+    "migration:run:all": "npm run migration:auth:run && npm run migration:usuario:run && npm run migration:shared:run && npm run migration:item:run && npm run migration:core:run",
+    "migration:revert:all": "npm run migration:item:revert && npm run migration:shared:revert && npm run migration:usuario:revert && npm run migration:auth:revert && npm run migration:core:revert"
   },
   "dependencies": {
     "@nestjs/bull": "^11.0.4",
