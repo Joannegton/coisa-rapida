@@ -654,17 +654,16 @@ Tabela `usuario_preferencias_notificacao`:
 
 | Check | Regra                             | Descrição                                                                                                                   | Prioridade |
 | ----- | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| [ ]   | **Requisitos para Publicar**      | Usuário deve ter: email verificado + telefone verificado + endereço verificado.                                             | Alta       |
-| [ ]   | **Dados Obrigatórios**            | Nome, descrição, categoria, mín 3 fotos, precoPorDia, valorCaucao (opcional), localizacao.                                  | Alta       |
-| [ ]   | **Fotos do Anúncio**              | Mínimo 3 fotos, máximo 15. Formatos: JPG/PNG. Tamanho máx: 5MB cada. Armazenadas no Firebase Storage.                       | Alta       |
-| [ ]   | **Descrição**                     | Mínimo 50 caracteres, máximo 2000. Deve incluir: estado do item, funcionalidades, limitações, o que está incluso.           | Alta       |
-| [ ]   | **Preço**                         | `precoPorDia`: obrigatório, mínimo R$5. `precoPorHora`: opcional (futuro). Máximo: R$10.000/dia.                            | Alta       |
-| [ ]   | **Caução**                        | `valorCaucao`: opcional mas recomendado. Se não definido, sistema sugere 30% do valor do item. Mín R$50, máx R$10.000.      | Média      |
-| [ ]   | **Localização**                   | Coordenadas (lat/lng) extraídas do endereço via Google Maps API. Endereço completo oculto até aprovação do aluguel.         | Alta       |
-| [ ]   | **Moderação Automática**          | Sistema detecta palavras proibidas, links externos, números de telefone. Item fica em `status: PENDENTE` até revisão.       | Alta       |
-| [ ]   | **Ativação Manual**               | Se locador tem: (1) < 1 mês na plataforma OU (2) reputação < 3.0, item requer aprovação manual. Prazo: 24h úteis.           | Alta       |
-| [ ]   | **Status do Item**                | `RASCUNHO`, `PENDENTE`, `ATIVO`, `INATIVO`, `ARQUIVADO`, `BLOQUEADO`, `EXCLUIDO`.                                           | Alta       |
-| [ ]   | **Remoção de Anúncio**            | Locador pode inativar/excluir a qualquer momento. Se há aluguéis ativos, não pode excluir (apenas inativar).                | Alta       |
+| [x]   | **Requisitos para Publicar**      | Usuário deve ter: email verificado + telefone verificado + endereço verificado.                                             | Alta       |
+| [x]   | **Dados Obrigatórios**            | Nome, descrição, categoria, mín 1 fotos, precoPorDia, valorCaucao (opcional), localizacao.                                  | Alta       |
+| [x]   | **Fotos do Anúncio**              | Mínimo 1 fotos, máximo 3. Formatos: JPG/PNG. Tamanho máx: 5MB cada. Armazenadas no cloudinary.                              | Alta       |
+| [x]   | **Descrição**                     | Mínimo 50 caracteres, máximo 2000. Deve incluir: estado do item, funcionalidades, limitações, o que está incluso.           | Alta       |
+| [x]   | **Preço**                         | `precoPorDia`: obrigatório, mínimo R$5. `precoPorHora`: opcional (futuro). Máximo: R$10.000/dia.                            | Alta       |
+| [x]   | **Caução**                        | `valorCaucao`: opcional mas recomendado. Se não definido, sistema sugere 30% do valor do item. Mín R$50, máx R$10.000.      | Média      |
+| [x]   | **Localização**                   | Coordenadas (lat/lng) extraídas do endereço via Google Maps API. Endereço completo oculto até aprovação do aluguel.         | Alta       |
+| [x]   | **Moderação Automática**          | Sistema detecta palavras proibidas, links externos, números de telefone. Item fica em `status: PENDENTE` até revisão.       | Alta       |
+| [x]   | **Status do Item**                | `RASCUNHO`, `PENDENTE`, `ATIVO`, `INATIVO`, `ARQUIVADO`, `BLOQUEADO`, `EXCLUIDO`.                                           | Alta       |
+| [ ]   | **Remoção de Anúncio**            | Locador pode inativar a qualquer momento.                                                                                   | Alta       |
 | [ ]   | **Arquivamento Automático**       | Itens sem visualizações em 90 dias: status → `ARQUIVADO`. Notificação enviada ao locador. Pode reativar editando o anúncio. | Média      |
 | [ ]   | **Calendário de Disponibilidade** | Tabela `disponibilidades`: Locador pode bloquear datas específicas. Sistema valida ao criar aluguel.                        | Alta       |
 
@@ -698,13 +697,14 @@ Tabela `usuario_preferencias_notificacao`:
 
 ### **8.3 Busca e Recomendação**
 
-| Check | Regra                | Descrição                                                                                               | Prioridade |
-| ----- | -------------------- | ------------------------------------------------------------------------------------------------------- | ---------- |
-| [ ]   | **Busca por Texto**  | ElasticSearch ou PostgreSQL Full-Text Search em `nome`, `descricao`, `categoria`.                       | Alta       |
-| [ ]   | **Busca Geográfica** | PostGIS: `ST_DWithin` para buscar itens dentro de X km do usuário. Padrão: 10km.                        | Alta       |
-| [ ]   | **Filtros**          | Categoria, preço (min/max), disponibilidade (datas), distância, avaliação mínima, aprovação automática. | Alta       |
-| [ ]   | **Ordenação**        | Relevância, preço (crescente/decrescente), distância, avaliação, mais alugados.                         | Média      |
-| [ ]   | **Recomendações**    | **[FUTURO]** Baseado em histórico de buscas/aluguéis. ML para sugestões personalizadas.                 | Baixa      |
+| Check | Regra                           | Descrição                                                                                               | Prioridade |
+| ----- | ------------------------------- | ------------------------------------------------------------------------------------------------------- | ---------- |
+| [x]   | **Busca por Texto**             | ElasticSearch ou PostgreSQL Full-Text Search em `nome`, `descricao`, `categoria`.                       | Alta       |
+| [x]   | **Busca por Texto (Full-Text)** | PostgreSQL Full-Text Search com tsvector e suporte a português. Performance 50-100x superior ao LIKE.   | Alta       |
+| [x]   | **Busca Geográfica**            | PostGIS: `ST_DWithin` para buscar itens dentro de X km do usuário. Padrão: 10km.                        | Alta       |
+| [x]   | **Filtros**                     | Categoria, preço (min/max), disponibilidade (datas), distância, avaliação mínima, aprovação automática. | Alta       |
+| [x]   | **Ordenação**                   | Relevância, preço (crescente/decrescente), distância, avaliação, mais alugados.                         | Média      |
+| [ ]   | **Recomendações**               | **[FUTURO]** Baseado em histórico de buscas/aluguéis. ML para sugestões personalizadas.                 | Baixa      |
 
 ---
 

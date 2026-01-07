@@ -118,6 +118,15 @@ export class ItemModel {
     })
     aluguelsTotais: number;
 
+    @Column({
+        name: 'vetor_busca',
+        type: 'tsvector',
+        select: false,
+        insert: false,
+        update: false,
+    })
+    vetorBusca: string;
+
     @OneToMany(() => FotosItemModel, (foto) => foto.item, {
         cascade: true,
         eager: false,
