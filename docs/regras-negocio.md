@@ -152,7 +152,7 @@ O Coisa Rápida é uma plataforma de compartilhamento e aluguel peer-to-peer que
 O sistema de aluguéis utiliza uma **máquina de estados rigorosa** com 8 estados principais e controle de caução separado:
 
 - **8 Estados do Aluguel**: `PAGAMENTO_PENDENTE`, `SOLICITADO`, `CONFIRMADO`, `ATIVO`, `DEVOLVIDO`, `CONCLUIDO`, `CANCELADO`, `DISPUTADO`
-- **6 Estados da Caução**: `CRIADA`, `AGUARDANDO_PAGAMENTO`, `PAGA`, `PROCESSANDO`, `DEVOLVIDA`, `CANCELADA`
+- **6 Estados da Caução**: `AGUARDANDO_PAGAMENTO`, `PAGA`, `PROCESSANDO`, `DEVOLVIDA`, `CANCELADA`
 - **Validações automáticas** em cada transição de estado
 - **Timeouts configurados**: 30min (pagamento), 24h (aprovação locador), 48h (devolução)
 - **Suporte a disputas** com sistema de mediação e indenização
@@ -182,7 +182,6 @@ O sistema de aluguel segue uma máquina de estados rigorosa. Cada transição de
 
 **Estados da Caução (enum `StatusCaucao`):**
 
-- `CRIADA`: Caução criada no sistema
 - `AGUARDANDO_PAGAMENTO`: Aguardando confirmação de pagamento
 - `PAGA`: Caução paga e confirmada
 - `PROCESSANDO`: Pagamento em processamento

@@ -14,6 +14,7 @@ import { AppProviders } from './app.providers';
 import { ItemModule } from './modules/item/item.module';
 import { ItemController } from './modules/item/item.controller';
 import { VerificacaoController } from './modules/usuario/presentation/verificacao.controller';
+import { CoreModule } from './modules/core/core.module';
 
 @Module({
     imports: [
@@ -25,6 +26,7 @@ import { VerificacaoController } from './modules/usuario/presentation/verificaca
         AuthModule,
         UsuarioModule,
         ItemModule,
+        CoreModule,
     ],
     controllers: [],
     providers: [...AppProviders],
