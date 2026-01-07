@@ -119,4 +119,26 @@ export class BuscarPorProximidadeDto {
     @Min(0)
     @Type(() => Number)
     offset?: number = 0;
+
+    @ApiProperty({
+        description:
+            'Latitude do usuário (obtida do GPS/localização do dispositivo)',
+        example: -23.55052,
+        required: false,
+    })
+    @IsNumber()
+    @IsOptional()
+    @Type(() => Number)
+    latitude?: number;
+
+    @ApiProperty({
+        description:
+            'Longitude do usuário (obtida do GPS/localização do dispositivo)',
+        example: -46.633308,
+        required: false,
+    })
+    @IsNumber()
+    @IsOptional()
+    @Type(() => Number)
+    longitude?: number;
 }

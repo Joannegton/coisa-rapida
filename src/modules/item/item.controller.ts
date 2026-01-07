@@ -8,29 +8,46 @@ import {
     UploadedFiles,
     Get,
     Query,
+    Param,
+    Patch,
+    Delete,
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import {
+    AuditarAtualizacaoItem,
     AuditarCriacaoItem,
-    Publico,
     usuarioAtual,
 } from 'src/common/decorators';
 import { CriarItemUseCase } from './application/usecases/criar-item.usecase';
+import { AtualizarItemUseCase } from './application/usecases/atualizar-item.usecase';
+import { AdicionarFotosItemUseCase } from './application/usecases/adicionar-fotos-item.usecase';
+import { RemoverFotoItemUseCase } from './application/usecases/remover-foto-item.usecase';
+import { AtualizarOrdemFotosItemUseCase } from './application/usecases/atualizar-ordem-fotos-item.usecase';
 import { ApiAccessToken } from 'src/common/decorators/swagger.decorators';
 import type { UsuarioPayload } from '../auth/infra/services/jwt.service';
 import { CriarItemDto } from './application/dtos/criar-item.dto';
+import { AtualizarItemDTO } from './application/dtos/atualizar-item.dto';
+import { AdicionarFotosItemDTO } from './application/dtos/adicionar-fotos-item.dto';
+import { AtualizarOrdemFotosDTO } from './application/dtos/atualizar-ordem-fotos.dto';
 import { BuscarPorProximidadeDto } from './application/dtos/buscar-por-proximidade.dto';
 import { BuscarItensProximidadeQuery } from './application/queries/buscar-itens-proximidade.query';
 import { ItemComDistanciaDto } from './application/dtos/responses/item-distancia.dto';
-import { ItemCardDto } from './application/dtos/responses/item-cards.dto';
+import { BuscarItemQuery } from './application/queries/buscar-item.query';
+import { BuscarItemDto } from './application/dtos/buscar-item.dto';
+import { ItemFotoDto } from './application/dtos/responses/item-foto.dto';
 
 @ApiTags('item')
 @Controller('item')
 export class ItemController {
     constructor(
         private readonly criarItemUseCase: CriarItemUseCase,
+        private readonly atualizarItemUseCase: AtualizarItemUseCase,
+        private readonly adicionarFotosItemUseCase: AdicionarFotosItemUseCase,
+        private readonly removerFotoItemUseCase: RemoverFotoItemUseCase,
+        private readonly atualizarOrdemFotosItemUseCase: AtualizarOrdemFotosItemUseCase,
         private readonly buscarItensProximidadeQuery: BuscarItensProximidadeQuery,
+        private readonly buscarItemQuery: BuscarItemQuery,
     ) {}
 
     @ApiOperation({
@@ -56,6 +73,121 @@ export class ItemController {
             ...criarItemDto,
             fotos,
             usuarioId: usuario.sub,
+        });
+    }
+
+    @ApiOperation({
+        summary: 'Atualizar um item existente',
+        description:
+            'Atualiza informações de um item. Apenas o dono do item pode atualizar.',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Item atualizado com sucesso.',
+    })
+    @ApiBody({ type: AtualizarItemDTO })
+    @ApiAccessToken()
+    @AuditarAtualizacaoItem()
+    @HttpCode(HttpStatus.OK)
+    @Patch(':itemId')
+    async atualizarItem(
+        @Param('itemId') itemId: string,
+        @usuarioAtual() usuario: UsuarioPayload,
+        @Body() atualizarItemDto: AtualizarItemDTO,
+    ): Promise<void> {
+        return this.atualizarItemUseCase.execute({
+            ...atualizarItemDto,
+            itemId,
+            usuarioId: usuario.sub,
+        });
+    }
+
+    @ApiOperation({
+        summary: 'Adicionar fotos ao item',
+        description:
+            'Adiciona 1-3 novas fotos ao item sem remover as existentes.\n' +
+            '- Total máximo de fotos: 3\n' +
+            '- Pode especificar qual foto será principal\n' +
+            '- Fotos são agendadas para verificação de conteúdo',
+    })
+    @ApiResponse({
+        status: 201,
+        description: 'Fotos adicionadas com sucesso.',
+        type: ItemFotoDto,
+    })
+    @ApiBody({ type: AdicionarFotosItemDTO })
+    @ApiAccessToken()
+    @HttpCode(HttpStatus.CREATED)
+    @UseInterceptors(FilesInterceptor('fotos'))
+    @Post(':itemId/fotos')
+    async adicionarFotosItem(
+        @Param('itemId') itemId: string,
+        @usuarioAtual() usuario: UsuarioPayload,
+        @UploadedFiles() fotos: Express.Multer.File[],
+        @Body() dto: AdicionarFotosItemDTO,
+    ) {
+        return this.adicionarFotosItemUseCase.execute({
+            itemId,
+            usuarioId: usuario.sub,
+            fotos,
+            fotoPrincipalId: dto.fotoPrincipalId,
+        });
+    }
+
+    @ApiOperation({
+        summary: 'Remover uma foto do item',
+        description:
+            'Remove uma foto específica do item.\n' +
+            '- Item deve ter no mínimo 1 foto\n' +
+            '- Se remover a principal, a primeira foto se torna principal\n' +
+            '- Ordem das fotos é recalculada automaticamente',
+    })
+    @ApiResponse({
+        status: 204,
+        description: 'Foto removida com sucesso.',
+    })
+    @ApiAccessToken()
+    @HttpCode(HttpStatus.NO_CONTENT)
+    @Delete(':itemId/fotos/:fotoId')
+    async removerFotoItem(
+        @Param('itemId') itemId: string,
+        @Param('fotoId') fotoId: string,
+        @usuarioAtual() usuario: UsuarioPayload,
+    ): Promise<void> {
+        return this.removerFotoItemUseCase.execute({
+            itemId,
+            fotoId,
+            usuarioId: usuario.sub,
+        });
+    }
+
+    @ApiOperation({
+        summary: 'Atualizar ordem das fotos',
+        description:
+            'Reordena as fotos e/ou muda qual é a principal.\n' +
+            '- Ordem deve ser sequencial sem gaps (1, 2, 3)\n' +
+            '- Deve incluir TODAS as fotos do item\n' +
+            '- Pode especificar qual será a principal',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Ordem das fotos atualizada com sucesso.',
+        type: ItemFotoDto,
+    })
+    @ApiBody({ type: AtualizarOrdemFotosDTO })
+    @ApiAccessToken()
+    @HttpCode(HttpStatus.OK)
+    @Patch(':itemId/fotos')
+    async atualizarOrdemFotosItem(
+        @Param('itemId') itemId: string,
+        @usuarioAtual() usuario: UsuarioPayload,
+        @Body() dto: AtualizarOrdemFotosDTO,
+    ) {
+        return this.atualizarOrdemFotosItemUseCase.execute({
+            itemId,
+            usuarioId: usuario.sub,
+            ordem: dto.ordem,
+            fotoPrincipalId: dto.fotoPrincipalId,
         });
     }
 
@@ -96,7 +228,7 @@ export class ItemController {
     })
     @ApiAccessToken()
     @HttpCode(HttpStatus.OK)
-    @Get()
+    @Get('proximidade')
     async buscarPorProximidade(
         @usuarioAtual() usuario: UsuarioPayload,
         @Query() dto: BuscarPorProximidadeDto,
@@ -107,154 +239,26 @@ export class ItemController {
         });
     }
 
-    // /**
-    //  * Busca os N itens mais próximos de um ponto (sem limite de raio).
-    //  * Útil para "Itens perto de você" ou recomendações.
-    //  *
-    //  * Exemplo:
-    //  * - GET /itens/buscar/mais-proximos?latitude=-23.5505&longitude=-46.6333&limite=10
-    //  *
-    //  * @param dto - Coordenadas e limite
-    //  * @returns Lista de itens ordenados por proximidade
-    //  */
-    // @Publico()
-    // @Get('buscar/mais-proximos')
-    // @HttpCode(HttpStatus.OK)
-    // @ApiOperation({
-    //     summary: 'Buscar itens mais próximos',
-    //     description:
-    //         'Retorna os N itens mais próximos de um ponto geográfico, sem limite de raio. Ordenado sempre por distância crescente.',
-    // })
-    // @ApiResponse({
-    //     status: 200,
-    //     description: 'Lista de itens mais próximos',
-    //     type: [ItemComDistanciaDTO],
-    // })
-    // @ApiQuery({
-    //     name: 'latitude',
-    //     required: true,
-    //     type: Number,
-    //     example: -23.5505,
-    // })
-    // @ApiQuery({
-    //     name: 'longitude',
-    //     required: true,
-    //     type: Number,
-    //     example: -46.6333,
-    // })
-    // @ApiQuery({ name: 'limite', required: false, type: Number, example: 10 })
-    // @ApiQuery({ name: 'offset', required: false, type: Number, example: 0 })
-    // async buscarMaisProximos(
-    //     @Query() dto: BuscarMaisProximosDTO,
-    // ): Promise<ItemComDistanciaDTO[]> {
-    //     return this.buscaGeograficaService.buscarMaisProximos(dto);
-    // }
-
-    // /**
-    //  * Calcula a distância entre um item específico e um ponto geográfico.
-    //  *
-    //  * Exemplo:
-    //  * - GET /itens/123e4567-e89b-12d3-a456-426614174000/distancia?latitude=-23.5505&longitude=-46.6333
-    //  *
-    //  * @param itemId - ID do item
-    //  * @param latitude - Query param latitude
-    //  * @param longitude - Query param longitude
-    //  * @returns Distância em metros e formatada
-    //  */
-    // @Publico()
-    // @Get(':itemId/distancia')
-    // @HttpCode(HttpStatus.OK)
-    // @ApiOperation({
-    //     summary: 'Calcular distância até um item',
-    //     description:
-    //         'Calcula a distância em linha reta (great circle) entre um item e coordenadas fornecidas.',
-    // })
-    // @ApiResponse({
-    //     status: 200,
-    //     description: 'Distância calculada',
-    //     schema: {
-    //         properties: {
-    //             distanciaMetros: { type: 'number', example: 1234.56 },
-    //             distanciaFormatada: { type: 'string', example: '1.2 km' },
-    //         },
-    //     },
-    // })
-    // @ApiResponse({ status: 404, description: 'Item não encontrado' })
-    // @ApiQuery({
-    //     name: 'latitude',
-    //     required: true,
-    //     type: Number,
-    //     example: -23.5505,
-    // })
-    // @ApiQuery({
-    //     name: 'longitude',
-    //     required: true,
-    //     type: Number,
-    //     example: -46.6333,
-    // })
-    // async calcularDistancia(
-    //     @Param('itemId') itemId: string,
-    //     @Query('latitude') latitude: number,
-    //     @Query('longitude') longitude: number,
-    // ): Promise<{ distanciaMetros: number; distanciaFormatada: string }> {
-    //     return this.buscaGeograficaService.calcularDistanciaParaItem(
-    //         itemId,
-    //         parseFloat(latitude.toString()),
-    //         parseFloat(longitude.toString()),
-    //     );
-    // }
-
-    // /**
-    //  * Retorna estatísticas de disponibilidade geográfica por raios.
-    //  * Útil para analytics ou indicadores de cobertura.
-    //  *
-    //  * Exemplo:
-    //  * - GET /itens/estatisticas/proximidade?latitude=-23.5505&longitude=-46.6333
-    //  *
-    //  * @param latitude
-    //  * @param longitude
-    //  * @returns Contagem de itens em diferentes raios (1km, 5km, 10km, 50km)
-    //  */
-    // @Publico()
-    // @Get('estatisticas/proximidade')
-    // @HttpCode(HttpStatus.OK)
-    // @ApiOperation({
-    //     summary: 'Estatísticas de disponibilidade por proximidade',
-    //     description:
-    //         'Retorna quantos itens ativos existem em diferentes raios a partir de um ponto (1km, 5km, 10km, 50km).',
-    // })
-    // @ApiResponse({
-    //     status: 200,
-    //     description: 'Estatísticas de disponibilidade',
-    //     schema: {
-    //         type: 'array',
-    //         items: {
-    //             properties: {
-    //                 raioMetros: { type: 'number', example: 5000 },
-    //                 quantidadeItens: { type: 'number', example: 42 },
-    //             },
-    //         },
-    //     },
-    // })
-    // @ApiQuery({
-    //     name: 'latitude',
-    //     required: true,
-    //     type: Number,
-    //     example: -23.5505,
-    // })
-    // @ApiQuery({
-    //     name: 'longitude',
-    //     required: true,
-    //     type: Number,
-    //     example: -46.6333,
-    // })
-    // async obterEstatisticasProximidade(
-    //     @Query('latitude') latitude: number,
-    //     @Query('longitude') longitude: number,
-    // ): Promise<{ raioMetros: number; quantidadeItens: number }[]> {
-    //     return this.buscaGeograficaService.obterEstatisticasPorProximidade(
-    //         parseFloat(latitude.toString()),
-    //         parseFloat(longitude.toString()),
-    //     );
-    // }
+    @ApiOperation({
+        summary: 'Buscar um item por ID',
+        description: 'Retorna os detalhes de um item específico pelo ID.',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Detalhes do item encontrado',
+        type: ItemComDistanciaDto,
+    })
+    @ApiAccessToken()
+    @Get(':itemId')
+    async buscarItem(
+        @Param('itemId') itemId: string,
+        @usuarioAtual() usuario: UsuarioPayload,
+        @Query() props: BuscarItemDto,
+    ): Promise<ItemComDistanciaDto> {
+        return this.buscarItemQuery.execute({
+            itemId,
+            usuarioId: usuario.sub,
+            ...props,
+        });
+    }
 }

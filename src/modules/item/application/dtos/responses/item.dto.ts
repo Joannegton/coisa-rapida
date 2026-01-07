@@ -16,12 +16,6 @@ export class ItemDto {
     precoPorDia: number;
     precoPorHora?: number;
     valorCaucao?: number;
-    localizacaoLat: number;
-    localizacaoLng: number;
-    localizacaoEndereco: string;
-    localizacaoCidade: string;
-    localizacaoEstado: string;
-    localizacaoCep?: string;
     permiteAluguelPorHora?: boolean;
     horasMinimosAluguel?: number;
     horasMaximosAluguel?: number;

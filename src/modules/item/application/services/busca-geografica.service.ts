@@ -129,35 +129,6 @@ export class BuscaGeograficaService {
     // }
 
     /**
-     * Calcula a distância entre um item específico e um ponto geográfico.
-     *
-     * @param itemId - ID do item
-     * @param latitude - Latitude do ponto de referência
-     * @param longitude - Longitude do ponto de referência
-     * @returns Distância em metros e formatada
-     */
-    async calcularDistanciaParaItem(
-        itemId: string,
-        latitude: number,
-        longitude: number,
-    ): Promise<{ distanciaMetros: number; distanciaFormatada: string }> {
-        const distancia = await this.itemRepository.calcularDistancia(
-            itemId,
-            latitude,
-            longitude,
-        );
-
-        if (distancia === null) {
-            throw new NotFoundException(`Item com ID ${itemId} não encontrado`);
-        }
-
-        return {
-            distanciaMetros: distancia,
-            distanciaFormatada: this.formatarDistancia(distancia),
-        };
-    }
-
-    /**
      * Retorna estatísticas de disponibilidade geográfica.
      * Útil para analytics ou dashboard.
      *

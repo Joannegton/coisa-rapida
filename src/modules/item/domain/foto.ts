@@ -42,6 +42,21 @@ export class Foto {
         this.setPrincipal(true);
     }
 
+    tornarPrincipal(): void {
+        this.setPrincipal(true);
+    }
+
+    removerPrincipal(): void {
+        this.setPrincipal(false);
+    }
+
+    mudarOrdem(novaOrdem: number): void {
+        if (novaOrdem < 1 || novaOrdem > 3) {
+            throw new Error('Ordem deve estar entre 1 e 3');
+        }
+        this.setOrdem(novaOrdem);
+    }
+
     private setUrl(value: string) {
         this.props.url = value;
     }

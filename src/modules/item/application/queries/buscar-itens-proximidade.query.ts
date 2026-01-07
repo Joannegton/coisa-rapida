@@ -1,9 +1,8 @@
-import { Inject, NotFoundException } from '@nestjs/common';
+import { Inject } from '@nestjs/common';
 import type { ItemRepository } from '../../domain/repositories/item.repository';
 import { ItemComDistanciaDto } from '../dtos/responses/item-distancia.dto';
 import { Utils } from 'src/shared/utils';
 import { BuscarPorProximidadeDto } from '../dtos/buscar-por-proximidade.dto';
-import type { UsuarioService } from '../../domain/services/usuario.service';
 
 export type BuscarItensProximidadeQueryProps = BuscarPorProximidadeDto & {
     usuarioId: string;
@@ -13,7 +12,7 @@ export type BuscarItensProximidadeQueryProps = BuscarPorProximidadeDto & {
  * Busca itens por proximidade geográfica OU itens populares.
  *
  * Estratégia inteligente:
- * - Se latitude/longitude fornecidos: busca por proximidade (PostGIS)
+ * - Se latitude/longitude fornecidos NO REQUEST (via Flutter): busca por proximidade (PostGIS)
  * - Se NÃO fornecidos: retorna itens populares (ordenado por aluguelsTotais)
  *
  * Regra de negócio:
@@ -24,8 +23,6 @@ export type BuscarItensProximidadeQueryProps = BuscarPorProximidadeDto & {
  */
 export class BuscarItensProximidadeQuery {
     constructor(
-        @Inject('UsuarioService')
-        private readonly usuarioService: UsuarioService,
         @Inject('ItemRepository')
         private readonly itemRepository: ItemRepository,
     ) {}
@@ -33,10 +30,7 @@ export class BuscarItensProximidadeQuery {
     async execute(
         props: BuscarItensProximidadeQueryProps,
     ): Promise<ItemComDistanciaDto[]> {
-        const usuario = await this.usuarioService.buscar(props.usuarioId);
-        if (!usuario) throw new NotFoundException('Usuario não encontrado');
-
-        if (!usuario.endereco?.latitude || !usuario.endereco?.longitude) {
+        if (!props.latitude || !props.longitude) {
             const itensPopulares =
                 await this.itemRepository.buscarItensPopularesSemLocalizacao({
                     termo: props.termo,
@@ -60,8 +54,8 @@ export class BuscarItensProximidadeQuery {
 
         const itensComDistancia =
             await this.itemRepository.buscarPorProximidade({
-                latitude: usuario.endereco.latitude,
-                longitude: usuario.endereco.longitude,
+                latitude: props.latitude,
+                longitude: props.longitude,
                 raioMetros: props.raioMetros ?? 5000,
                 termo: props.termo,
                 categorias: props.categorias,
@@ -78,7 +72,7 @@ export class BuscarItensProximidadeQuery {
                 item: resultado.item.toCardDto(),
                 distanciaMetros: resultado.distanciaMetros,
                 distanciaFormatada: Utils.formatarDistancia(
-                    resultado.distanciaMetros,
+                    resultado.distanciaMetros!,
                 ),
             }));
 

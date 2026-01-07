@@ -64,3 +64,9 @@ export const AuditarCriacaoItem = () =>
         descricao: 'Criação de novo item',
         nivel: 'medio',
     });
+
+export const AuditarAtualizacaoItem = () =>
+    Auditar(AuditoriaAcao.ATUALIZAR_ITEM, 'item', {
+        descricao: 'Atualização de item',
+        nivel: 'medio',
+    });

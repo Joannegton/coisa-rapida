@@ -26,6 +26,7 @@ export class ModeracaoMapper {
 
     toModel(domain: Moderacao): ModeracaoItemModel {
         const model = ModeracaoItemModel.criar({
+            id: domain.id,
             contemLinksExternos: domain.contemLinksExternos,
             contemPalavrasProibidas: domain.contemPalavrasProibidas,
             contemTelefone: domain.contemTelefone,

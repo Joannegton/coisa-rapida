@@ -166,6 +166,33 @@ export class ItemModel {
     static criar(props: Partial<ItemModel>): ItemModel {
         const item = new ItemModel();
         Object.assign(item, props);
+        
+        // Estabelecer relacionamento bidirecional com fotos para cascade funcionar
+        if (item.fotos && item.fotos.length > 0) {
+            item.fotos.forEach((foto) => {
+                foto.item = item;
+                if (item.id) {
+                    foto.itemId = item.id;
+                }
+            });
+        }
+        
+        // Estabelecer relacionamento bidirecional com disponibilidade
+        if (item.disponibilidade) {
+            item.disponibilidade.item = item;
+            if (item.id) {
+                item.disponibilidade.itemId = item.id;
+            }
+        }
+        
+        // Estabelecer relacionamento bidirecional com moderacao
+        if (item.moderacao) {
+            item.moderacao.item = item;
+            if (item.id) {
+                item.moderacao.itemId = item.id;
+            }
+        }
+        
         return item;
     }
 }

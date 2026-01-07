@@ -5,11 +5,14 @@ import {
     StatusItem,
     TipoAnuncio,
 } from '../infra/models/item.model';
-import { Preco } from './precos';
+import { AtualizarPrecosProps, Preco } from './precos';
 import { LocalizacaoItem } from './localizacao';
 import { Foto } from './foto';
 import { Moderacao } from './moderacao';
-import { Disponibilidade } from './disponibilidade';
+import {
+    AtualizarDisponibilidadeProps,
+    Disponibilidade,
+} from './disponibilidade';
 import { ItemDto } from '../application/dtos/responses/item.dto';
 import { ItemCardDto } from '../application/dtos/responses/item-cards.dto';
 
@@ -46,6 +49,16 @@ export type CriarItemProps = {
     fotos: Foto[];
     moderacao?: Moderacao;
     disponibilidade?: Disponibilidade;
+};
+
+export type AtualizarItemProps = {
+    nome?: string;
+    descricao?: string;
+    categoria?: CategoriaItem;
+    estado?: EstadoItem;
+    tipoAnuncio?: TipoAnuncio;
+    precos?: AtualizarPrecosProps;
+    disponibilidade?: AtualizarDisponibilidadeProps;
 };
 
 export class Item {
@@ -97,6 +110,30 @@ export class Item {
         item.props.atualizadoEm = props.atualizadoEm;
 
         return item;
+    }
+
+    atualizar(props: AtualizarItemProps): void {
+        if (props.nome !== undefined) {
+            this.setNome(props.nome);
+        }
+        if (props.descricao !== undefined) {
+            this.setDescricao(props.descricao);
+        }
+        if (props.categoria !== undefined) {
+            this.setCategoria(props.categoria);
+        }
+        if (props.estado !== undefined) {
+            this.setEstado(props.estado);
+        }
+        if (props.tipoAnuncio !== undefined) {
+            this.setTipoAnuncio(props.tipoAnuncio);
+        }
+        if (props.precos !== undefined) {
+            this.props.precos.atualizar(props.precos);
+        }
+        if (props.disponibilidade !== undefined && this.props.disponibilidade) {
+            this.props.disponibilidade.atualizar(props.disponibilidade);
+        }
     }
 
     private setUsuarioId(usuarioId: string) {
@@ -173,6 +210,90 @@ export class Item {
             throw new InvalidPropsException('Mínimo 1 foto é obrigatória');
         }
         this.props.fotos = fotos;
+    }
+
+    /**
+     * Adiciona novas fotos ao item
+     * @param novasFotos Fotos a adicionar
+     */
+    adicionarFotos(novasFotos: Foto[]): void {
+        if (!novasFotos || novasFotos.length === 0) {
+            throw new InvalidPropsException('Deve haver pelo menos 1 foto para adicionar');
+        }
+        if (this.props.fotos.length + novasFotos.length > 3) {
+            throw new InvalidPropsException(
+                `Total máximo 3 fotos. Atual: ${this.props.fotos.length}, tentando adicionar: ${novasFotos.length}`,
+            );
+        }
+        this.props.fotos.push(...novasFotos);
+    }
+
+    /**
+     * Remove uma foto do item
+     * @param fotoId ID da foto a remover
+     */
+    removerFoto(fotoId: string): void {
+        if (this.props.fotos.length === 1) {
+            throw new InvalidPropsException('Item deve ter pelo menos 1 foto');
+        }
+        const novasFotos = this.props.fotos.filter((f) => f.id !== fotoId);
+        if (novasFotos.length === this.props.fotos.length) {
+            throw new InvalidPropsException('Foto não encontrada neste item');
+        }
+        this.props.fotos = novasFotos;
+    }
+
+    /**
+     * Atualiza a ordem das fotos
+     * @param ordemData Array com {id, ordem} para cada foto
+     */
+    atualizarOrdemFotos(ordemData: Array<{ id: string; ordem: number }>): void {
+        if (ordemData.length !== this.props.fotos.length) {
+            throw new InvalidPropsException(
+                `Deve incluir todas as fotos. Esperado: ${this.props.fotos.length}, recebido: ${ordemData.length}`,
+            );
+        }
+
+        // Atualizar ordem de cada foto
+        for (const dados of ordemData) {
+            const foto = this.props.fotos.find((f) => f.id === dados.id);
+            if (foto) {
+                foto.mudarOrdem(dados.ordem);
+            }
+        }
+
+        // Ordenar array pelo campo ordem
+        this.props.fotos.sort((a, b) => a.ordem - b.ordem);
+    }
+
+    /**
+     * Recalcula a ordem das fotos para ser sequencial (1, 2, 3)
+     */
+    recalcularOrdemFotos(): void {
+        this.props.fotos.forEach((foto, index) => {
+            foto.mudarOrdem(index + 1);
+        });
+    }
+
+    /**
+     * Muda a foto principal
+     * @param fotoId ID da foto que será principal
+     */
+    mudarFotoPrincipal(fotoId: string): void {
+        const fotoAtual = this.props.fotos.find((f) => f.id === fotoId);
+        if (!fotoAtual) {
+            throw new InvalidPropsException('Foto não encontrada neste item');
+        }
+
+        // Remover principal de todas
+        this.props.fotos.forEach((f) => {
+            if (f.principal) {
+                f.removerPrincipal();
+            }
+        });
+
+        // Tornar a foto especificada como principal
+        fotoAtual.tornarPrincipal();
     }
 
     private setModeracao(moderacao?: Moderacao) {
@@ -289,12 +410,6 @@ export class Item {
             precoPorDia: this.precos.precoPorDia,
             precoPorHora: this.precos.precoPorHora,
             valorCaucao: this.precos.valorCaucao,
-            localizacaoLat: this.localizacao.latitude,
-            localizacaoLng: this.localizacao.longitude,
-            localizacaoEndereco: this.localizacao.endereco,
-            localizacaoCidade: this.localizacao.cidade,
-            localizacaoEstado: this.localizacao.estado,
-            localizacaoCep: this.localizacao.cep,
             permiteAluguelPorHora: this.disponibilidade?.permiteAluguelPorHora,
             horasMinimosAluguel: this.disponibilidade?.horasMinimosAluguel,
             horasMaximosAluguel: this.disponibilidade?.horasMaximosAluguel,

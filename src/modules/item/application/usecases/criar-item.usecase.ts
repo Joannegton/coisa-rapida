@@ -111,7 +111,7 @@ export class CriarItemUseCase {
             moderacao: moderacao,
         });
 
-        const itemSalvo = await this.itemRepository.criar(itemDomain);
+        const itemSalvo = await this.itemRepository.salvar(itemDomain);
 
         // OTIMIZAÇÃO: Fire-and-forget - não aguarda confirmação
         // Executa em paralelo sem bloquear resposta ao cliente

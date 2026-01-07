@@ -8,6 +8,7 @@ import {
     FiltrosGeograficos,
     ResultadoBuscaGeografica,
     BuscarItensPopularesSemLocalizacaoProps,
+    BuscarComDistancia,
 } from '../../domain/repositories/item.repository';
 import { InjectRepository } from '@nestjs/typeorm';
 import { RepositoryException } from 'src/common/exceptions/repository.exception';
@@ -22,80 +23,34 @@ export class ItemRepositoryImpl implements ItemRepository {
         private readonly repository: Repository<ItemModel>,
     ) {}
 
-    async criar(item: Item): Promise<Item> {
+    async salvar(item: Item): Promise<Item> {
         try {
             const model = this.itemMapper.toModel(item);
             const itemSalvo = await this.repository.save(model);
             return this.itemMapper.toDomain(itemSalvo);
         } catch (error) {
             this.logger.error(
-                `Erro ao criar item: ${error.message}`,
+                `Erro ao salvar item: ${error.message}`,
                 error.stack,
             );
-            throw new RepositoryException('Erro ao criar item');
+            throw new RepositoryException('Erro ao salvar item');
         }
     }
 
-    async buscarItensPopularesSemLocalizacao(
-        props: BuscarItensPopularesSemLocalizacaoProps,
-    ): Promise<Item[]> {
+    async buscar(id: string): Promise<Item | null> {
         try {
-            const queryBuilder = this.repository
-                .createQueryBuilder('item')
-                .leftJoinAndSelect('item.fotos', 'fotos')
-                .leftJoinAndSelect('item.disponibilidade', 'disponibilidade')
-                .where('item.status = :status', { status: StatusItem.ATIVO })
-                .orderBy('item.aluguelsTotais', 'DESC')
-                .addOrderBy('item.criadoEm', 'DESC');
-
-            if (props.termo) {
-                queryBuilder.andWhere(
-                    '(LOWER(item.nome) LIKE LOWER(:termo) OR LOWER(item.descricao) LIKE LOWER(:termo))',
-                    { termo: `%${props.termo}%` },
-                );
-            }
-
-            if (props.categorias && props.categorias.length > 0) {
-                queryBuilder.andWhere('item.categoria IN (:...categorias)', {
-                    categorias: props.categorias,
-                });
-            }
-
-            // Filtro por estados específicos (prioridade sobre estadoMinimo)
-            if (props.estados && props.estados.length > 0) {
-                queryBuilder.andWhere('item.estado IN (:...estados)', {
-                    estados: props.estados,
-                });
-            }
-
-            if (props.precoMinimoPorDia) {
-                queryBuilder.andWhere(
-                    'item.precoPorDia >= :precoMinimoPorDia',
-                    {
-                        precoMinimoPorDia: props.precoMinimoPorDia,
-                    },
-                );
-            }
-
-            if (props.precoMaximoPorDia) {
-                queryBuilder.andWhere(
-                    'item.precoPorDia <= :precoMaximoPorDia',
-                    {
-                        precoMaximoPorDia: props.precoMaximoPorDia,
-                    },
-                );
-            }
-
-            queryBuilder.skip(props.offset).take(props.limite);
-
-            const models = await queryBuilder.getMany();
-            return models.map((m) => this.itemMapper.toDomain(m));
+            const model = await this.repository.findOne({
+                where: { id },
+                relations: ['fotos', 'disponibilidade', 'moderacao'],
+            });
+            if (!model) return null;
+            return this.itemMapper.toDomain(model);
         } catch (error) {
             this.logger.error(
-                `Erro ao buscar itens populares sem localização: ${error.message}`,
+                `Erro ao buscar item: ${error.message}`,
                 error.stack,
             );
-            throw new RepositoryException('Erro ao buscar itens populares');
+            throw new RepositoryException('Erro ao buscar item');
         }
     }
 
@@ -252,6 +207,120 @@ export class ItemRepositoryImpl implements ItemRepository {
         }
     }
 
+    async buscarItensPopularesSemLocalizacao(
+        props: BuscarItensPopularesSemLocalizacaoProps,
+    ): Promise<Item[]> {
+        try {
+            const queryBuilder = this.repository
+                .createQueryBuilder('item')
+                .leftJoinAndSelect('item.fotos', 'fotos')
+                .leftJoinAndSelect('item.disponibilidade', 'disponibilidade')
+                .where('item.status = :status', { status: StatusItem.ATIVO })
+                .orderBy('item.aluguelsTotais', 'DESC')
+                .addOrderBy('item.criadoEm', 'DESC');
+
+            if (props.termo) {
+                queryBuilder.andWhere(
+                    '(LOWER(item.nome) LIKE LOWER(:termo) OR LOWER(item.descricao) LIKE LOWER(:termo))',
+                    { termo: `%${props.termo}%` },
+                );
+            }
+
+            if (props.categorias && props.categorias.length > 0) {
+                queryBuilder.andWhere('item.categoria IN (:...categorias)', {
+                    categorias: props.categorias,
+                });
+            }
+
+            // Filtro por estados específicos (prioridade sobre estadoMinimo)
+            if (props.estados && props.estados.length > 0) {
+                queryBuilder.andWhere('item.estado IN (:...estados)', {
+                    estados: props.estados,
+                });
+            }
+
+            if (props.precoMinimoPorDia) {
+                queryBuilder.andWhere(
+                    'item.precoPorDia >= :precoMinimoPorDia',
+                    {
+                        precoMinimoPorDia: props.precoMinimoPorDia,
+                    },
+                );
+            }
+
+            if (props.precoMaximoPorDia) {
+                queryBuilder.andWhere(
+                    'item.precoPorDia <= :precoMaximoPorDia',
+                    {
+                        precoMaximoPorDia: props.precoMaximoPorDia,
+                    },
+                );
+            }
+
+            queryBuilder.skip(props.offset).take(props.limite);
+
+            const models = await queryBuilder.getMany();
+            return models.map((m) => this.itemMapper.toDomain(m));
+        } catch (error) {
+            this.logger.error(
+                `Erro ao buscar itens populares sem localização: ${error.message}`,
+                error.stack,
+            );
+            throw new RepositoryException('Erro ao buscar itens populares');
+        }
+    }
+
+    async buscarComDistancia(
+        props: BuscarComDistancia,
+    ): Promise<ResultadoBuscaGeografica | null> {
+        try {
+            let query = this.repository
+                .createQueryBuilder('item')
+                .leftJoinAndSelect('item.fotos', 'fotos')
+                .leftJoinAndSelect('item.disponibilidade', 'disponibilidade')
+                .where('item.id = :itemId', { itemId: props.itemId });
+
+            if (props.latitude !== undefined && props.longitude !== undefined) {
+                query = query.addSelect(
+                    `ST_Distance(
+                        item.ponto,
+                        ST_SetSRID(ST_MakePoint(:longitude, :latitude), 4326)::geography
+                    )`,
+                    'distancia_metros',
+                );
+                query = query.setParameters({
+                    latitude: props.latitude,
+                    longitude: props.longitude,
+                });
+            }
+
+            const rawAndEntities = await query.getRawAndEntities();
+
+            if (rawAndEntities.entities.length === 0) {
+                return null;
+            }
+
+            const model = rawAndEntities.entities[0];
+            const distanciaMetros: number | null =
+                props.latitude !== undefined && props.longitude !== undefined
+                    ? Number.parseFloat(rawAndEntities.raw[0].distancia_metros)
+                    : null;
+
+            return {
+                item: this.itemMapper.toDomain(model),
+                distanciaMetros,
+            };
+        } catch (error) {
+            this.logger.error(
+                `Erro ao buscar item com distância: ${error.message}`,
+                error.stack,
+            );
+            throw new RepositoryException('Erro ao buscar item com distância');
+        }
+    }
+
+    // não utilizados ainda
+
     /**
      * Calcula a distância (em metros) entre um item específico e um ponto geográfico.
      */
@@ -329,6 +398,18 @@ export class ItemRepositoryImpl implements ItemRepository {
             where: { usuarioId, status: StatusItem.ATIVO },
         });
         return models.map((m) => this.itemMapper.toDomain(m));
+    }
+
+    async incrementarVersao(itemId: string): Promise<void> {
+        try {
+            await this.repository.increment({ id: itemId }, 'version', 1);
+        } catch (error) {
+            this.logger.error(
+                `Erro ao incrementar versão do item: ${error.message}`,
+                error.stack,
+            );
+            throw new RepositoryException('Erro ao incrementar versão do item');
+        }
     }
 
     /**

@@ -24,8 +24,13 @@ type CriarDisponibilidadeProps = {
     horasMaximosAluguel?: number;
 };
 
+export type AtualizarDisponibilidadeProps = Omit<
+    DisponibilidadeProps,
+    'datasBloqueadas' | 'dataDisponibilidade' | 'disponivel'
+>;
+
 export class Disponibilidade {
-    private readonly _id;
+    private readonly _id: string;
     private readonly props: DisponibilidadeProps;
 
     constructor(id?: string) {
@@ -61,6 +66,32 @@ export class Disponibilidade {
         domain.setHorasMinimosAluguel(props.horasMinimosAluguel);
         domain.setHorasMaximosAluguel(props.horasMaximosAluguel);
         return domain;
+    }
+
+    atualizar(props: AtualizarDisponibilidadeProps): void {
+        if (props.diasMinimosAluguel !== undefined) {
+            this.setDiasMinimosAluguel(props.diasMinimosAluguel);
+        }
+        if (props.diasMaximosAluguel !== undefined) {
+            this.setDiasMaximosAluguel(props.diasMaximosAluguel);
+        }
+        if (props.permitAluguelsConsecutivos !== undefined) {
+            this.setPermitAluguelsConsecutivos(
+                props.permitAluguelsConsecutivos,
+            );
+        }
+        if (props.permiteAluguelPorHora !== undefined) {
+            this.setPermiteAluguelPorHora(props.permiteAluguelPorHora);
+        }
+        if (props.horasMinimosAluguel !== undefined) {
+            this.setHorasMinimosAluguel(props.horasMinimosAluguel);
+        }
+        if (props.horasMaximosAluguel !== undefined) {
+            this.setHorasMaximosAluguel(props.horasMaximosAluguel);
+        }
+        if (props.aprovacaoAutomatica !== undefined) {
+            this.setAprovacaoAutomatica(props.aprovacaoAutomatica);
+        }
     }
 
     // estaDisponivel(dataInicio: Date, dataFim: Date): boolean {

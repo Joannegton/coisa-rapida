@@ -26,16 +26,20 @@ export type BuscarItensPopularesSemLocalizacaoProps = {
 
 export type ResultadoBuscaGeografica = {
     item: Item;
-    distanciaMetros: number;
+    distanciaMetros: number | null;
     distanciaFormatada?: string;
 };
 
-export interface ItemRepository {
-    criar(item: Item): Promise<Item>;
+export type BuscarComDistancia = {
+    itemId: string;
+    latitude?: number;
+    longitude?: number;
+};
 
-    buscarItensPopularesSemLocalizacao(
-        props: BuscarItensPopularesSemLocalizacaoProps,
-    ): Promise<Item[]>;
+export interface ItemRepository {
+    salvar(item: Item): Promise<Item>;
+
+    buscar(id: string): Promise<Item | null>;
 
     /**
      * Busca itens dentro de um raio específico (em metros) a partir de um ponto geográfico.
@@ -44,6 +48,14 @@ export interface ItemRepository {
     buscarPorProximidade(
         filtros: FiltrosGeograficos,
     ): Promise<ResultadoBuscaGeografica[]>;
+
+    buscarItensPopularesSemLocalizacao(
+        props: BuscarItensPopularesSemLocalizacaoProps,
+    ): Promise<Item[]>;
+
+    buscarComDistancia(
+        props: BuscarComDistancia,
+    ): Promise<ResultadoBuscaGeografica | null>;
 
     /**
      * Calcula a distância (em metros) entre um item específico e um ponto geográfico.
@@ -71,4 +83,10 @@ export interface ItemRepository {
     buscarPendentesAprovacao(pagina?: number, limite?: number): Promise<Item[]>;
 
     buscarAtivosDoUsuario(usuarioId: string): Promise<Item[]>;
+
+    /**
+     * Incrementa a versão de um item (para otimistic locking)
+     * Usado quando fotos ou outras relações são modificadas sem carregar o item completo
+     */
+    incrementarVersao(itemId: string): Promise<void>;
 }

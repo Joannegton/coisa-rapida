@@ -25,6 +25,7 @@ export class DisponibilidadeMapper {
     }
     toModel(domain: Disponibilidade): DisponibilidadeItemModel {
         const model = DisponibilidadeItemModel.criar({
+            id: domain.id,
             aprovacaoAutomatica: domain.aprovacaoAutomatica,
             diasMaximosAluguel: domain.diasMaximosAluguel,
             diasMinimosAluguel: domain.diasMinimosAluguel,

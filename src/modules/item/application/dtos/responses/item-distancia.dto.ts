@@ -1,12 +1,13 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { ItemCardDto } from './item-cards.dto';
+import { ItemDto } from './item.dto';
 
 export class ItemComDistanciaDto {
     @ApiProperty({
         description: 'Dados do item para exibição em card',
         type: ItemCardDto,
     })
-    item: ItemCardDto;
+    item: ItemCardDto | ItemDto;
 
     @ApiProperty({
         description: 'Distância em metros (null se não houver localização)',
@@ -21,4 +22,11 @@ export class ItemComDistanciaDto {
         nullable: true,
     })
     distanciaFormatada: string | null;
+
+    @ApiProperty({
+        description: 'Indica se o usuário é o proprietário do item',
+        example: false,
+        required: false,
+    })
+    proprietario?: boolean;
 }

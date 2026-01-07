@@ -33,4 +33,8 @@ export class UploadImagemServiceImpl implements UploadImagemService {
             url: uploadResult.url,
         };
     }
+
+    async deletarImagem(publicId: string): Promise<void> {
+        await this.cloudinaryService.deletarArquivoCloudinary(publicId);
+    }
 }

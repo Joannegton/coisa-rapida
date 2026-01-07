@@ -15,4 +15,5 @@ export type UploadImagemResult = {
 };
 export interface UploadImagemService {
     uploadImagem(props: UploadImagemProps): Promise<UploadImagemResult>;
+    deletarImagem(publicId: string): Promise<void>;
 }

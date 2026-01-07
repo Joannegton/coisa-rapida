@@ -8,6 +8,8 @@ export interface PrecosProps {
     caucaoObrigatoria: boolean;
 }
 
+export type AtualizarPrecosProps = Partial<PrecosProps>;
+
 export class Preco {
     private readonly props: PrecosProps;
 
@@ -41,6 +43,28 @@ export class Preco {
         domain.setValorCaucao(props.valorCaucao);
         domain.setCaucaoObrigatoria(props.caucaoObrigatoria);
         return domain;
+    }
+
+    atualizar(props: AtualizarPrecosProps): void {
+        if (props.precoPorDia !== undefined) {
+            this.setPrecoPorDia(props.precoPorDia);
+        }
+        if (props.precoPorHora !== undefined) {
+            this.setPrecoPorHora(props.precoPorHora);
+        }
+        if (props.valorCaucao !== undefined) {
+            // Validar caução mínima se estiver atualizando
+            const caucaoMinima = this.calcularCaucaoMinima();
+            if (props.valorCaucao < caucaoMinima) {
+                throw new PrecoException(
+                    `valor do Caução deve ser no mínimo ${caucaoMinima}`,
+                );
+            }
+            this.setValorCaucao(props.valorCaucao);
+        }
+        if (props.caucaoObrigatoria !== undefined) {
+            this.setCaucaoObrigatoria(props.caucaoObrigatoria);
+        }
     }
 
     // calcularValorPeriodo(
