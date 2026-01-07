@@ -124,23 +124,17 @@ export class ItemController {
         @Param('itemId') itemId: string,
         @usuarioAtual() usuario: UsuarioPayload,
         @UploadedFiles() fotos: Express.Multer.File[],
-        @Body() dto: AdicionarFotosItemDTO,
     ) {
         return this.adicionarFotosItemUseCase.execute({
             itemId,
             usuarioId: usuario.sub,
             fotos,
-            fotoPrincipalId: dto.fotoPrincipalId,
         });
     }
 
     @ApiOperation({
         summary: 'Remover uma foto do item',
-        description:
-            'Remove uma foto específica do item.\n' +
-            '- Item deve ter no mínimo 1 foto\n' +
-            '- Se remover a principal, a primeira foto se torna principal\n' +
-            '- Ordem das fotos é recalculada automaticamente',
+        description: 'Remove uma foto específica do item.',
     })
     @ApiResponse({
         status: 204,

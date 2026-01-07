@@ -1,5 +1,7 @@
+import { InvalidPropsException } from 'src/common/exceptions/invalidProps.exception';
+
 export interface FotoProps {
-    id: string;
+    publicIdCloudinary: string;
     url: string;
     ordem: number;
     principal: boolean;
@@ -8,32 +10,36 @@ export interface FotoProps {
     criadoEm: Date;
 }
 
-type CriarFotoProps = Omit<FotoProps, 'criadoEm'>;
+type CriarFotoProps = Omit<FotoProps, 'criadoEm' | 'id'>;
 
 export class Foto {
+    private readonly _id: string;
     private readonly props: FotoProps;
 
-    constructor(id: string) {
-        this.props = { id } as FotoProps;
+    constructor(id?: string) {
+        if (id) this._id = id;
+        this.props = {} as FotoProps;
     }
 
     static criar(props: CriarFotoProps): Foto {
-        const domain = new Foto(props.id);
+        const domain = new Foto();
         domain.setUrl(props.url);
         domain.setOrdem(props.ordem);
         domain.setPrincipal(props.principal);
         domain.setNomeArquivo(props.nomeArquivo);
         domain.setTamanhoBytes(props.tamanhoBytes);
+        domain.setPublicIdCloudinary(props.publicIdCloudinary);
         return domain;
     }
 
-    static carregar(props: FotoProps): Foto {
-        const domain = new Foto(props.id);
+    static carregar(props: FotoProps, id: string): Foto {
+        const domain = new Foto(id);
         domain.setUrl(props.url);
         domain.setOrdem(props.ordem);
         domain.setPrincipal(props.principal);
         domain.setNomeArquivo(props.nomeArquivo);
         domain.setTamanhoBytes(props.tamanhoBytes);
+        domain.setPublicIdCloudinary(props.publicIdCloudinary);
         domain.props.criadoEm = props.criadoEm;
         return domain;
     }
@@ -52,7 +58,7 @@ export class Foto {
 
     mudarOrdem(novaOrdem: number): void {
         if (novaOrdem < 1 || novaOrdem > 3) {
-            throw new Error('Ordem deve estar entre 1 e 3');
+            throw new InvalidPropsException('Ordem deve estar entre 1 e 3');
         }
         this.setOrdem(novaOrdem);
     }
@@ -77,8 +83,16 @@ export class Foto {
         this.props.tamanhoBytes = value;
     }
 
+    private setPublicIdCloudinary(value: string) {
+        if (!value)
+            throw new InvalidPropsException(
+                'publicIdCloudinary não pode ser vazio',
+            );
+        this.props.publicIdCloudinary = value;
+    }
+
     get id(): string {
-        return this.props.id;
+        return this._id;
     }
 
     get url(): string {
@@ -99,5 +113,9 @@ export class Foto {
 
     get tamanhoBytes(): number | undefined {
         return this.props.tamanhoBytes;
+    }
+
+    get publicIdCloudinary(): string | undefined {
+        return this.props.publicIdCloudinary;
     }
 }

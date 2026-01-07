@@ -165,7 +165,7 @@ export class CriarItemUseCase {
                 foto.publicId.split('/').pop() || 'imagem-desconhecida';
 
             const imagem = Foto.criar({
-                id: foto.publicId,
+                publicIdCloudinary: foto.publicId,
                 url: foto.secure_url,
                 nomeArquivo: nomeArquivo,
                 tamanhoBytes: foto.bytes,

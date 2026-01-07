@@ -8,7 +8,6 @@ import { FotosItemModel } from './infra/models/fotos-item.model';
 import { ModeracaoItemModel } from './infra/models/moderacao-item.model';
 import { DisponibilidadeItemModel } from './infra/models/disponibilidade-item.model';
 import { ItemRepositoryImpl } from './infra/repositories/item.repository';
-import { FotoRepositoryImpl } from './infra/repositories/foto.repository';
 import { BuscaGeograficaService } from './application/services/busca-geografica.service';
 import { UploadImagemServiceImpl } from './infra/services/upload-imagem.service';
 import { UsuarioServiceImpl } from './infra/services/usuario.service';
@@ -47,10 +46,6 @@ import { ItemQueries } from './application/queries';
         {
             provide: 'ItemRepository',
             useClass: ItemRepositoryImpl,
-        },
-        {
-            provide: 'FotoRepository',
-            useClass: FotoRepositoryImpl,
         },
         {
             provide: 'UsuarioService',

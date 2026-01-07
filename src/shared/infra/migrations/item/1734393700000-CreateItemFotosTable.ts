@@ -4,8 +4,9 @@ export class CreateItemFotosTable1734393700000 implements MigrationInterface {
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`
             CREATE TABLE IF NOT EXISTS item.item_fotos (
-                id VARCHAR(500) NOT NULL PRIMARY KEY,
+                id UUID DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
                 item_id UUID NOT NULL REFERENCES item.item(id) ON DELETE CASCADE,
+                public_id_cloudinary VARCHAR(500) NOT NULL,
                 url TEXT NOT NULL,
                 ordem INTEGER DEFAULT 0 NOT NULL,
                 principal BOOLEAN DEFAULT FALSE NOT NULL,
@@ -26,6 +27,11 @@ export class CreateItemFotosTable1734393700000 implements MigrationInterface {
         await queryRunner.query(`
             CREATE INDEX IF NOT EXISTS idx_item_fotos_principal 
             ON item.item_fotos(item_id, principal);
+        `);
+
+        await queryRunner.query(`
+            CREATE INDEX IF NOT EXISTS idx_item_fotos_public_id 
+            ON item.item_fotos(public_id_cloudinary);
         `);
     }
 

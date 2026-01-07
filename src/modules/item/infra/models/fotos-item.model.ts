@@ -5,21 +5,35 @@ import {
     ManyToOne,
     JoinColumn,
     CreateDateColumn,
-    PrimaryColumn,
+    PrimaryGeneratedColumn,
 } from 'typeorm';
 import { ItemModel } from './item.model';
 
 @Entity('item_fotos', { schema: 'item' })
 @Index('idx_item_fotos_item_id', ['itemId'])
 @Index('idx_item_fotos_principal', ['itemId', 'principal'])
+@Index('idx_item_fotos_public_id', ['publicIdCloudinary'])
 export class FotosItemModel {
-    @PrimaryColumn('varchar', { length: 500 })
+    @PrimaryGeneratedColumn('uuid')
     id: string;
+
+    @Column({
+        name: 'public_id_cloudinary',
+        type: 'varchar',
+        length: 500,
+        nullable: false,
+    })
+    publicIdCloudinary: string;
 
     @Column({ name: 'item_id', type: 'uuid' })
     itemId: string;
 
-    @ManyToOne(() => ItemModel, (item) => item.fotos, { onDelete: 'CASCADE' })
+    @ManyToOne(() => ItemModel, (item) => item.fotos, {
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE',
+        nullable: false,
+        orphanedRowAction: 'delete',
+    })
     @JoinColumn({ name: 'item_id' })
     item: ItemModel;
 

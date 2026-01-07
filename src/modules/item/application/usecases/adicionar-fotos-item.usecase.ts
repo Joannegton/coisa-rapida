@@ -8,7 +8,6 @@ import type { ItemRepository } from '../../domain/repositories/item.repository';
 import { Foto } from '../../domain/foto';
 import { InvalidPropsException } from 'src/common/exceptions/invalidProps.exception';
 import type { UploadImagemService } from '../../domain/services/upload-imagem.service';
-import type { FotoRepository } from '../../domain/repositories/foto.repository';
 import { ItemFotoDto } from '../dtos/responses/item-foto.dto';
 
 export type AdicionarFotosItemUseCaseProps = {
@@ -25,8 +24,6 @@ export class AdicionarFotosItemUseCase {
         private readonly itemRepository: ItemRepository,
         @Inject('UploadService')
         private readonly uploadService: UploadImagemService,
-        @Inject('FotoRepository')
-        private readonly fotoRepository: FotoRepository,
     ) {}
 
     async execute(props: AdicionarFotosItemUseCaseProps): Promise<ItemFotoDto> {
@@ -60,37 +57,26 @@ export class AdicionarFotosItemUseCase {
             ),
         );
 
-        const fotosDomain = uploadResults.map((result) => {
-            const nomeArquivo =
-                result.publicId.split('/').pop() || 'imagem-desconhecida';
+        const fotosDomain = uploadResults.map((result, index) => {
+            const nomeArquivo = result.publicId.split('/').pop();
 
             return Foto.criar({
-                id: result.publicId,
+                publicIdCloudinary: result.publicId,
                 url: result.url,
                 principal: false,
                 nomeArquivo: nomeArquivo,
                 tamanhoBytes: result.bytes,
-                ordem: totalAtual + 1,
+                ordem: totalAtual + index + 1,
             });
         });
 
-        const fotosInseridas = await this.fotoRepository.salvar(fotosDomain);
+        itemDomain.adicionarFotos(fotosDomain);
 
-        if (props.fotoPrincipalId) {
-            const fotoEspecificada = fotosInseridas.find(
-                (f) => f.id === props.fotoPrincipalId,
-            );
-            if (fotoEspecificada) {
-                await this.fotoRepository.tornarPrincipal(
-                    props.fotoPrincipalId,
-                    props.itemId,
-                );
-            }
-        }
+        const itemSalvo = await this.itemRepository.salvar(itemDomain);
 
         const dto: ItemFotoDto = {
             itemId: itemDomain.id,
-            fotos: fotosInseridas.map((foto) => ({
+            fotos: itemSalvo.fotos.map((foto) => ({
                 fotoId: foto.id,
                 url: foto.url,
                 ordem: foto.ordem,

@@ -5,15 +5,18 @@ import { FotosItemModel } from '../models/fotos-item.model';
 @Injectable()
 export class FotoMapper {
     toDomain(model: FotosItemModel): Foto {
-        const domain = Foto.carregar({
-            url: model.url,
-            ordem: model.ordem,
-            principal: model.principal,
-            nomeArquivo: model.nomeArquivo,
-            tamanhoBytes: model.tamanhoBytes,
-            criadoEm: model.criadoEm,
-            id: model.id,
-        });
+        const domain = Foto.carregar(
+            {
+                url: model.url,
+                ordem: model.ordem,
+                principal: model.principal,
+                nomeArquivo: model.nomeArquivo,
+                tamanhoBytes: model.tamanhoBytes,
+                criadoEm: model.criadoEm,
+                publicIdCloudinary: model.publicIdCloudinary,
+            },
+            model.id,
+        );
         return domain;
     }
 
@@ -25,6 +28,7 @@ export class FotoMapper {
             principal: domain.principal,
             nomeArquivo: domain.nomeArquivo,
             tamanhoBytes: domain.tamanhoBytes,
+            publicIdCloudinary: domain.publicIdCloudinary,
         });
         return model;
     }

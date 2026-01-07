@@ -136,6 +136,91 @@ export class Item {
         }
     }
 
+    adicionarFotos(novasFotos: Foto[]): void {
+        if (!novasFotos || novasFotos.length === 0) {
+            throw new InvalidPropsException(
+                'Deve haver pelo menos 1 foto para adicionar',
+            );
+        }
+        if (this.props.fotos.length + novasFotos.length > 3) {
+            throw new InvalidPropsException(
+                `Total máximo 3 fotos. Atual: ${this.props.fotos.length}, tentando adicionar: ${novasFotos.length}`,
+            );
+        }
+
+        const proximaOrdem = this.props.fotos.length + 1;
+        novasFotos.forEach((foto, index) => {
+            foto.mudarOrdem(proximaOrdem + index);
+            foto.removerPrincipal();
+        });
+
+        this.props.fotos.push(...novasFotos);
+
+        if (!this.props.fotos.some((f) => f.principal)) {
+            this.props.fotos[0].tornarPrincipal();
+        }
+    }
+
+    removerFoto(fotoId: string): void {
+        if (this.props.fotos.length < 2) {
+            throw new InvalidPropsException('Item deve ter pelo menos 1 foto');
+        }
+
+        const fotoARemover = this.props.fotos.find((f) => f.id === fotoId);
+        if (!fotoARemover) {
+            throw new InvalidPropsException('Foto não encontrada neste item');
+        }
+
+        const eraPrincipal = fotoARemover.principal;
+
+        this.props.fotos = this.props.fotos.filter((f) => f.id !== fotoId);
+
+        this.recalcularOrdemFotos();
+
+        if (eraPrincipal && this.props.fotos.length > 0) {
+            const primeiraMantida = this.props.fotos[0];
+            primeiraMantida.tornarPrincipal();
+        }
+    }
+
+    recalcularOrdemFotos(): void {
+        this.props.fotos.forEach((foto, index) => {
+            foto.mudarOrdem(index + 1);
+        });
+    }
+
+    atualizarOrdemFotos(ordemData: Array<{ id: string; ordem: number }>): void {
+        if (ordemData.length !== this.props.fotos.length) {
+            throw new InvalidPropsException(
+                `Deve incluir todas as fotos. Esperado: ${this.props.fotos.length}, recebido: ${ordemData.length}`,
+            );
+        }
+
+        for (const dados of ordemData) {
+            const foto = this.props.fotos.find((f) => f.id === dados.id);
+            if (foto) {
+                foto.mudarOrdem(dados.ordem);
+            }
+        }
+
+        this.props.fotos.sort((a, b) => a.ordem - b.ordem);
+    }
+
+    mudarFotoPrincipal(fotoId: string): void {
+        const fotoAtual = this.props.fotos.find((f) => f.id === fotoId);
+        if (!fotoAtual) {
+            throw new InvalidPropsException('Foto não encontrada neste item');
+        }
+
+        this.props.fotos.forEach((f) => {
+            if (f.principal) {
+                f.removerPrincipal();
+            }
+        });
+
+        fotoAtual.tornarPrincipal();
+    }
+
     private setUsuarioId(usuarioId: string) {
         if (!usuarioId || usuarioId.trim().length === 0) {
             throw new InvalidPropsException('ID do usuário é obrigatório');
@@ -210,90 +295,6 @@ export class Item {
             throw new InvalidPropsException('Mínimo 1 foto é obrigatória');
         }
         this.props.fotos = fotos;
-    }
-
-    /**
-     * Adiciona novas fotos ao item
-     * @param novasFotos Fotos a adicionar
-     */
-    adicionarFotos(novasFotos: Foto[]): void {
-        if (!novasFotos || novasFotos.length === 0) {
-            throw new InvalidPropsException('Deve haver pelo menos 1 foto para adicionar');
-        }
-        if (this.props.fotos.length + novasFotos.length > 3) {
-            throw new InvalidPropsException(
-                `Total máximo 3 fotos. Atual: ${this.props.fotos.length}, tentando adicionar: ${novasFotos.length}`,
-            );
-        }
-        this.props.fotos.push(...novasFotos);
-    }
-
-    /**
-     * Remove uma foto do item
-     * @param fotoId ID da foto a remover
-     */
-    removerFoto(fotoId: string): void {
-        if (this.props.fotos.length === 1) {
-            throw new InvalidPropsException('Item deve ter pelo menos 1 foto');
-        }
-        const novasFotos = this.props.fotos.filter((f) => f.id !== fotoId);
-        if (novasFotos.length === this.props.fotos.length) {
-            throw new InvalidPropsException('Foto não encontrada neste item');
-        }
-        this.props.fotos = novasFotos;
-    }
-
-    /**
-     * Atualiza a ordem das fotos
-     * @param ordemData Array com {id, ordem} para cada foto
-     */
-    atualizarOrdemFotos(ordemData: Array<{ id: string; ordem: number }>): void {
-        if (ordemData.length !== this.props.fotos.length) {
-            throw new InvalidPropsException(
-                `Deve incluir todas as fotos. Esperado: ${this.props.fotos.length}, recebido: ${ordemData.length}`,
-            );
-        }
-
-        // Atualizar ordem de cada foto
-        for (const dados of ordemData) {
-            const foto = this.props.fotos.find((f) => f.id === dados.id);
-            if (foto) {
-                foto.mudarOrdem(dados.ordem);
-            }
-        }
-
-        // Ordenar array pelo campo ordem
-        this.props.fotos.sort((a, b) => a.ordem - b.ordem);
-    }
-
-    /**
-     * Recalcula a ordem das fotos para ser sequencial (1, 2, 3)
-     */
-    recalcularOrdemFotos(): void {
-        this.props.fotos.forEach((foto, index) => {
-            foto.mudarOrdem(index + 1);
-        });
-    }
-
-    /**
-     * Muda a foto principal
-     * @param fotoId ID da foto que será principal
-     */
-    mudarFotoPrincipal(fotoId: string): void {
-        const fotoAtual = this.props.fotos.find((f) => f.id === fotoId);
-        if (!fotoAtual) {
-            throw new InvalidPropsException('Foto não encontrada neste item');
-        }
-
-        // Remover principal de todas
-        this.props.fotos.forEach((f) => {
-            if (f.principal) {
-                f.removerPrincipal();
-            }
-        });
-
-        // Tornar a foto especificada como principal
-        fotoAtual.tornarPrincipal();
     }
 
     private setModeracao(moderacao?: Moderacao) {

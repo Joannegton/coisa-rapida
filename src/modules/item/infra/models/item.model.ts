@@ -119,7 +119,7 @@ export class ItemModel {
     aluguelsTotais: number;
 
     @OneToMany(() => FotosItemModel, (foto) => foto.item, {
-        cascade: ['insert', 'update'],
+        cascade: true,
         eager: false,
     })
     fotos: FotosItemModel[];
@@ -166,7 +166,7 @@ export class ItemModel {
     static criar(props: Partial<ItemModel>): ItemModel {
         const item = new ItemModel();
         Object.assign(item, props);
-        
+
         // Estabelecer relacionamento bidirecional com fotos para cascade funcionar
         if (item.fotos && item.fotos.length > 0) {
             item.fotos.forEach((foto) => {
@@ -176,7 +176,7 @@ export class ItemModel {
                 }
             });
         }
-        
+
         // Estabelecer relacionamento bidirecional com disponibilidade
         if (item.disponibilidade) {
             item.disponibilidade.item = item;
@@ -184,7 +184,7 @@ export class ItemModel {
                 item.disponibilidade.itemId = item.id;
             }
         }
-        
+
         // Estabelecer relacionamento bidirecional com moderacao
         if (item.moderacao) {
             item.moderacao.item = item;
@@ -192,7 +192,7 @@ export class ItemModel {
                 item.moderacao.itemId = item.id;
             }
         }
-        
+
         return item;
     }
 }
