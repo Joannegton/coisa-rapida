@@ -67,23 +67,6 @@ export class Preco {
         }
     }
 
-    // calcularValorPeriodo(
-    //     dataInicio: Date,
-    //     dataFim: Date,
-    //     permiteHora: boolean,
-    // ): number {
-    //     const dataMs = dataFim.getTime() - dataInicio.getTime();
-    //     if (dataMs <= 0) return 0;
-
-    //     if (permiteHora && this.precoPorHora !== undefined) {
-    //         const horas = Math.ceil(dataMs / (1000 * 60 * 60));
-    //         return horas * this.precoPorHora;
-    //     }
-
-    //     const dias = Math.ceil(dataMs / (1000 * 60 * 60 * 24));
-    //     return dias * this.precoPorDia;
-    // }
-
     private calcularCaucaoMinima(): number {
         const taxa = this.precoPorDia * 0.5;
         return this.precoPorDia + taxa;

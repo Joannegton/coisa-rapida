@@ -1,5 +1,4 @@
 import { InvalidPropsException } from 'src/common/exceptions/invalidProps.exception';
-import { DisponibilidadeException } from './exceptions/disponibilidade.exception';
 
 export interface DisponibilidadeProps {
     disponivel: boolean;
@@ -93,43 +92,6 @@ export class Disponibilidade {
             this.setAprovacaoAutomatica(props.aprovacaoAutomatica);
         }
     }
-
-    // estaDisponivel(dataInicio: Date, dataFim: Date): boolean {
-    //     if (dataInicio >= dataFim) {
-    //         throw new DisponibilidadeException(
-    //             'dataInicio deve ser anterior a dataFim',
-    //         );
-    //     }
-    //     if (!this.disponivel) {
-    //         return false;
-    //     }
-
-    //     const duracaoMs = dataFim.getTime() - dataInicio.getTime();
-
-    //     if (this.permiteAluguelPorHora) {
-    //         const duracaoHoras = duracaoMs / (1000 * 60 * 60);
-    //         const minHoras = this.horasMinimosAluguel!;
-    //         const maxHoras = this.horasMaximosAluguel!;
-    //         if (duracaoHoras < minHoras || duracaoHoras > maxHoras)
-    //             return false;
-    //     } else {
-    //         const duracaoDias = duracaoMs / (1000 * 60 * 60 * 24);
-    //         if (
-    //             duracaoDias < this.diasMinimosAluguel ||
-    //             duracaoDias > this.diasMaximosAluguel
-    //         ) {
-    //             return false;
-    //         }
-    //     }
-
-    //     for (const dataBloqueada of this.datasBloqueadas) {
-    //         if (dataBloqueada >= dataInicio && dataBloqueada <= dataFim) {
-    //             return false;
-    //         }
-    //     }
-
-    //     return true;
-    // }
 
     get id(): string {
         return this._id;

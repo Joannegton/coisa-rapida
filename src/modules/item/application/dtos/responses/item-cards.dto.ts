@@ -25,13 +25,13 @@ export class ItemCardDto {
     @ApiProperty({ enum: TipoAnuncio, example: TipoAnuncio.ALUGUEL })
     tipoAnuncio: TipoAnuncio;
 
-    @ApiProperty({ example: 50.0, required: false })
+    @ApiProperty({ example: 50, required: false })
     precoPorDia?: number;
 
-    @ApiProperty({ example: 10.0, required: false })
+    @ApiProperty({ example: 10, required: false })
     precoPorHora?: number;
 
-    @ApiProperty({ example: 100.0, required: false })
+    @ApiProperty({ example: 100, required: false })
     valorCaucao?: number;
 
     @ApiProperty({ example: true, required: false })

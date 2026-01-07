@@ -1,9 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import axios, { AxiosError } from 'axios';
+import { Injectable } from '@nestjs/common';
+import axios from 'axios';
 import FormData from 'form-data';
 import { ServiceException } from 'src/common/exceptions/service.exception';
-import * as crypto from 'crypto';
 
 interface EstatisticasVirusTotal {
     malicious: number;

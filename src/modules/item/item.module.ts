@@ -8,7 +8,6 @@ import { FotosItemModel } from './infra/models/fotos-item.model';
 import { ModeracaoItemModel } from './infra/models/moderacao-item.model';
 import { DisponibilidadeItemModel } from './infra/models/disponibilidade-item.model';
 import { ItemRepositoryImpl } from './infra/repositories/item.repository';
-import { BuscaGeograficaService } from './application/services/busca-geografica.service';
 import { UploadImagemServiceImpl } from './infra/services/upload-imagem.service';
 import { UsuarioServiceImpl } from './infra/services/usuario.service';
 import { UsuarioModule } from '../usuario/usuario.module';
@@ -58,7 +57,6 @@ import { ItemQueries } from './application/queries';
         ModeracaoFilaService,
         AdvancedModerationWorker,
         ItemModeradoEventHandler,
-        BuscaGeograficaService,
     ],
     exports: [],
 })
