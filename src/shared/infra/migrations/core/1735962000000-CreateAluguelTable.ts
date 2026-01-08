@@ -43,6 +43,23 @@ export class CreateAluguelTable1735962000000 implements MigrationInterface {
                 -- Item
                 item_id UUID NOT NULL,
                 
+                -- Snapshot do Item (capturado no momento da criação)
+                snapshot_item_id UUID NOT NULL,
+                snapshot_item_nome VARCHAR(255) NOT NULL,
+                snapshot_item_descricao TEXT,
+                snapshot_preco_diaria DECIMAL(10, 2) NOT NULL,
+                snapshot_preco_hora DECIMAL(10, 2),
+                snapshot_item_foto_url TEXT,
+                snapshot_capturado_em TIMESTAMP WITH TIME ZONE NOT NULL,
+                snapshot_versao INTEGER DEFAULT 1,
+                snapshot_permite_aluguel_hora BOOLEAN DEFAULT FALSE,
+                snapshot_dias_minimos_aluguel INTEGER DEFAULT 1,
+                snapshot_dias_maximos_aluguel INTEGER DEFAULT 365,
+                snapshot_horas_minimas_aluguel INTEGER,
+                snapshot_horas_maximas_aluguel INTEGER,
+                snapshot_valor_caucao DECIMAL(10, 2),
+                snapshot_caucao_obrigatoria BOOLEAN DEFAULT FALSE,
+                
                 -- Preço Total
                 preco_total DECIMAL(10, 2) NOT NULL,
                 
@@ -69,6 +86,10 @@ export class CreateAluguelTable1735962000000 implements MigrationInterface {
                 -- Datas do Aluguel
                 data_inicio TIMESTAMP WITH TIME ZONE NOT NULL,
                 data_fim TIMESTAMP WITH TIME ZONE NOT NULL,
+                
+                -- Comunicação (observações e motivos de recusa)
+                observacoes_locatario TEXT,
+                motivo_recusa_locador TEXT,
                 
                 -- Status
                 status core.aluguel_status DEFAULT 'solicitado' NOT NULL,

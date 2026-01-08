@@ -3,7 +3,6 @@ import {
     CreateDateColumn,
     Entity,
     Index,
-    OneToOne,
     PrimaryGeneratedColumn,
     UpdateDateColumn,
 } from 'typeorm';
@@ -11,7 +10,7 @@ import { CaucaoModel } from './caucao.value-object';
 import { MultaModel } from './multa.value-object';
 import { ContratoModel } from './contrato.value-object';
 import { PessoaModel } from './pessoa.value-object';
-import { AluguelSnapshotModel } from './aluguel-snapshot.model';
+import { SnapshotItemModel } from './snapshot-item.value-object';
 
 export enum AluguelStatus {
     PAGAMENTO_PENDENTE = 'pagamento_pendente',
@@ -41,6 +40,9 @@ export class AluguelModel {
     @Column({ name: 'item_id', type: 'uuid' })
     itemId: string;
 
+    @Column(() => SnapshotItemModel, { prefix: 'snapshot' })
+    snapshotItem: SnapshotItemModel;
+
     @Column({
         type: 'decimal',
         precision: 10,
@@ -61,8 +63,25 @@ export class AluguelModel {
     @Column({ type: 'timestamptz', name: 'data_inicio' })
     dataInicio: Date;
 
-    @Column({ type: 'timestamptz', name: 'data_fim' })
+    @Column({
+        type: 'timestamptz',
+        name: 'data_fim',
+    })
     dataFim: Date;
+
+    @Column({
+        type: 'text',
+        name: 'observacoes_locatario',
+        nullable: true,
+    })
+    observacoesLocatario?: string;
+
+    @Column({
+        type: 'text',
+        name: 'motivo_recusa_locador',
+        nullable: true,
+    })
+    motivoRecusaLocador?: string;
 
     @Column({
         type: 'enum',
@@ -78,9 +97,9 @@ export class AluguelModel {
     @UpdateDateColumn({ name: 'atualizado_em' })
     atualizadoEm: Date;
 
-    @OneToOne(() => AluguelSnapshotModel, (snapshot) => snapshot.aluguel, {
-        cascade: true,
-        eager: false,
-    })
-    snapshot: AluguelSnapshotModel;
+    static criar(props: Partial<AluguelModel>): AluguelModel {
+        const aluguel = new AluguelModel();
+        Object.assign(aluguel, props);
+        return aluguel;
+    }
 }

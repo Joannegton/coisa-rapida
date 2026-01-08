@@ -23,13 +23,6 @@ export type SnapshotItem = {
     caucaoObrigatoria: boolean;
 };
 
-export type AluguelSnapshot = {
-    itemSnapshot: SnapshotItem;
-    observacoesLocatario?: string;
-    motivoRecusaLocador?: string;
-    criadoEm: Date;
-};
-
 export type AluguelProps = {
     locador: Pessoa;
     locatario: Pessoa;
@@ -37,12 +30,13 @@ export type AluguelProps = {
     dataInicio: Date;
     dataFim: Date;
     status: AluguelStatus;
+    observacoesLocatario?: string;
+    motivoRecusaLocador?: string;
     criadoEm: Date;
     atualizadoEm: Date;
 
     itemId: string;
     itemSnapshot: SnapshotItem;
-    snapshot?: AluguelSnapshot;
     caucao?: Caucao;
     multa: Multa;
     contrato: Contrato;
@@ -76,6 +70,7 @@ export class Aluguel {
         domain.setDataInicio(props.dataInicio);
         domain.setDataFim(props.dataFim);
         domain.setStatus(AluguelStatus.SOLICITADO);
+        domain.setObservacoesLocatario(props.observacoesLocatario);
 
         domain.calcularPrecoTotal();
 
@@ -95,7 +90,8 @@ export class Aluguel {
         domain.setDataInicio(props.dataInicio);
         domain.setDataFim(props.dataFim);
         domain.setStatus(props.status);
-        domain.props.snapshot = props.snapshot;
+        domain.props.observacoesLocatario = props.observacoesLocatario;
+        domain.props.motivoRecusaLocador = props.motivoRecusaLocador;
         domain.props.criadoEm = props.criadoEm;
         domain.props.atualizadoEm = props.atualizadoEm;
 
@@ -190,6 +186,14 @@ export class Aluguel {
         this.props.status = status;
     }
 
+    private setObservacoesLocatario(observacoesLocatario?: string): void {
+        this.props.observacoesLocatario = observacoesLocatario;
+    }
+
+    private setMotivoRecusaLocador(motivoRecusaLocador?: string): void {
+        this.props.motivoRecusaLocador = motivoRecusaLocador;
+    }
+
     get id(): string {
         return this._id;
     }
@@ -202,16 +206,20 @@ export class Aluguel {
         return this.props.locatario;
     }
 
+    get observacoesLocatario(): string | undefined {
+        return this.props.observacoesLocatario;
+    }
+
+    get motivoRecusaLocador(): string | undefined {
+        return this.props.motivoRecusaLocador;
+    }
+
     get itemId(): string {
         return this.props.itemId;
     }
 
     get itemSnapshot(): SnapshotItem {
         return this.props.itemSnapshot;
-    }
-
-    get snapshot(): AluguelSnapshot | undefined {
-        return this.props.snapshot;
     }
 
     get caucao(): Caucao | undefined {
