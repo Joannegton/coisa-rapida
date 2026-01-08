@@ -63,6 +63,10 @@ export class Foto {
         this.setOrdem(novaOrdem);
     }
 
+    ePrincipal(): boolean {
+        return this.props.principal;
+    }
+
     private setUrl(value: string) {
         this.props.url = value;
     }

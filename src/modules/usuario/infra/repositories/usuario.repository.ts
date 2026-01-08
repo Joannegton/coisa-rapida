@@ -44,11 +44,14 @@ export class UsuarioRepositoryImpl implements UsuarioRepository {
         }
     }
 
-    async buscarPorId(id: string): Promise<Usuario | null> {
+    async buscarPorId(
+        id: string,
+        carregarRelacoes: boolean = true,
+    ): Promise<Usuario | null> {
         try {
             const usuario = await this.repository.findOne({
                 where: { id },
-                relations: ['comprovantesResidencia'],
+                relations: carregarRelacoes ? ['comprovantesResidencia'] : [],
             });
             return usuario ? this.usuarioMapper.modelToDomain(usuario) : null;
         } catch (error) {

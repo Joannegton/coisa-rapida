@@ -147,7 +147,7 @@ export class ItemModel {
             eager: false,
         },
     )
-    disponibilidade?: DisponibilidadeItemModel;
+    disponibilidade: DisponibilidadeItemModel;
 
     @VersionColumn()
     versao: number;

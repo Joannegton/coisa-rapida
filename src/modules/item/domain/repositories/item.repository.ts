@@ -42,6 +42,12 @@ export interface ItemRepository {
     buscar(id: string): Promise<Item | null>;
 
     /**
+     * Busca item com pessimistic lock (FOR UPDATE) para evitar race conditions
+     * Use quando for modificar disponibilidade/bloqueios
+     */
+    buscarComLock(id: string, useLock?: boolean): Promise<Item | null>;
+
+    /**
      * Busca itens dentro de um raio específico (em metros) a partir de um ponto geográfico.
      * Utiliza PostGIS ST_DWithin para consulta otimizada com índice GiST.
      */

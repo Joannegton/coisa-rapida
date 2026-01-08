@@ -58,6 +58,6 @@ import { ItemQueries } from './application/queries';
         AdvancedModerationWorker,
         ItemModeradoEventHandler,
     ],
-    exports: [],
+    exports: ['ItemRepository'],
 })
 export class ItemModule {}

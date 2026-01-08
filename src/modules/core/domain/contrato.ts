@@ -31,6 +31,7 @@ export class Contrato {
         domain.setConteudoHtml(props.conteudoHtml);
         domain.setAceiteLocador(props.aceiteLocador);
         domain.setAceiteLocatario(props.aceiteLocatario);
+        domain.setCriadoEm(new Date());
         return domain;
     }
 

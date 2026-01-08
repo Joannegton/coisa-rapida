@@ -9,7 +9,7 @@ import {
 import { CaucaoModel } from './caucao.value-object';
 import { MultaModel } from './multa.value-object';
 import { ContratoModel } from './contrato.value-object';
-import { PessoaModel } from './pessoa.value-object';
+import { LocadorModel, LocatarioModel } from './pessoa-aluguel.value-object';
 import { SnapshotItemModel } from './snapshot-item.value-object';
 
 export enum AluguelStatus {
@@ -31,16 +31,16 @@ export class AluguelModel {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
-    @Column(() => PessoaModel, { prefix: 'locador' })
-    locador: PessoaModel;
+    @Column(() => LocadorModel, { prefix: false })
+    locador: LocadorModel;
 
-    @Column(() => PessoaModel, { prefix: 'locatario' })
-    locatario: PessoaModel;
+    @Column(() => LocatarioModel, { prefix: false })
+    locatario: LocatarioModel;
 
     @Column({ name: 'item_id', type: 'uuid' })
     itemId: string;
 
-    @Column(() => SnapshotItemModel, { prefix: 'snapshot' })
+    @Column(() => SnapshotItemModel, { prefix: false })
     snapshotItem: SnapshotItemModel;
 
     @Column({
@@ -55,7 +55,7 @@ export class AluguelModel {
     caucao?: CaucaoModel;
 
     @Column(() => MultaModel, { prefix: false })
-    multa: MultaModel;
+    multa?: MultaModel;
 
     @Column(() => ContratoModel, { prefix: false })
     contrato: ContratoModel;

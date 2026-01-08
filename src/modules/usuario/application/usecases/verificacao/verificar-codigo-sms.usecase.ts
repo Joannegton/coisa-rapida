@@ -47,6 +47,7 @@ export class VerificarCodigoSMSUseCase {
 
         const usuario = await this.usuarioRepository.buscarPorId(
             props.usuarioId,
+            true,
         );
 
         if (!usuario) throw new NotFoundException('Usuário não encontrado');

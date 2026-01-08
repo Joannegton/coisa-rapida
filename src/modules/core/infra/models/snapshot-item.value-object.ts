@@ -2,14 +2,7 @@ import { Column } from 'typeorm';
 
 export class SnapshotItemModel {
     @Column({
-        name: 'snapshot_item_id',
-        type: 'uuid',
-        comment: 'ID do item no momento do aluguel',
-    })
-    itemId: string;
-
-    @Column({
-        name: 'snapshot_item_nome',
+        name: 'item_nome_snapshot',
         type: 'varchar',
         length: 255,
         comment: 'Nome do item capturado no momento da criação',
@@ -17,7 +10,7 @@ export class SnapshotItemModel {
     nome: string;
 
     @Column({
-        name: 'snapshot_item_descricao',
+        name: 'item_descricao_snapshot',
         type: 'text',
         nullable: true,
         comment: 'Descrição do item capturada (opcional)',
@@ -25,7 +18,7 @@ export class SnapshotItemModel {
     descricao?: string;
 
     @Column({
-        name: 'snapshot_preco_diaria',
+        name: 'item_preco_diaria_snapshot',
         type: 'decimal',
         precision: 10,
         scale: 2,
@@ -34,7 +27,7 @@ export class SnapshotItemModel {
     precoDiaria: number;
 
     @Column({
-        name: 'snapshot_preco_hora',
+        name: 'item_preco_hora_snapshot',
         type: 'decimal',
         precision: 10,
         scale: 2,
@@ -44,7 +37,7 @@ export class SnapshotItemModel {
     precoHora?: number;
 
     @Column({
-        name: 'snapshot_item_foto_url',
+        name: 'item_foto_url_snapshot',
         type: 'text',
         nullable: true,
         comment: 'URL da foto principal do item (para histórico/exibição)',
@@ -52,7 +45,7 @@ export class SnapshotItemModel {
     fotoUrl?: string;
 
     @Column({
-        name: 'snapshot_capturado_em',
+        name: 'item_capturado_em_snapshot',
         type: 'timestamp',
         comment:
             'Data/hora em que o snapshot foi capturado (criação do aluguel)',
@@ -60,7 +53,7 @@ export class SnapshotItemModel {
     capturadoEm: Date;
 
     @Column({
-        name: 'snapshot_versao',
+        name: 'item_versao_snapshot',
         type: 'integer',
         default: 1,
         comment: 'Versão do snapshot (incrementa se item é re-capturado)',
@@ -68,7 +61,7 @@ export class SnapshotItemModel {
     versao: number;
 
     @Column({
-        name: 'snapshot_permite_aluguel_hora',
+        name: 'item_permite_aluguel_hora_snapshot',
         type: 'boolean',
         default: false,
         comment: 'Indica se este item permite aluguel por hora',
@@ -76,7 +69,7 @@ export class SnapshotItemModel {
     permiteAluguelPorHora: boolean;
 
     @Column({
-        name: 'snapshot_dias_minimos_aluguel',
+        name: 'item_dias_minimos_aluguel_snapshot',
         type: 'integer',
         default: 1,
         comment: 'Dias mínimos de aluguel configurados no momento da criação',
@@ -84,7 +77,7 @@ export class SnapshotItemModel {
     diasMinimosAluguel: number;
 
     @Column({
-        name: 'snapshot_dias_maximos_aluguel',
+        name: 'item_dias_maximos_aluguel_snapshot',
         type: 'integer',
         default: 365,
         comment: 'Dias máximos de aluguel configurados no momento da criação',
@@ -92,7 +85,7 @@ export class SnapshotItemModel {
     diasMaximosAluguel: number;
 
     @Column({
-        name: 'snapshot_horas_minimas_aluguel',
+        name: 'item_horas_minimas_aluguel_snapshot',
         type: 'integer',
         nullable: true,
         comment: 'Horas mínimas de aluguel (se aluguel por hora)',
@@ -100,7 +93,7 @@ export class SnapshotItemModel {
     horasMinimosAluguel?: number;
 
     @Column({
-        name: 'snapshot_horas_maximas_aluguel',
+        name: 'item_horas_maximas_aluguel_snapshot',
         type: 'integer',
         nullable: true,
         comment: 'Horas máximas de aluguel (se aluguel por hora)',
@@ -108,7 +101,7 @@ export class SnapshotItemModel {
     horasMaximosAluguel?: number;
 
     @Column({
-        name: 'snapshot_valor_caucao',
+        name: 'item_valor_caucao_snapshot',
         type: 'decimal',
         precision: 10,
         scale: 2,
@@ -118,7 +111,7 @@ export class SnapshotItemModel {
     valorCaucao?: number;
 
     @Column({
-        name: 'snapshot_caucao_obrigatoria',
+        name: 'item_caucao_obrigatoria_snapshot',
         type: 'boolean',
         default: false,
         comment: 'Indica se caução era obrigatória',

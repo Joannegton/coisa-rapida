@@ -25,7 +25,9 @@ export class AluguelMapper {
             ? this.caucaoMapper.toDomain(model.caucao)
             : undefined;
 
-        const multa = this.multaMapper.toDomain(model.multa);
+        const multa = model.multa
+            ? this.multaMapper.toDomain(model.multa)
+            : undefined;
         const contrato = this.contratoMapper.toDomain(model.contrato);
         const itemSnapshot = this.snapshotItemMapper.toDomain(
             model.snapshotItem,
@@ -54,14 +56,16 @@ export class AluguelMapper {
     }
 
     toModel(aluguel: Aluguel): AluguelModel {
-        const locadorModel = this.pessoaMapper.toModel(aluguel.locador);
-        const locatarioModel = this.pessoaMapper.toModel(aluguel.locatario);
+        const locadorModel = this.pessoaMapper.toLocadorModel(aluguel.locador);
+        const locatarioModel = this.pessoaMapper.toLocatarioModel(aluguel.locatario);
 
         const caucaoModel = aluguel.caucao
             ? this.caucaoMapper.toModel(aluguel.caucao)
             : undefined;
 
-        const multaModel = this.multaMapper.toModel(aluguel.multa);
+        const multaModel = aluguel.multa
+            ? this.multaMapper.toModel(aluguel.multa)
+            : undefined;
         const contratoModel = this.contratoMapper.toModel(aluguel.contrato);
 
         const itemSnapshotModel = this.snapshotItemMapper.toModel(

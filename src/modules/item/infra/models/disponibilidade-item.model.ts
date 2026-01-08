@@ -8,6 +8,12 @@ import {
 } from 'typeorm';
 import { ItemModel } from './item.model';
 
+export interface DataBloqueada {
+    dataInicio: string; // ISO 8601
+    dataFim: string; // ISO 8601
+    motivo?: string;
+}
+
 @Entity('item_disponibilidade', { schema: 'item' })
 @Index('idx_item_disponibilidade_item_id', ['itemId'], { unique: true })
 @Index('idx_item_disponibilidade_disponivel', ['disponivel'])
@@ -70,7 +76,7 @@ export class DisponibilidadeItemModel {
         default: [],
         nullable: true,
     })
-    datasBloqueadas?: Date[];
+    datasBloqueadas?: DataBloqueada[];
 
     @Column({
         name: 'permite_aluguel_por_hora',

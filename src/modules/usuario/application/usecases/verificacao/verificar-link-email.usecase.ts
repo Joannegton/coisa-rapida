@@ -34,6 +34,7 @@ export class VerificarLinkEmailUseCase {
 
             const usuario = await this.usuarioRepository.buscarPorId(
                 payload.sub,
+                true,
             );
 
             if (!usuario) {

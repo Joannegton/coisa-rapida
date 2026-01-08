@@ -54,6 +54,32 @@ export class ItemRepositoryImpl implements ItemRepository {
         }
     }
 
+    async buscarComLock(id: string, useLock = false): Promise<Item | null> {
+        try {
+            let query = this.repository
+                .createQueryBuilder('item')
+                .leftJoinAndSelect('item.fotos', 'fotos')
+                .leftJoinAndSelect('item.disponibilidade', 'disponibilidade')
+                .leftJoinAndSelect('item.moderacao', 'moderacao')
+                .where('item.id = :id', { id });
+
+            // Aplica pessimistic lock se solicitado (SELECT FOR UPDATE)
+            if (useLock) {
+                query = query.setLock('pessimistic_write');
+            }
+
+            const model = await query.getOne();
+            if (!model) return null;
+            return this.itemMapper.toDomain(model);
+        } catch (error) {
+            this.logger.error(
+                `Erro ao buscar item com lock: ${error.message}`,
+                error.stack,
+            );
+            throw new RepositoryException('Erro ao buscar item com lock');
+        }
+    }
+
     /**
      * Busca itens dentro de um raio específico (em metros) a partir de um ponto geográfico.
      * Utiliza PostGIS ST_DWithin para consulta otimizada com índice GiST.

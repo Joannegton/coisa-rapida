@@ -17,7 +17,8 @@ export class CreateItemDisponibilidadeTable1734393900000
                 permite_alugueis_consecutivos BOOLEAN DEFAULT TRUE NOT NULL,
                 aprovacao_automatica BOOLEAN DEFAULT FALSE NOT NULL,
                 
-                -- Bloqueios de datas (JSON array de datas ISO 8601)
+                -- Bloqueios de datas (JSON array de intervalos com dataInicio, dataFim, motivo)
+                -- Formato: [{"dataInicio": "2024-01-01T00:00:00Z", "dataFim": "2024-01-05T23:59:59Z", "motivo": "Manutenção"}]
                 datas_bloqueadas JSONB DEFAULT '[]'::jsonb,
 
                 -- Suporte a aluguel por hora
@@ -70,13 +71,53 @@ export class CreateItemDisponibilidadeTable1734393900000
 
         await queryRunner.query(`
             COMMENT ON COLUMN item.item_disponibilidade.datas_bloqueadas IS 
-            'Array JSON de datas ISO 8601 em que o item não está disponível para aluguel.';
+            'Array JSON de intervalos de datas bloqueadas. Formato: [{"dataInicio": "ISO8601", "dataFim": "ISO8601", "motivo": "string"}]';
+        `);
+
+        // função de validação para intervalos de bloqueio
+        await queryRunner.query(`
+            CREATE OR REPLACE FUNCTION item.validate_bloqueios_intervalos()
+            RETURNS TRIGGER AS $$
+            BEGIN
+                IF NEW.datas_bloqueadas IS NOT NULL THEN
+                    IF NEW.datas_bloqueadas::text != '[]' THEN
+                        FOR i IN 0..jsonb_array_length(NEW.datas_bloqueadas) - 1 LOOP
+                            IF NOT (NEW.datas_bloqueadas->i ? 'dataInicio') THEN
+                                RAISE EXCEPTION 'dataInicio é obrigatório em bloqueios';
+                            END IF;
+                            IF NOT (NEW.datas_bloqueadas->i ? 'dataFim') THEN
+                                RAISE EXCEPTION 'dataFim é obrigatório em bloqueios';
+                            END IF;
+                            IF (NEW.datas_bloqueadas->>i->>'dataInicio')::timestamp >= 
+                               (NEW.datas_bloqueadas->>i->>'dataFim')::timestamp THEN
+                                RAISE EXCEPTION 'dataInicio deve ser menor que dataFim em bloqueios';
+                            END IF;
+                        END LOOP;
+                    END IF;
+                END IF;
+                RETURN NEW;
+            END;
+            $$ LANGUAGE plpgsql;
+        `);
+
+        // trigger de validação
+        await queryRunner.query(`
+            CREATE TRIGGER trg_validate_bloqueios_intervalos
+            BEFORE INSERT OR UPDATE ON item.item_disponibilidade
+            FOR EACH ROW
+            EXECUTE FUNCTION item.validate_bloqueios_intervalos();
         `);
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(
+            `DROP TRIGGER IF EXISTS trg_validate_bloqueios_intervalos ON item.item_disponibilidade`,
+        );
+        await queryRunner.query(
             `DROP TRIGGER IF EXISTS trg_disponibilidade_atualizado_em ON item.item_disponibilidade`,
+        );
+        await queryRunner.query(
+            `DROP FUNCTION IF EXISTS item.validate_bloqueios_intervalos()`,
         );
         await queryRunner.query(
             `DROP FUNCTION IF EXISTS item.update_disponibilidade_timestamp()`,

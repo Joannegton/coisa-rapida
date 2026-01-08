@@ -4,24 +4,14 @@ import { Caucao } from './caucao';
 import { Contrato } from './contrato';
 import { Multa } from './multa';
 import { Pessoa } from './pessoa';
-
-export type SnapshotItem = {
-    id: string;
-    nome: string;
-    descricao?: string;
-    precoDiaria: number;
-    precoHora?: number;
-    fotoUrl?: string;
-    capturadoEm: Date;
-    versao: number;
-    permiteAluguelPorHora: boolean;
-    diasMinimosAluguel: number;
-    diasMaximosAluguel: number;
-    horasMinimosAluguel?: number;
-    horasMaximosAluguel?: number;
-    valorCaucao?: number;
-    caucaoObrigatoria: boolean;
-};
+import { ItemSnapshot } from './item-snapshot';
+import { DatasBloqueadas, ItemResult } from './services/item.service';
+import { AluguelException } from './exceptions/aluguel.exception';
+import { UsuarioResult } from './services/usuario.service';
+import { DomainEvent } from 'src/shared/utils/domian.event';
+import { AluguelConfirmadoEvent } from './events/aluguel-confirmado.event';
+import { AluguelCanceladoEvent } from './events/aluguel-cancelado.event';
+import { AluguelFinalizadoEvent } from './events/aluguel-finalizado.event';
 
 export type AluguelProps = {
     locador: Pessoa;
@@ -36,41 +26,97 @@ export type AluguelProps = {
     atualizadoEm: Date;
 
     itemId: string;
-    itemSnapshot: SnapshotItem;
+    itemSnapshot: ItemSnapshot;
     caucao?: Caucao;
-    multa: Multa;
+    multa?: Multa;
     contrato: Contrato;
 };
 
 export type CriarAluguelProps = {
-    locador: Pessoa;
-    locatario: Pessoa;
-    itemId: string;
-    itemSnapshot: SnapshotItem;
-    dataInicio: Date;
-    dataFim: Date;
+    locadorData: UsuarioResult;
+    locatarioData: UsuarioResult;
+    dataInicio: string;
+    dataFim: string;
     observacoesLocatario?: string;
+    itemData: ItemResult;
 };
 
 export class Aluguel {
     private readonly _id: string;
     private readonly props: AluguelProps;
+    private _domainEvents: DomainEvent[] = [];
 
     constructor(id?: string) {
         if (id) this._id = id;
         this.props = {} as AluguelProps;
     }
 
+    get domainEvents(): DomainEvent[] {
+        return this._domainEvents;
+    }
+
+    clearEvents(): void {
+        this._domainEvents = [];
+    }
+
+    private addDomainEvent(event: DomainEvent): void {
+        this._domainEvents.push(event);
+    }
+
     static criar(props: CriarAluguelProps): Aluguel {
         const domain = new Aluguel();
-        domain.setLocador(props.locador);
-        domain.setLocatario(props.locatario);
-        domain.setItemId(props.itemId);
-        domain.setItemSnapshot(props.itemSnapshot);
         domain.setDataInicio(props.dataInicio);
         domain.setDataFim(props.dataFim);
+
+        const locador = Pessoa.criar({
+            id: props.locadorData.id,
+            nome: props.locadorData.nome,
+        });
+
+        const locatario = Pessoa.criar({
+            id: props.locatarioData.id,
+            nome: props.locatarioData.nome,
+        });
+
+        const itemSnapshot = ItemSnapshot.criar(props.itemData);
+        domain.setItemId(props.itemData.id);
+        domain.setItemSnapshot(itemSnapshot);
+
+        if (!domain.itemSnapshot.disponivel) {
+            throw new AluguelException(
+                'Item não está disponível para aluguel.',
+            );
+        }
+
+        const bloqueiosSobrepostos = domain.obterBloqueiosSobrepostos(
+            domain.dataInicio,
+            domain.dataFim,
+            domain.itemSnapshot.datasBloqueadas,
+        );
+
+        if (bloqueiosSobrepostos.length > 0) {
+            const motivos = bloqueiosSobrepostos
+                .map((b) => b.motivo || 'Bloqueado')
+                .join(', ');
+            throw new AluguelException(
+                `Item indisponível nas datas selecionadas. Motivo(s): ${motivos}`,
+            );
+        }
+
+        domain.validarPeriodoAluguel();
+
+        domain.setLocador(locador);
+        domain.setLocatario(locatario);
         domain.setStatus(AluguelStatus.SOLICITADO);
         domain.setObservacoesLocatario(props.observacoesLocatario);
+
+        domain.setContrato(
+            Contrato.criar({
+                conteudoHtml: 'a', //TODO Será preenchido posteriormente
+                aceiteLocador: undefined,
+                aceiteLocatario: undefined,
+            }),
+        );
 
         domain.calcularPrecoTotal();
 
@@ -98,6 +144,93 @@ export class Aluguel {
         return domain;
     }
 
+    confirmar(): void {
+        if (this.status !== AluguelStatus.SOLICITADO) {
+            throw new AluguelException(
+                `Aluguel não pode ser confirmado do status ${this.status}`,
+            );
+        }
+
+        this.setStatus(AluguelStatus.CONFIRMADO);
+
+        // Emite evento para bloqueio de datas
+        this.addDomainEvent(
+            new AluguelConfirmadoEvent(
+                this._id,
+                this.props.itemId,
+                this.props.dataInicio,
+                this.props.dataFim,
+                this.props.locador.id,
+                this.props.locatario.id,
+            ),
+        );
+    }
+
+    cancelar(motivo: string): void {
+        if (
+            ![
+                AluguelStatus.SOLICITADO,
+                AluguelStatus.ATIVO,
+                AluguelStatus.CONFIRMADO,
+            ].includes(this.status)
+        ) {
+            throw new AluguelException(
+                `Aluguel não pode ser cancelado do status ${this.status}`,
+            );
+        }
+
+        this.setStatus(AluguelStatus.CANCELADO);
+        this.setMotivoRecusaLocador(motivo);
+
+        // Emite evento apenas se estava bloqueado (status não era SOLICITADO)
+        if (this.status !== AluguelStatus.SOLICITADO) {
+            this.addDomainEvent(
+                new AluguelCanceladoEvent(
+                    this._id,
+                    this.props.itemId,
+                    this.props.dataInicio,
+                    this.props.dataFim,
+                    motivo,
+                ),
+            );
+        }
+    }
+
+    /**
+     * ✅ PRODUÇÃO: Volta aluguel para SOLICITADO (rollback de confirmação)
+     * Usado quando a confirmação falha durante bloqueio de datas
+     */
+    voltarParaSolicitado(): void {
+        if (this.status !== AluguelStatus.CONFIRMADO) {
+            throw new AluguelException(
+                `Aluguel não pode voltar para SOLICITADO do status ${this.status}`,
+            );
+        }
+
+        this.setStatus(AluguelStatus.SOLICITADO);
+        this.clearEvents(); // Limpa eventos de confirmação
+    }
+
+    finalizar(): void {
+        if (this.status !== AluguelStatus.ATIVO) {
+            throw new AluguelException(
+                `Aluguel não pode ser finalizado do status ${this.status}`,
+            );
+        }
+
+        this.setStatus(AluguelStatus.CONCLUIDO);
+
+        // Emite evento para desbloquear datas
+        this.addDomainEvent(
+            new AluguelFinalizadoEvent(
+                this._id,
+                this.props.itemId,
+                this.props.dataInicio,
+                this.props.dataFim,
+            ),
+        );
+    }
+
     private calcularPrecoTotal(): void {
         const totalMs =
             this.props.dataFim.getTime() - this.props.dataInicio.getTime();
@@ -116,6 +249,199 @@ export class Aluguel {
         }
     }
 
+    private validarPeriodoAluguel(): void {
+        const totalMs =
+            this.props.dataFim.getTime() - this.props.dataInicio.getTime();
+
+        if (this.props.itemSnapshot.permiteAluguelPorHora) {
+            const horas = totalMs / (1000 * 60 * 60);
+            const horasMinimas =
+                this.props.itemSnapshot.horasMinimosAluguel || 1;
+            const horasMaximas =
+                this.props.itemSnapshot.horasMaximosAluguel || 720;
+
+            if (horas < horasMinimas) {
+                throw new AluguelException(
+                    `Período mínimo de aluguel é ${horasMinimas} hora(s).`,
+                );
+            }
+
+            if (horas > horasMaximas) {
+                throw new AluguelException(
+                    `Período máximo de aluguel é ${horasMaximas} hora(s).`,
+                );
+            }
+        } else {
+            const dias = totalMs / (1000 * 60 * 60 * 24);
+            const diasMinimos = this.props.itemSnapshot.diasMinimosAluguel || 1;
+            const diasMaximos =
+                this.props.itemSnapshot.diasMaximosAluguel || 365;
+
+            if (dias < diasMinimos) {
+                throw new AluguelException(
+                    `Período mínimo de aluguel é ${diasMinimos} dia(s).`,
+                );
+            }
+
+            if (dias > diasMaximos) {
+                throw new AluguelException(
+                    `Período máximo de aluguel é ${diasMaximos} dia(s).`,
+                );
+            }
+        }
+    }
+
+    /**
+     * Adiciona margem de segurança de 1 hora ao período
+     * Usado para verificar conflitos entre aluguéis consecutivos
+     *
+     * @param dataInicio Data de início do período
+     * @param dataFim Data de fim do período
+     * @returns Objeto com período ajustado incluindo margem de 1 hora
+     */
+    private adicionarMargemSeguranca(
+        dataInicio: Date,
+        dataFim: Date,
+    ): { inicio: Date; fim: Date } {
+        const UMA_HORA_MS = 60 * 60 * 1000;
+
+        return {
+            inicio: new Date(dataInicio.getTime() - UMA_HORA_MS),
+            fim: new Date(dataFim.getTime() + UMA_HORA_MS),
+        };
+    }
+
+    /**
+     * Verifica se um período de aluguel (dataInicio -> dataFim) sobrepõe com algum bloqueio
+     * de disponibilidade do item
+     *
+     * @param dataInicio Início do período de aluguel solicitado
+     * @param dataFim Fim do período de aluguel solicitado
+     * @param datasBloqueadas Intervalos de datas bloqueadas do item
+     * @returns true se há sobreposição, false caso contrário
+     *
+     * @example
+     * const temConflito = verificarSobreposicaoBloqueios(
+     *   new Date('2024-12-25T00:00:00Z'),
+     *   new Date('2024-12-26T23:59:59Z'),
+     *   [{
+     *     dataInicio: new Date('2024-12-25T00:00:00Z'),
+     *     dataFim: new Date('2024-12-26T23:59:59Z'),
+     *     motivo: 'Manutenção'
+     *   }]
+     * ); // true - conflita com bloqueio
+     */
+    private verificarSobreposicaoBloqueios(
+        dataInicio: Date,
+        dataFim: Date,
+        datasBloqueadas?: DatasBloqueadas[],
+    ): boolean {
+        if (!datasBloqueadas || datasBloqueadas.length === 0) {
+            return false;
+        }
+
+        for (const bloqueio of datasBloqueadas) {
+            if (
+                this.temSobreposicao(
+                    dataInicio,
+                    dataFim,
+                    bloqueio.dataInicio,
+                    bloqueio.dataFim,
+                )
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Retorna todos os bloqueios que sobrepõem com o período de aluguel solicitado
+     * Adiciona margem de 1 hora antes e depois para evitar aluguéis muito próximos
+     *
+     * @param dataInicio Início do período de aluguel
+     * @param dataFim Fim do período de aluguel
+     * @param datasBloqueadas Intervalos de datas bloqueadas
+     * @returns Array de bloqueios que sobrepõem
+     *
+     * @example
+     * const conflitos = obterBloqueiosSobrepostos(
+     *   new Date('2024-12-25T00:00:00Z'),
+     *   new Date('2024-12-26T23:59:59Z'),
+     *   bloqueios
+     * );
+     * if (conflitos.length > 0) {
+     *   throw new Error(`Item indisponível: ${conflitos.map(c => c.motivo).join(', ')}`);
+     * }
+     */
+    private obterBloqueiosSobrepostos(
+        dataInicio: Date,
+        dataFim: Date,
+        datasBloqueadas?: DatasBloqueadas[],
+    ): DatasBloqueadas[] {
+        if (!datasBloqueadas || datasBloqueadas.length === 0) {
+            return [];
+        }
+
+        const { inicio, fim } = this.adicionarMargemSeguranca(
+            dataInicio,
+            dataFim,
+        );
+
+        return datasBloqueadas.filter((bloqueio) =>
+            this.temSobreposicao(
+                inicio,
+                fim,
+                bloqueio.dataInicio,
+                bloqueio.dataFim,
+            ),
+        );
+    }
+
+    /**
+     * Função auxiliar: Verifica se dois períodos se sobrepõem
+     *
+     * Dois períodos NÃO se sobrepõem se:
+     *   - fim1 <= inicio2 (período 1 termina antes de período 2 começar)
+     *   - OR fim2 <= inicio1 (período 2 termina antes de período 1 começar)
+     *
+     * @param inicio1 Início do primeiro período
+     * @param fim1 Fim do primeiro período
+     * @param inicio2 Início do segundo período (pode ser string ISO)
+     * @param fim2 Fim do segundo período (pode ser string ISO)
+     * @returns true se há sobreposição
+     *
+     * @example
+     * // Períodos que se sobrepõem
+     * temSobreposicao(
+     *   new Date('2024-12-25T00:00:00Z'),
+     *   new Date('2024-12-26T23:59:59Z'),
+     *   new Date('2024-12-24T00:00:00Z'),
+     *   new Date('2024-12-25T12:00:00Z')
+     * ); // true
+     *
+     * // Períodos que NÃO se sobrepõem
+     * temSobreposicao(
+     *   new Date('2024-12-25T00:00:00Z'),
+     *   new Date('2024-12-26T23:59:59Z'),
+     *   new Date('2024-12-27T00:00:00Z'),
+     *   new Date('2024-12-28T23:59:59Z')
+     * ); // false
+     */
+    private temSobreposicao(
+        inicio1: Date,
+        fim1: Date,
+        inicio2: Date | string,
+        fim2: Date | string,
+    ): boolean {
+        const dataInicio2 =
+            typeof inicio2 === 'string' ? new Date(inicio2) : inicio2;
+        const dataFim2 = typeof fim2 === 'string' ? new Date(fim2) : fim2;
+
+        return !(fim1 <= dataInicio2 || dataFim2 <= inicio1);
+    }
+
     private setLocador(locador: Pessoa): void {
         if (!locador) throw new InvalidPropsException('Locador é obrigatório.');
         this.props.locador = locador;
@@ -132,7 +458,7 @@ export class Aluguel {
         this.props.itemId = itemId;
     }
 
-    private setItemSnapshot(snapshot: SnapshotItem): void {
+    private setItemSnapshot(snapshot: ItemSnapshot): void {
         if (!snapshot)
             throw new InvalidPropsException('Snapshot do item é obrigatório.');
         this.props.itemSnapshot = snapshot;
@@ -150,9 +476,7 @@ export class Aluguel {
         this.props.caucao = caucao;
     }
 
-    private setMulta(multa: Multa): void {
-        if (!multa)
-            throw new InvalidPropsException('Multa do aluguel é obrigatória.');
+    private setMulta(multa?: Multa): void {
         this.props.multa = multa;
     }
 
@@ -164,22 +488,56 @@ export class Aluguel {
         this.props.contrato = contrato;
     }
 
-    private setDataInicio(dataInicio: Date): void {
+    private setDataInicio(dataInicio: string | Date): void {
+        if (dataInicio instanceof Date) {
+            this.props.dataInicio = dataInicio;
+            return;
+        }
+
         if (!dataInicio)
             throw new InvalidPropsException('Data de início é obrigatória.');
-        this.props.dataInicio = dataInicio;
+
+        const data = new Date(dataInicio);
+        if (Number.isNaN(data.getTime()))
+            throw new InvalidPropsException('Data de início inválida.');
+
+        const isoString = data.toISOString();
+        const isoRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/;
+        if (!isoRegex.test(isoString))
+            throw new InvalidPropsException(
+                'Data de início deve estar no formato ISO 8601 com horas, minutos e segundos (YYYY-MM-DDTHH:mm:ss.sssZ).',
+            );
+
+        this.props.dataInicio = data;
     }
 
-    private setDataFim(dataFim: Date): void {
+    private setDataFim(dataFim: string | Date): void {
+        if (dataFim instanceof Date) {
+            this.props.dataFim = dataFim;
+            return;
+        }
+
         if (!dataFim)
             throw new InvalidPropsException('Data de fim é obrigatória.');
 
-        if (dataFim < this.props.dataInicio)
+        const data = new Date(dataFim);
+        if (Number.isNaN(data.getTime()))
+            throw new InvalidPropsException('Data de fim inválida.');
+
+        const isoString = data.toISOString();
+        const isoRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{3})?Z$/;
+        if (!isoRegex.test(isoString))
+            throw new InvalidPropsException(
+                'Data de fim deve estar no formato ISO 8601 com horas, minutos e segundos (YYYY-MM-DDTHH:mm:ss.sssZ).',
+            );
+
+        if (data < this.props.dataInicio)
             throw new InvalidPropsException(
                 'Data de fim não pode ser anterior à data de início.',
             );
-        this.props.dataFim = dataFim;
+        this.props.dataFim = data;
     }
+
     private setStatus(status: AluguelStatus): void {
         if (!Object.values(AluguelStatus).includes(status))
             throw new InvalidPropsException('Status do aluguel inválido.');
@@ -218,7 +576,7 @@ export class Aluguel {
         return this.props.itemId;
     }
 
-    get itemSnapshot(): SnapshotItem {
+    get itemSnapshot(): ItemSnapshot {
         return this.props.itemSnapshot;
     }
 
@@ -226,7 +584,7 @@ export class Aluguel {
         return this.props.caucao;
     }
 
-    get multa(): Multa {
+    get multa(): Multa | undefined {
         return this.props.multa;
     }
 

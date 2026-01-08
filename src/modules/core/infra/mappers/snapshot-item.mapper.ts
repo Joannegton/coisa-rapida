@@ -1,12 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { SnapshotItem } from '../../domain/aluguel';
+import { ItemSnapshot } from '../../domain/item-snapshot';
 import { SnapshotItemModel } from '../models/snapshot-item.value-object';
 
 @Injectable()
 export class SnapshotItemMapper {
-    toDomain(model: SnapshotItemModel): SnapshotItem {
-        return {
-            id: model.itemId,
+    toDomain(model: SnapshotItemModel): ItemSnapshot {
+        return ItemSnapshot.carregar({
             nome: model.nome,
             descricao: model.descricao,
             precoDiaria: Number(model.precoDiaria),
@@ -23,13 +22,12 @@ export class SnapshotItemMapper {
                 ? Number(model.valorCaucao)
                 : undefined,
             caucaoObrigatoria: model.caucaoObrigatoria,
-        };
+        });
     }
 
-    toModel(domain: SnapshotItem): SnapshotItemModel {
+    toModel(domain: ItemSnapshot): SnapshotItemModel {
         const model = new SnapshotItemModel();
         Object.assign(model, {
-            itemId: domain.id,
             nome: domain.nome,
             descricao: domain.descricao,
             precoDiaria: domain.precoDiaria,
@@ -48,7 +46,7 @@ export class SnapshotItemMapper {
         return model;
     }
 
-    toDomainList(models: SnapshotItemModel[]): SnapshotItem[] {
+    toDomainList(models: SnapshotItemModel[]): ItemSnapshot[] {
         return models.map((model) => this.toDomain(model));
     }
 }

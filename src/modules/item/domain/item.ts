@@ -11,6 +11,7 @@ import { Foto } from './foto';
 import { Moderacao } from './moderacao';
 import {
     AtualizarDisponibilidadeProps,
+    DataBloqueada,
     Disponibilidade,
 } from './disponibilidade';
 import { ItemDto } from '../application/dtos/responses/item.dto';
@@ -28,7 +29,7 @@ export type ItemProps = {
     localizacao: LocalizacaoItem;
     fotos: Foto[];
     moderacao?: Moderacao;
-    disponibilidade?: Disponibilidade;
+    disponibilidade: Disponibilidade;
     aluguelsTotais: number;
     versao: number;
     criadoEm: Date;
@@ -48,7 +49,7 @@ export type CriarItemProps = {
     localizacao: LocalizacaoItem;
     fotos: Foto[];
     moderacao?: Moderacao;
-    disponibilidade?: Disponibilidade;
+    disponibilidade: Disponibilidade;
 };
 
 export type AtualizarItemProps = {
@@ -221,6 +222,14 @@ export class Item {
         fotoAtual.tornarPrincipal();
     }
 
+    adicionarDataBloqueada(bloqueio: DataBloqueada) {
+        this.props.disponibilidade.adicionarDataBloqueio(bloqueio);
+    }
+
+    removerDataBloqueada(bloqueio: DataBloqueada) {
+        this.props.disponibilidade.removerDataBloqueio(bloqueio);
+    }
+
     private setUsuarioId(usuarioId: string) {
         if (!usuarioId || usuarioId.trim().length === 0) {
             throw new InvalidPropsException('ID do usuário é obrigatório');
@@ -301,7 +310,7 @@ export class Item {
         this.props.moderacao = moderacao;
     }
 
-    private setDisponibilidade(disponibilidade?: Disponibilidade) {
+    private setDisponibilidade(disponibilidade: Disponibilidade) {
         this.props.disponibilidade = disponibilidade;
     }
 
@@ -370,7 +379,7 @@ export class Item {
         return this.props.moderacao;
     }
 
-    get disponibilidade(): Disponibilidade | undefined {
+    get disponibilidade(): Disponibilidade {
         return this.props.disponibilidade;
     }
 

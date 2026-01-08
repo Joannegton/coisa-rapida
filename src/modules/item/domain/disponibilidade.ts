@@ -1,5 +1,11 @@
 import { InvalidPropsException } from 'src/common/exceptions/invalidProps.exception';
 
+export interface DataBloqueada {
+    dataInicio: Date;
+    dataFim: Date;
+    motivo?: string;
+}
+
 export interface DisponibilidadeProps {
     disponivel: boolean;
     dataDisponibilidade?: Date;
@@ -7,7 +13,7 @@ export interface DisponibilidadeProps {
     diasMaximosAluguel: number;
     permitAluguelsConsecutivos: boolean;
     aprovacaoAutomatica: boolean;
-    datasBloqueadas?: Date[];
+    datasBloqueadas?: DataBloqueada[];
     permiteAluguelPorHora?: boolean;
     horasMinimosAluguel?: number;
     horasMaximosAluguel?: number;
@@ -93,6 +99,24 @@ export class Disponibilidade {
         }
     }
 
+    adicionarDataBloqueio(bloqueio: DataBloqueada): void {
+        const bloqueiosAtuais = this.props.datasBloqueadas || [];
+        bloqueiosAtuais.push(bloqueio);
+        this.setDatasBloqueadas(bloqueiosAtuais);
+    }
+
+    removerDataBloqueio(bloqueio: DataBloqueada): void {
+        const bloqueiosAtuais = this.props.datasBloqueadas || [];
+        const bloqueiosFiltrados = bloqueiosAtuais.filter(
+            (b) =>
+                !(
+                    b.dataInicio.getTime() === bloqueio.dataInicio.getTime() &&
+                    b.dataFim.getTime() === bloqueio.dataFim.getTime()
+                ),
+        );
+        this.setDatasBloqueadas(bloqueiosFiltrados);
+    }
+
     get id(): string {
         return this._id;
     }
@@ -121,7 +145,7 @@ export class Disponibilidade {
         return this.props.aprovacaoAutomatica;
     }
 
-    get datasBloqueadas(): Date[] | undefined {
+    get datasBloqueadas(): DataBloqueada[] | undefined {
         return this.props.datasBloqueadas;
     }
 
@@ -175,7 +199,16 @@ export class Disponibilidade {
         this.props.aprovacaoAutomatica = value;
     }
 
-    private setDatasBloqueadas(value?: Date[]) {
+    private setDatasBloqueadas(value?: DataBloqueada[]) {
+        if (value) {
+            for (const intervalo of value) {
+                if (intervalo.dataInicio >= intervalo.dataFim) {
+                    throw new InvalidPropsException(
+                        'dataInicio deve ser menor que dataFim em bloqueios de datas',
+                    );
+                }
+            }
+        }
         this.props.datasBloqueadas = value;
     }
 

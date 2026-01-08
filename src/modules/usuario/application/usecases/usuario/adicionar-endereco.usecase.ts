@@ -24,6 +24,7 @@ export class AdicionarEnderecoUsecase {
     ): Promise<{ mensagem: string }> {
         const usuario = await this.usuarioRepository.buscarPorId(
             props.usuarioId,
+            true,
         );
 
         if (!usuario) {

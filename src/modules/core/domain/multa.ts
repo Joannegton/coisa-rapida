@@ -1,10 +1,10 @@
 import { InvalidPropsException } from 'src/common/exceptions/invalidProps.exception';
 
 export type MultaProps = {
-    diasAtraso: number;
-    multiplicador: number;
-    valorDiariaSnapshot: number;
-    valorTotal: number;
+    diasAtraso?: number;
+    multiplicador?: number;
+    valorDiariaSnapshot?: number;
+    valorTotal?: number;
     calculadaEm?: Date;
 };
 
@@ -37,15 +37,11 @@ export class Multa {
     }
 
     temAtraso(): boolean {
-        return this.props.diasAtraso > 0;
+        return (this.props.diasAtraso ?? 0) > 0;
     }
 
     eAtrasosCritico(): boolean {
-        return this.props.diasAtraso >= 5;
-    }
-
-    descrever(): string {
-        return `Multa: R$ ${this.valorTotal.toFixed(2)} (${this.diasAtraso} dia(s) de atraso @ ${this.multiplicador}x)`;
+        return (this.props.diasAtraso ?? 0) >= 5;
     }
 
     /**
@@ -54,9 +50,9 @@ export class Multa {
      */
     private calcularValorTotal(): void {
         const valorCalculado =
-            this.props.multiplicador *
-            this.props.valorDiariaSnapshot *
-            this.props.diasAtraso;
+            this.props.multiplicador! *
+            this.props.valorDiariaSnapshot! *
+            this.props.diasAtraso!;
 
         this.props.valorTotal = Math.round(valorCalculado * 100) / 100;
         this.setCalculadaEm(new Date());
@@ -67,32 +63,32 @@ export class Multa {
         this.calcularValorTotal();
     }
 
-    private setDiasAtraso(dias: number) {
-        if (dias < 0)
+    private setDiasAtraso(dias?: number) {
+        if (dias !== undefined && dias < 0)
             throw new InvalidPropsException(
                 'Dias de atraso não pode ser negativo.',
             );
-        if (dias > 30)
+        if (dias !== undefined && dias > 30)
             throw new InvalidPropsException(
                 'Atraso máximo de 30 dias. Acima disso deve ser tratado como disputa.',
             );
         this.props.diasAtraso = dias;
     }
 
-    private setMultiplicador(multiplicador: number) {
-        if (multiplicador <= 0)
+    private setMultiplicador(multiplicador?: number) {
+        if (multiplicador !== undefined && multiplicador <= 0)
             throw new InvalidPropsException(
                 'Multiplicador deve ser maior que zero.',
             );
-        if (multiplicador > 5)
+        if (multiplicador !== undefined && multiplicador > 5)
             throw new InvalidPropsException(
                 'Multiplicador máximo é 5x (500% do valor diário).',
             );
         this.props.multiplicador = multiplicador;
     }
 
-    private setValorDiariaSnapshot(valor: number) {
-        if (valor <= 0)
+    private setValorDiariaSnapshot(valor?: number) {
+        if (valor !== undefined && valor <= 0)
             throw new InvalidPropsException(
                 'Valor da diária deve ser maior que zero.',
             );
@@ -107,8 +103,8 @@ export class Multa {
         this.props.calculadaEm = data;
     }
 
-    private setValorTotal(valor: number) {
-        if (valor < 0)
+    private setValorTotal(valor?: number) {
+        if (valor !== undefined && valor < 0)
             throw new InvalidPropsException(
                 'Valor total da multa não pode ser negativo.',
             );
@@ -116,19 +112,19 @@ export class Multa {
     }
 
     // Getters
-    get diasAtraso(): number {
+    get diasAtraso(): number | undefined {
         return this.props.diasAtraso;
     }
 
-    get multiplicador(): number {
+    get multiplicador(): number | undefined {
         return this.props.multiplicador;
     }
 
-    get valorDiariaSnapshot(): number {
+    get valorDiariaSnapshot(): number | undefined {
         return this.props.valorDiariaSnapshot;
     }
 
-    get valorTotal(): number {
+    get valorTotal(): number | undefined {
         return this.props.valorTotal;
     }
 

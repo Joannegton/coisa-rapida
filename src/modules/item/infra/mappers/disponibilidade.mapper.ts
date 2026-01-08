@@ -1,9 +1,29 @@
 import { Injectable } from '@nestjs/common';
-import { Disponibilidade } from '../../domain/disponibilidade';
-import { DisponibilidadeItemModel } from '../models/disponibilidade-item.model';
+import { Disponibilidade, DataBloqueada as DataBloqueadaDomain } from '../../domain/disponibilidade';
+import { DisponibilidadeItemModel, DataBloqueada as DataBloqueadaModel } from '../models/disponibilidade-item.model';
 
 @Injectable()
 export class DisponibilidadeMapper {
+    private convertDataBloqueadaToModel(
+        dataBloqueada: DataBloqueadaDomain,
+    ): DataBloqueadaModel {
+        return {
+            dataInicio: dataBloqueada.dataInicio.toISOString(),
+            dataFim: dataBloqueada.dataFim.toISOString(),
+            motivo: dataBloqueada.motivo,
+        };
+    }
+
+    private convertDataBloqueadaToDomain(
+        dataBloqueada: DataBloqueadaModel,
+    ): DataBloqueadaDomain {
+        return {
+            dataInicio: new Date(dataBloqueada.dataInicio),
+            dataFim: new Date(dataBloqueada.dataFim),
+            motivo: dataBloqueada.motivo,
+        };
+    }
+
     toDomain(model: DisponibilidadeItemModel): Disponibilidade {
         const domain = Disponibilidade.carregar(
             {
@@ -14,7 +34,9 @@ export class DisponibilidadeMapper {
                 horasMinimosAluguel: model.horasMinimosAluguel,
                 permitAluguelsConsecutivos: model.permitAluguelsConsecutivos,
                 permiteAluguelPorHora: model.permiteAluguelPorHora,
-                datasBloqueadas: model.datasBloqueadas,
+                datasBloqueadas: model.datasBloqueadas?.map((db) =>
+                    this.convertDataBloqueadaToDomain(db),
+                ),
                 dataDisponibilidade: model.dataDisponibilidade,
                 disponivel: model.disponivel,
             },
@@ -23,6 +45,7 @@ export class DisponibilidadeMapper {
 
         return domain;
     }
+
     toModel(domain: Disponibilidade): DisponibilidadeItemModel {
         const model = DisponibilidadeItemModel.criar({
             id: domain.id,
@@ -34,7 +57,9 @@ export class DisponibilidadeMapper {
             permitAluguelsConsecutivos: domain.permitAluguelsConsecutivos,
             permiteAluguelPorHora: domain.permiteAluguelPorHora,
             dataDisponibilidade: domain.dataDisponibilidade,
-            datasBloqueadas: domain.datasBloqueadas,
+            datasBloqueadas: domain.datasBloqueadas?.map((db) =>
+                this.convertDataBloqueadaToModel(db),
+            ),
             disponivel: domain.disponivel,
         });
         return model;

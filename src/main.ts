@@ -19,6 +19,11 @@ function setupSwagger(app: INestApplication<any>) {
         },
         { name: 'item', description: 'Gerenciamento de itens' },
         { name: 'auditoria', description: 'Logs de auditoria' },
+        {
+            name: 'core',
+            description:
+                'Funcionalidades principais, como de aluguel, caução, contrato, multa, etc.',
+        },
     ];
 
     let configBuilder = new DocumentBuilder()

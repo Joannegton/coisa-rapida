@@ -44,21 +44,20 @@ export class CreateAluguelTable1735962000000 implements MigrationInterface {
                 item_id UUID NOT NULL,
                 
                 -- Snapshot do Item (capturado no momento da criação)
-                snapshot_item_id UUID NOT NULL,
-                snapshot_item_nome VARCHAR(255) NOT NULL,
-                snapshot_item_descricao TEXT,
-                snapshot_preco_diaria DECIMAL(10, 2) NOT NULL,
-                snapshot_preco_hora DECIMAL(10, 2),
-                snapshot_item_foto_url TEXT,
-                snapshot_capturado_em TIMESTAMP WITH TIME ZONE NOT NULL,
-                snapshot_versao INTEGER DEFAULT 1,
-                snapshot_permite_aluguel_hora BOOLEAN DEFAULT FALSE,
-                snapshot_dias_minimos_aluguel INTEGER DEFAULT 1,
-                snapshot_dias_maximos_aluguel INTEGER DEFAULT 365,
-                snapshot_horas_minimas_aluguel INTEGER,
-                snapshot_horas_maximas_aluguel INTEGER,
-                snapshot_valor_caucao DECIMAL(10, 2),
-                snapshot_caucao_obrigatoria BOOLEAN DEFAULT FALSE,
+                item_nome_snapshot VARCHAR(255) NOT NULL,
+                item_descricao_snapshot TEXT,
+                item_preco_diaria_snapshot DECIMAL(10, 2) NOT NULL,
+                item_preco_hora_snapshot DECIMAL(10, 2),
+                item_foto_url_snapshot TEXT,
+                item_capturado_em_snapshot TIMESTAMP WITH TIME ZONE NOT NULL,
+                item_versao_snapshot INTEGER DEFAULT 1,
+                item_permite_aluguel_hora_snapshot BOOLEAN DEFAULT FALSE,
+                item_dias_minimos_aluguel_snapshot INTEGER DEFAULT 1,
+                item_dias_maximos_aluguel_snapshot INTEGER DEFAULT 365,
+                item_horas_minimas_aluguel_snapshot INTEGER,
+                item_horas_maximas_aluguel_snapshot INTEGER,
+                item_valor_caucao_snapshot DECIMAL(10, 2),
+                item_caucao_obrigatoria_snapshot BOOLEAN DEFAULT FALSE,
                 
                 -- Preço Total
                 preco_total DECIMAL(10, 2) NOT NULL,
@@ -69,11 +68,11 @@ export class CreateAluguelTable1735962000000 implements MigrationInterface {
                 caucao_data_pagamento TIMESTAMP WITH TIME ZONE,
                 caucao_data_devolucao TIMESTAMP WITH TIME ZONE,
                 
-                -- Multa (obrigatório)
-                multa_dias_atraso INTEGER NOT NULL DEFAULT 0,
-                multa_multiplicador DECIMAL(3, 2) NOT NULL DEFAULT 1.00,
-                multa_valor_diaria_snapshot DECIMAL(10, 2) NOT NULL,
-                multa_valor_total DECIMAL(10, 2) NOT NULL DEFAULT 0,
+                -- Multa (opcional - apenas se houver atraso)
+                multa_dias_atraso INTEGER,
+                multa_multiplicador DECIMAL(3, 2),
+                multa_valor_diaria_snapshot DECIMAL(10, 2),
+                multa_valor_total DECIMAL(10, 2),
                 multa_calculada_em TIMESTAMP WITH TIME ZONE,
                 
                 -- Contrato (obrigatório)

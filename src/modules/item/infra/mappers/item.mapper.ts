@@ -23,9 +23,9 @@ export class ItemMapper {
             ? this.fotoMapper.toDomainList(model.fotos)
             : [];
         const localizacao = this.localizacaoMapper.toDomain(model.localizacao);
-        const disponibilidade = model.disponibilidade
-            ? this.disponibilidadeMapper.toDomain(model.disponibilidade)
-            : undefined;
+        const disponibilidade = this.disponibilidadeMapper.toDomain(
+            model.disponibilidade,
+        );
         const moderacao = model.moderacao
             ? this.moderacaoMapper.toDomain(model.moderacao)
             : undefined;

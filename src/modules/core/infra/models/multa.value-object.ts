@@ -5,8 +5,9 @@ export class MultaModel {
         name: 'multa_dias_atraso',
         type: 'integer',
         comment: 'Quantidade de dias em atraso na devolução',
+        nullable: true,
     })
-    diasAtraso: number;
+    diasAtraso?: number;
 
     @Column({
         name: 'multa_multiplicador',
@@ -15,8 +16,9 @@ export class MultaModel {
         scale: 2,
         comment:
             'Multiplicador da multa (1.5x, 2.0x, etc). 50% = 0.5 do valor diário',
+        nullable: true,
     })
-    multiplicador: number;
+    multiplicador?: number;
 
     @Column({
         name: 'multa_valor_diaria_snapshot',
@@ -24,8 +26,9 @@ export class MultaModel {
         precision: 10,
         scale: 2,
         comment: 'Snapshot do valor da diária no momento do cálculo da multa',
+        nullable: true,
     })
-    valorDiariaSnapshot: number;
+    valorDiariaSnapshot?: number;
 
     @Column({
         name: 'multa_valor_total',
@@ -34,8 +37,9 @@ export class MultaModel {
         scale: 2,
         comment:
             'Valor total da multa calculado (multiplicador × valor_diaria × dias_atraso)',
+        nullable: true,
     })
-    valorTotal: number;
+    valorTotal?: number;
 
     @Column({
         name: 'multa_calculada_em',
