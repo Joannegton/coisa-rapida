@@ -28,6 +28,9 @@ export enum AuditoriaAcao {
 
     // Usuário
     ALTERAR_ENDERECO = 'alterar_endereco',
+
+    // Aluguéis
+    SOLICITAR_ALUGUEL = 'solicitar_aluguel',
 }
 
 /**

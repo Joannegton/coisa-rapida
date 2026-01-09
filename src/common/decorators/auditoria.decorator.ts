@@ -70,3 +70,9 @@ export const AuditarAtualizacaoItem = () =>
         descricao: 'Atualização de item',
         nivel: 'medio',
     });
+
+export const AuditarSolicitacaoAluguel = () =>
+    Auditar(AuditoriaAcao.SOLICITAR_ALUGUEL, 'aluguel', {
+        descricao: 'Solicitação de aluguel de item',
+        nivel: 'medio',
+    });

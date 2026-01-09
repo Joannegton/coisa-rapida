@@ -1,6 +1,6 @@
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { usuarioAtual } from 'src/common/decorators';
+import { AuditarSolicitacaoAluguel, usuarioAtual } from 'src/common/decorators';
 import { ApiAccessToken } from 'src/common/decorators/swagger.decorators';
 import { SolicitarAluguelDto } from './application/dtos/solicitar-aluguel.dto';
 import { SolicitarAluguelUseCase } from './application/usecases/solicitar-aluguel.usecase';
@@ -25,7 +25,7 @@ export class CoreController {
     @ApiBody({ type: SolicitarAluguelDto })
     @ApiAccessToken()
     @HttpCode(HttpStatus.CREATED)
-    // @AuditarSolicitacaoAluguel()
+    @AuditarSolicitacaoAluguel()
     @Post('aluguel')
     async solicitarAluguel(
         @usuarioAtual() usuario: UsuarioPayload,
