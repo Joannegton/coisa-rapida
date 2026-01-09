@@ -61,6 +61,7 @@ export class CreateAluguelTable1735962000000 implements MigrationInterface {
                 
                 -- Preço Total
                 preco_total DECIMAL(10, 2) NOT NULL,
+                preco_total_com_taxa DECIMAL(10, 2) NOT NULL,
                 
                 -- Caução (obrigatório quando presente)
                 caucao_valor DECIMAL(10, 2),
@@ -162,6 +163,12 @@ export class CreateAluguelTable1735962000000 implements MigrationInterface {
 
         await queryRunner.query(`
             ALTER TABLE core.aluguel
+            ADD CONSTRAINT check_preco_total_com_taxa_positivo 
+            CHECK (preco_total_com_taxa >= 0);
+        `);
+
+        await queryRunner.query(`
+            ALTER TABLE core.aluguel
             ADD CONSTRAINT check_dias_atraso_nao_negativo 
             CHECK (multa_dias_atraso >= 0);
         `);
@@ -239,6 +246,11 @@ export class CreateAluguelTable1735962000000 implements MigrationInterface {
         await queryRunner.query(`
             ALTER TABLE core.aluguel
             DROP CONSTRAINT IF EXISTS check_preco_total_positivo;
+        `);
+
+        await queryRunner.query(`
+            ALTER TABLE core.aluguel
+            DROP CONSTRAINT IF EXISTS check_preco_total_com_taxa_positivo;
         `);
 
         await queryRunner.query(`

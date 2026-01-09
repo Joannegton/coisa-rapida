@@ -10,11 +10,13 @@ import { AluguelException } from './exceptions/aluguel.exception';
 import { UsuarioResult } from './services/usuario.service';
 import { AluguelDto } from '../application/dtos/results/Aluguel.dto';
 import { ForbiddenException } from '@nestjs/common';
+import { DinheiroUtils } from '../../../shared/utils';
 
 export type AluguelProps = {
     locador: Pessoa;
     locatario: Pessoa;
     precoTotal: number;
+    precoTotalComTaxa: number;
     dataInicio: Date;
     dataFim: Date;
     status: AluguelStatus;
@@ -42,6 +44,12 @@ export type CriarAluguelProps = {
 export class Aluguel {
     private readonly _id: string;
     private readonly props: AluguelProps;
+    private readonly taxaApp = Number.parseFloat(
+        process.env.PERCENTUAL_TAXA_APP as string,
+    );
+
+    private readonly UMA_HORA = 1000 * 60 * 60;
+    private readonly UM_DIA = this.UMA_HORA * 24;
 
     constructor(id?: string) {
         if (id) this._id = id;
@@ -80,9 +88,6 @@ export class Aluguel {
         );
 
         if (bloqueiosSobrepostos.length > 0) {
-            const motivos = bloqueiosSobrepostos
-                .map((b) => b.motivo || 'Bloqueado')
-                .join(', ');
             throw new AluguelException(
                 `Item indisponível nas datas selecionadas.`,
             );
@@ -173,13 +178,21 @@ export class Aluguel {
             this.props.itemSnapshot.permiteAluguelPorHora &&
             this.props.itemSnapshot.precoHora
         ) {
-            const horas = totalMs / (1000 * 60 * 60);
-            const precoTotal = horas * this.props.itemSnapshot.precoHora;
-            this.setPrecoTotal(Math.round(precoTotal * 100) / 100);
+            const horas = totalMs / this.UMA_HORA;
+            const precoTotal = DinheiroUtils.multiplicar(
+                horas,
+                this.props.itemSnapshot.precoHora,
+            );
+            this.setPrecoTotal(precoTotal);
+            this.setPrecoTotalComTaxa(this.calcularPrecoTotalComTaxa());
         } else {
-            const dias = totalMs / (1000 * 60 * 60 * 24);
-            const precoTotal = dias * this.props.itemSnapshot.precoDiaria;
-            this.setPrecoTotal(Math.round(precoTotal * 100) / 100);
+            const dias = totalMs / this.UM_DIA;
+            const precoTotal = DinheiroUtils.multiplicar(
+                dias,
+                this.props.itemSnapshot.precoDiaria,
+            );
+            this.setPrecoTotal(precoTotal);
+            this.setPrecoTotalComTaxa(this.calcularPrecoTotalComTaxa());
         }
     }
 
@@ -223,6 +236,14 @@ export class Aluguel {
                 );
             }
         }
+    }
+
+    private calcularPrecoTotalComTaxa(): number {
+        const valorTaxa = DinheiroUtils.multiplicar(
+            this.props.precoTotal,
+            this.taxaApp,
+        );
+        return DinheiroUtils.somar(this.props.precoTotal, valorTaxa);
     }
 
     /**
@@ -406,6 +427,14 @@ export class Aluguel {
         this.props.precoTotal = precoTotal;
     }
 
+    private setPrecoTotalComTaxa(precoTotalComTaxa: number): void {
+        if (precoTotalComTaxa < 0)
+            throw new InvalidPropsException(
+                'Preço total com taxa do aluguel não pode ser negativo.',
+            );
+        this.props.precoTotalComTaxa = precoTotalComTaxa;
+    }
+
     private setCaucao(caucao?: Caucao): void {
         this.props.caucao = caucao;
     }
@@ -526,6 +555,10 @@ export class Aluguel {
         return this.props.precoTotal;
     }
 
+    get precoTotalComTaxa(): number {
+        return this.props.precoTotalComTaxa;
+    }
+
     get contrato(): Contrato {
         return this.props.contrato;
     }
@@ -566,6 +599,7 @@ export class Aluguel {
                 valorCaucao: this.props.itemSnapshot.valorCaucao,
             },
             precoTotal: this.props.precoTotal,
+            precoTotalComTaxa: this.precoTotalComTaxa,
             caucao: this.props.caucao?.toDto(),
             dataInicio: this.props.dataInicio,
             dataFim: this.props.dataFim,

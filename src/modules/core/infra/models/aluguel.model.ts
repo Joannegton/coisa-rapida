@@ -51,6 +51,14 @@ export class AluguelModel {
     })
     precoTotal: number;
 
+    @Column({
+        type: 'decimal',
+        precision: 10,
+        scale: 2,
+        name: 'preco_total_com_taxa',
+    })
+    precoTotalComTaxa: number;
+
     @Column(() => CaucaoModel, { prefix: false })
     caucao?: CaucaoModel;
 

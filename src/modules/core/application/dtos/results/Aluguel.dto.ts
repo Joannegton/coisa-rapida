@@ -5,6 +5,7 @@ export class AluguelDto {
     locador: PessoaDto;
     locatario: PessoaDto;
     precoTotal: number;
+    precoTotalComTaxa: number;
     dataInicio: Date;
     dataFim: Date;
     status: AluguelStatus;

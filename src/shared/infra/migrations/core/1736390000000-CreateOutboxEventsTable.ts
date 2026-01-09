@@ -8,7 +8,7 @@ export class CreateOutboxEventsTable1736390000000
         // Garante atomicidade transacional
         await queryRunner.query(`
             CREATE TABLE core.outbox_events (
-                id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 tipo_evento VARCHAR(255) NOT NULL,
                 id_agregado VARCHAR(255) NOT NULL,
                 tipo_agregado VARCHAR(100) NOT NULL,
