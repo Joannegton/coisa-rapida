@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { CqrsModule } from '@nestjs/cqrs';
 import { CoreController } from './core.controller';
 import { AluguelRepositoryImpl } from './infra/repositories/aluguel.repository';
 import { CoreUsuarioServiceImpl } from './infra/services/usuario.service';
@@ -9,11 +10,12 @@ import { CoreUseCases } from './application/usecases';
 import { CoreMappers } from './infra/mappers';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AluguelModel } from './infra/models/aluguel.model';
-import { AluguelDisponibilidadeEventHandler } from './application/event-handlers/aluguel-disponibilidade.event-handler';
 import { CoreQueries } from './application/queries';
+import { CoreEventHandlers } from './application/event-handlers';
 
 @Module({
     imports: [
+        CqrsModule,
         TypeOrmModule.forFeature([AluguelModel]),
         UsuarioModule,
         ItemModule,
@@ -23,7 +25,7 @@ import { CoreQueries } from './application/queries';
         ...CoreUseCases,
         ...CoreMappers,
         ...CoreQueries,
-        AluguelDisponibilidadeEventHandler,
+        ...CoreEventHandlers,
         {
             provide: 'AluguelRepository',
             useClass: AluguelRepositoryImpl,

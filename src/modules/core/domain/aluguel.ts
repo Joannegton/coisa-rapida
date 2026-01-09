@@ -8,11 +8,8 @@ import { ItemSnapshot } from './item-snapshot';
 import { DatasBloqueadas, ItemResult } from './services/item.service';
 import { AluguelException } from './exceptions/aluguel.exception';
 import { UsuarioResult } from './services/usuario.service';
-import { DomainEvent } from 'src/shared/utils/domian.event';
-import { AluguelConfirmadoEvent } from './events/aluguel-confirmado.event';
-import { AluguelCanceladoEvent } from './events/aluguel-cancelado.event';
-import { AluguelFinalizadoEvent } from './events/aluguel-finalizado.event';
 import { AluguelDto } from '../application/dtos/results/Aluguel.dto';
+import { ForbiddenException } from '@nestjs/common';
 
 export type AluguelProps = {
     locador: Pessoa;
@@ -45,23 +42,10 @@ export type CriarAluguelProps = {
 export class Aluguel {
     private readonly _id: string;
     private readonly props: AluguelProps;
-    private _domainEvents: DomainEvent[] = [];
 
     constructor(id?: string) {
         if (id) this._id = id;
         this.props = {} as AluguelProps;
-    }
-
-    get domainEvents(): DomainEvent[] {
-        return this._domainEvents;
-    }
-
-    clearEvents(): void {
-        this._domainEvents = [];
-    }
-
-    private addDomainEvent(event: DomainEvent): void {
-        this._domainEvents.push(event);
     }
 
     static criar(props: CriarAluguelProps): Aluguel {
@@ -130,26 +114,18 @@ export class Aluguel {
         return domain;
     }
 
-    confirmar(): void {
-        if (this.status !== AluguelStatus.SOLICITADO) {
-            throw new AluguelException(
-                `Aluguel não pode ser confirmado do status ${this.status}`,
+    confirmar(usuarioId: string): void {
+        if (this.locador.id !== usuarioId) {
+            throw new ForbiddenException(
+                `Você não tem permissão para confirmar este aluguel.`,
             );
         }
 
-        this.setStatus(AluguelStatus.CONFIRMADO);
+        if (this.status !== AluguelStatus.SOLICITADO) {
+            throw new AluguelException(`Aluguel não pode ser confirmado.`);
+        }
 
-        // Emite evento para bloqueio de datas
-        this.addDomainEvent(
-            new AluguelConfirmadoEvent(
-                this._id,
-                this.props.itemId,
-                this.props.dataInicio,
-                this.props.dataFim,
-                this.props.locador.id,
-                this.props.locatario.id,
-            ),
-        );
+        this.setStatus(AluguelStatus.CONFIRMADO);
     }
 
     cancelar(motivo: string): void {
@@ -167,25 +143,8 @@ export class Aluguel {
 
         this.setStatus(AluguelStatus.CANCELADO);
         this.setMotivoRecusaLocador(motivo);
-
-        // Emite evento apenas se estava bloqueado (status não era SOLICITADO)
-        if (this.status !== AluguelStatus.SOLICITADO) {
-            this.addDomainEvent(
-                new AluguelCanceladoEvent(
-                    this._id,
-                    this.props.itemId,
-                    this.props.dataInicio,
-                    this.props.dataFim,
-                    motivo,
-                ),
-            );
-        }
     }
 
-    /**
-     * ✅ PRODUÇÃO: Volta aluguel para SOLICITADO (rollback de confirmação)
-     * Usado quando a confirmação falha durante bloqueio de datas
-     */
     voltarParaSolicitado(): void {
         if (this.status !== AluguelStatus.CONFIRMADO) {
             throw new AluguelException(
@@ -194,7 +153,6 @@ export class Aluguel {
         }
 
         this.setStatus(AluguelStatus.SOLICITADO);
-        this.clearEvents(); // Limpa eventos de confirmação
     }
 
     finalizar(): void {
@@ -205,16 +163,6 @@ export class Aluguel {
         }
 
         this.setStatus(AluguelStatus.CONCLUIDO);
-
-        // Emite evento para desbloquear datas
-        this.addDomainEvent(
-            new AluguelFinalizadoEvent(
-                this._id,
-                this.props.itemId,
-                this.props.dataInicio,
-                this.props.dataFim,
-            ),
-        );
     }
 
     private calcularPrecoTotal(): void {

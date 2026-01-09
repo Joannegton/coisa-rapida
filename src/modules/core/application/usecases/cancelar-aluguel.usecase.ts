@@ -32,7 +32,9 @@ export class CancelarAluguelUseCase {
         const aluguel = await this.aluguelRepository.buscar(props.aluguelId);
 
         if (!aluguel) {
-            throw new BadRequestException(`Aluguel ${props.aluguelId} não encontrado`);
+            throw new BadRequestException(
+                `Aluguel ${props.aluguelId} não encontrado`,
+            );
         }
 
         // 2️⃣ Domain cria evento (se estava bloqueado)
@@ -59,10 +61,12 @@ export class CancelarAluguelUseCase {
         // 4️⃣ Publica evento se gerou (desbloqueia datas)
         // ⚠️ Se falhar, apenas loga erro (cancelamento já foi persistido)
         try {
-            for (const event of aluguel.domainEvents) {
-                await this.eventEmitter.emitAsync(event.eventType, event);
-            }
-            this.logger.log(`✅ Datas desbloqueadas para aluguel ${props.aluguelId}`);
+            // for (const event of aluguel.domainEvents) {
+            //     await this.eventEmitter.emitAsync(event.eventType, event);
+            // }
+            this.logger.log(
+                `✅ Datas desbloqueadas para aluguel ${props.aluguelId}`,
+            );
         } catch (error) {
             this.logger.error(
                 `⚠️ AVISO: Falha ao desbloquear datas para aluguel ${props.aluguelId}: ${error.message}`,
@@ -70,7 +74,5 @@ export class CancelarAluguelUseCase {
             // ⚠️ Não faz rollback porque cancelamento já foi persistido
             // Admin pode desbloquear manualmente se necessário
         }
-
-        aluguel.clearEvents();
     }
 }

@@ -22,6 +22,7 @@ import type { UsuarioPayload } from '../auth/infra/services/jwt.service';
 import { AluguelDto } from './application/dtos/results/Aluguel.dto';
 import { ListarAlugueisUsuarioQuery } from './application/queries/listar-alugueis-usuario.query';
 import { BuscarAluguelIdQuery } from './application/queries/buscar-aluguel-id.query';
+import { ConfirmarAluguelUseCase } from './application/usecases/confirmar-aluguel.usecase';
 
 @ApiTags('core')
 @Controller()
@@ -30,6 +31,7 @@ export class CoreController {
         private readonly solicitarAluguelUseCase: SolicitarAluguelUseCase,
         private readonly listarAlugueisPorUsuarioQuery: ListarAlugueisUsuarioQuery,
         private readonly buscarAluguelIdQuery: BuscarAluguelIdQuery,
+        private readonly confirmarAluguelUseCase: ConfirmarAluguelUseCase,
     ) {}
 
     @ApiOperation({
@@ -94,6 +96,28 @@ export class CoreController {
     ): Promise<AluguelDto> {
         return await this.buscarAluguelIdQuery.execute({
             id,
+            usuarioId: usuario.sub,
+        });
+    }
+
+    @ApiOperation({
+        summary: 'Confirmar aluguel',
+        description: 'Confirma um aluguel pendente.',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Aluguel confirmado com sucesso.',
+    })
+    @ApiParam({ name: 'id', description: 'ID do aluguel' })
+    @ApiAccessToken()
+    @HttpCode(HttpStatus.OK)
+    @Post('aluguel/:id/confirmar')
+    async confirmarAluguel(
+        @Param('id') id: string,
+        @usuarioAtual() usuario: UsuarioPayload,
+    ): Promise<void> {
+        return await this.confirmarAluguelUseCase.execute({
+            aluguelId: id,
             usuarioId: usuario.sub,
         });
     }

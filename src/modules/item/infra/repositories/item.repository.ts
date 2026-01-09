@@ -1,4 +1,4 @@
-import { Repository } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { Injectable, Logger } from '@nestjs/common';
 import { ItemModel, StatusItem } from '../models/item.model';
 import { ItemMapper } from '../mappers/item.mapper';
@@ -21,6 +21,7 @@ export class ItemRepositoryImpl implements ItemRepository {
         private readonly itemMapper: ItemMapper,
         @InjectRepository(ItemModel)
         private readonly repository: Repository<ItemModel>,
+        private readonly dataSource: DataSource,
     ) {}
 
     async salvar(item: Item): Promise<Item> {
@@ -56,21 +57,43 @@ export class ItemRepositoryImpl implements ItemRepository {
 
     async buscarComLock(id: string, useLock = false): Promise<Item | null> {
         try {
-            let query = this.repository
-                .createQueryBuilder('item')
-                .leftJoinAndSelect('item.fotos', 'fotos')
-                .leftJoinAndSelect('item.disponibilidade', 'disponibilidade')
-                .leftJoinAndSelect('item.moderacao', 'moderacao')
-                .where('item.id = :id', { id });
-
-            // Aplica pessimistic lock se solicitado (SELECT FOR UPDATE)
-            if (useLock) {
-                query = query.setLock('pessimistic_write');
+            // Se não precisa de lock, retorna com left joins (pode incluir null)
+            if (!useLock) {
+                const model = await this.repository
+                    .createQueryBuilder('item')
+                    .leftJoinAndSelect('item.fotos', 'fotos')
+                    .leftJoinAndSelect('item.disponibilidade', 'disponibilidade')
+                    .leftJoinAndSelect('item.moderacao', 'moderacao')
+                    .where('item.id = :id', { id })
+                    .getOne();
+                if (!model) return null;
+                return this.itemMapper.toDomain(model);
             }
 
-            const model = await query.getOne();
-            if (!model) return null;
-            return this.itemMapper.toDomain(model);
+            // Com lock, usa inner joins (sem nulls) - obrigatório para FOR UPDATE
+            const queryRunner = this.dataSource.createQueryRunner();
+            await queryRunner.connect();
+            await queryRunner.startTransaction();
+
+            try {
+                const model = await queryRunner.manager
+                    .createQueryBuilder(ItemModel, 'item')
+                    .innerJoinAndSelect('item.fotos', 'fotos')
+                    .innerJoinAndSelect('item.disponibilidade', 'disponibilidade')
+                    .innerJoinAndSelect('item.moderacao', 'moderacao')
+                    .where('item.id = :id', { id })
+                    .setLock('pessimistic_write')
+                    .getOne();
+
+                await queryRunner.commitTransaction();
+                if (!model) return null;
+                return this.itemMapper.toDomain(model);
+            } catch (error) {
+                await queryRunner.rollbackTransaction();
+                throw error;
+            } finally {
+                await queryRunner.release();
+            }
         } catch (error) {
             this.logger.error(
                 `Erro ao buscar item com lock: ${error.message}`,

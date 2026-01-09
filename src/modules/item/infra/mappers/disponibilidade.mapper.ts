@@ -1,6 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { Disponibilidade, DataBloqueada as DataBloqueadaDomain } from '../../domain/disponibilidade';
-import { DisponibilidadeItemModel, DataBloqueada as DataBloqueadaModel } from '../models/disponibilidade-item.model';
+import {
+    Disponibilidade,
+    DataBloqueada as DataBloqueadaDomain,
+} from '../../domain/disponibilidade';
+import {
+    DisponibilidadeItemModel,
+    DataBloqueada as DataBloqueadaModel,
+} from '../models/disponibilidade-item.model';
 
 @Injectable()
 export class DisponibilidadeMapper {

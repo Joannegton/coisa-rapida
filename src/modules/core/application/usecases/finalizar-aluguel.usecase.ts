@@ -31,7 +31,9 @@ export class FinalizarAluguelUseCase {
         const aluguel = await this.aluguelRepository.buscar(props.aluguelId);
 
         if (!aluguel) {
-            throw new BadRequestException(`Aluguel ${props.aluguelId} não encontrado`);
+            throw new BadRequestException(
+                `Aluguel ${props.aluguelId} não encontrado`,
+            );
         }
 
         // 2️⃣ Domain finaliza (deve estar em ATIVO)
@@ -47,7 +49,9 @@ export class FinalizarAluguelUseCase {
         // 3️⃣ Persiste estado CONCLUIDO
         try {
             await this.aluguelRepository.salvar(aluguel);
-            this.logger.log(`✅ Aluguel ${props.aluguelId} finalizado/concluído`);
+            this.logger.log(
+                `✅ Aluguel ${props.aluguelId} finalizado/concluído`,
+            );
         } catch (error) {
             this.logger.error(`Erro ao salvar finalização: ${error.message}`);
             throw error;
@@ -56,10 +60,12 @@ export class FinalizarAluguelUseCase {
         // 4️⃣ Publica evento (desbloqueia datas)
         // ⚠️ Se falhar, apenas loga erro (finalização já foi persistida)
         try {
-            for (const event of aluguel.domainEvents) {
-                await this.eventEmitter.emitAsync(event.eventType, event);
-            }
-            this.logger.log(`✅ Datas desbloqueadas após finalização do aluguel ${props.aluguelId}`);
+            // for (const event of aluguel.domainEvents) {
+            //     await this.eventEmitter.emitAsync(event.eventType, event);
+            // }
+            this.logger.log(
+                `✅ Datas desbloqueadas após finalização do aluguel ${props.aluguelId}`,
+            );
         } catch (error) {
             this.logger.error(
                 `⚠️ AVISO: Falha ao desbloquear datas após finalização de ${props.aluguelId}: ${error.message}`,
@@ -67,7 +73,5 @@ export class FinalizarAluguelUseCase {
             // ⚠️ Não faz rollback porque finalização já foi persistida
             // Admin pode desbloquear manualmente se necessário
         }
-
-        aluguel.clearEvents();
     }
 }
