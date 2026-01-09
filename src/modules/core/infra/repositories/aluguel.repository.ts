@@ -11,14 +11,14 @@ export class AluguelRepositoryImpl implements AluguelRepository {
     private readonly logger: Logger = new Logger(AluguelRepositoryImpl.name);
     constructor(
         @InjectRepository(AluguelModel)
-        private readonly aluguelRepository: Repository<AluguelModel>,
+        private readonly repository: Repository<AluguelModel>,
         private readonly aluguelMapper: AluguelMapper,
     ) {}
 
     async salvar(aluguel: Aluguel): Promise<void> {
         try {
             const aluguelModel = this.aluguelMapper.toModel(aluguel);
-            await this.aluguelRepository.save(aluguelModel);
+            await this.repository.save(aluguelModel);
         } catch (error) {
             this.logger.error(`Erro ao salvar aluguel: ${error.message}`);
             throw new RepositoryException('Erro ao salvar aluguel.');
@@ -27,7 +27,7 @@ export class AluguelRepositoryImpl implements AluguelRepository {
 
     async buscar(id: string): Promise<Aluguel | null> {
         try {
-            const aluguelModel = await this.aluguelRepository.findOne({
+            const aluguelModel = await this.repository.findOne({
                 where: { id },
             });
 
@@ -39,6 +39,25 @@ export class AluguelRepositoryImpl implements AluguelRepository {
         } catch (error) {
             this.logger.error(`Erro ao buscar aluguel ${id}: ${error.message}`);
             throw new RepositoryException(`Erro ao buscar aluguel ${id}`);
+        }
+    }
+
+    async listarPorUsuario(usuarioId: string): Promise<Aluguel[]> {
+        try {
+            const models = await this.repository.find({
+                where: [
+                    { locador: { id: usuarioId } },
+                    { locatario: { id: usuarioId } },
+                ],
+                order: { criadoEm: 'DESC' },
+            });
+
+            return this.aluguelMapper.toDomainList(models);
+        } catch (error) {
+            this.logger.error(
+                `Erro ao listar aluguéis do usuário ${usuarioId}: ${error.message}`,
+            );
+            throw new RepositoryException(`Erro ao listar aluguéis`);
         }
     }
 }

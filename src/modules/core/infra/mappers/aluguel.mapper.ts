@@ -57,7 +57,9 @@ export class AluguelMapper {
 
     toModel(aluguel: Aluguel): AluguelModel {
         const locadorModel = this.pessoaMapper.toLocadorModel(aluguel.locador);
-        const locatarioModel = this.pessoaMapper.toLocatarioModel(aluguel.locatario);
+        const locatarioModel = this.pessoaMapper.toLocatarioModel(
+            aluguel.locatario,
+        );
 
         const caucaoModel = aluguel.caucao
             ? this.caucaoMapper.toModel(aluguel.caucao)
