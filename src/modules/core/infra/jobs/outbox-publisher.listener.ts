@@ -33,6 +33,15 @@ export class OutboxPublisherListener implements OnModuleInit, OnModuleDestroy {
     private readonly logger = new Logger(OutboxPublisherListener.name);
     private pgClient: Client;
 
+    // Health check inteligente
+    private isConnected = false;
+    private lastHealthCheck = 0;
+    private consecutiveFailures = 0;
+
+    private readonly HEALTH_INTERVAL = 5 * 60 * 1000; // 5 minutos
+    private readonly MAX_FAILURES = 3;
+    private readonly HEALTH_CHECK_TIMEOUT = 5000; // 5 segundos
+
     constructor(
         private readonly outboxRepository: OutboxRepository,
         private readonly auditoriaService: AuditoriaService,
@@ -44,27 +53,7 @@ export class OutboxPublisherListener implements OnModuleInit, OnModuleDestroy {
      */
     async onModuleInit() {
         try {
-            // Cria conexão dedicada para LISTEN
-            this.pgClient = new Client({
-                connectionString: process.env.DATABASE_URL as string,
-            });
-
-            await this.pgClient.connect();
-
-            // Configura listener de notificações
-            this.pgClient.on('notification', async (msg) => {
-                if (msg.channel === 'outbox_events') {
-                    const payload = JSON.parse(msg.payload);
-                    this.logger.log(
-                        `🔔 Notificação recebida: ${payload.tipo_evento} (${payload.id})`,
-                    );
-                    await this.publicarEvento(payload.id);
-                }
-            });
-
-            // Registra listener no canal 'outbox_events'
-            await this.pgClient.query('LISTEN outbox_events');
-
+            await this.reiniciarConexao();
             this.logger.log(
                 '✅ OutboxPublisherListener iniciado (PostgreSQL LISTEN/NOTIFY)',
             );
@@ -82,9 +71,172 @@ export class OutboxPublisherListener implements OnModuleInit, OnModuleDestroy {
      */
     async onModuleDestroy() {
         if (this.pgClient) {
-            await this.pgClient.query('UNLISTEN outbox_events');
-            await this.pgClient.end();
-            this.logger.log('👋 OutboxPublisherListener desconectado');
+            try {
+                await this.pgClient.query('UNLISTEN outbox_events');
+                await this.pgClient.end();
+                this.isConnected = false;
+                this.logger.log('👋 OutboxPublisherListener desconectado');
+            } catch (error) {
+                this.logger.error(
+                    `❌ Erro ao desconectar listener: ${error.message}`,
+                );
+            }
+        }
+    }
+
+    /**
+     * 🏥 Health Check Inteligente (executa a cada minuto, mas verifica apenas a cada 5 minutos)
+     * Implementa circuit breaker após 3 falhas consecutivas
+     */
+    @Cron('*/1 * * * *')
+    async healthCheckInteligente(): Promise<void> {
+        const agora = Date.now();
+
+        // Apenas verifica se intervalou 5 minutos E conexão está saudável
+        if (
+            this.isConnected &&
+            agora - this.lastHealthCheck < this.HEALTH_INTERVAL
+        ) {
+            return;
+        }
+
+        await this.verificarConexao();
+    }
+
+    /**
+     * 🔍 Verifica saúde da conexão PostgreSQL
+     */
+    private async verificarConexao(): Promise<void> {
+        try {
+            // Circuit breaker: pausa verificações por 30 minutos após 3 falhas
+            if (this.consecutiveFailures >= this.MAX_FAILURES) {
+                const agora = Date.now();
+                const tempoBackoff = 30 * 60 * 1000; // 30 minutos
+                const proximaVerificacao = this.lastHealthCheck + tempoBackoff;
+
+                if (agora < proximaVerificacao) {
+                    return; // Ainda em período de backoff
+                }
+
+                // Reseta contador e tenta novamente
+                this.logger.log(
+                    '🔄 Tentando reconectar após período de backoff (circuit breaker reset)',
+                );
+                this.consecutiveFailures = 0;
+            }
+
+            // Health check com timeout
+            const promise = this.pgClient.query('SELECT 1 as health_check_ok');
+
+            const timeout = new Promise((_, reject) =>
+                setTimeout(
+                    () =>
+                        reject(
+                            new Error(
+                                `Health check timeout (${this.HEALTH_CHECK_TIMEOUT}ms)`,
+                            ),
+                        ),
+                    this.HEALTH_CHECK_TIMEOUT,
+                ),
+            );
+
+            await Promise.race([promise, timeout]);
+
+            // Sucesso
+            if (!this.isConnected) {
+                this.logger.log(
+                    '🟢 LISTEN/NOTIFY reconectado com sucesso (recoveryto)',
+                );
+                this.consecutiveFailures = 0;
+            }
+
+            this.isConnected = true;
+            this.lastHealthCheck = Date.now();
+        } catch (error) {
+            this.consecutiveFailures++;
+
+            this.logger.warn(
+                `🔴 Health check falhou (${this.consecutiveFailures}/${this.MAX_FAILURES}): ${error.message}`,
+            );
+
+            if (this.consecutiveFailures >= this.MAX_FAILURES) {
+                this.logger.error(
+                    `❌ Conexão perdida! Circuit breaker ativado por 30 minutos.`,
+                );
+                this.isConnected = false;
+
+                await this.auditoriaService.criar({
+                    usuarioId: 'sistema',
+                    modulo: 'core',
+                    acao: AuditoriaAcao.EVENTO_FALHA_PUBLICACAO,
+                    recurso: 'OutboxPublisher',
+                    recursoId: 'health-check',
+                    descricao: `Conexão PostgreSQL LISTEN/NOTIFY perdida. Circuit breaker ativado.`,
+                    nivel: 'critico',
+                    erro: error.message,
+                    estadoAntes: { status: 'CONECTADO' },
+                    estadoDepois: { status: 'DESCONECTADO' },
+                    timestamp: new Date(),
+                });
+
+                // Tenta reconectar em background
+                this.reiniciarConexao().catch((err) => {
+                    this.logger.error(`❌ Erro ao reconectar: ${err.message}`);
+                });
+            }
+        }
+    }
+
+    /**
+     * 🔗 Reinicia conexão PostgreSQL LISTEN/NOTIFY
+     */
+    private async reiniciarConexao(): Promise<void> {
+        try {
+            // Fecha conexão anterior se existir
+            if (this.pgClient) {
+                try {
+                    await this.pgClient.end();
+                } catch {
+                    // Ignora erros ao fechar
+                }
+            }
+
+            // Cria nova conexão
+            this.pgClient = new Client({
+                connectionString: process.env.DATABASE_URL as string,
+            });
+
+            await this.pgClient.connect();
+
+            // Configura listener de notificações
+            this.pgClient.on('notification', async (msg) => {
+                if (msg.channel === 'outbox_events') {
+                    try {
+                        const payload = JSON.parse(msg.payload);
+                        this.logger.log(
+                            `🔔 Notificação recebida: ${payload.tipo_evento} (${payload.id})`,
+                        );
+                        await this.publicarEvento(payload.id);
+                    } catch (error) {
+                        this.logger.error(
+                            `❌ Erro ao processar notificação: ${error.message}`,
+                        );
+                    }
+                }
+            });
+
+            // Registra listener no canal 'outbox_events'
+            await this.pgClient.query('LISTEN outbox_events');
+
+            this.isConnected = true;
+            this.consecutiveFailures = 0;
+            this.lastHealthCheck = Date.now();
+
+            this.logger.log('✅ Conexão PostgreSQL LISTEN/NOTIFY restaurada');
+        } catch (error) {
+            this.logger.error(`❌ Erro ao reiniciar conexão: ${error.message}`);
+            this.isConnected = false;
+            throw error;
         }
     }
 
