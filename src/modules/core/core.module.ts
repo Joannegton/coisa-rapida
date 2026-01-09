@@ -10,6 +10,7 @@ import { CoreMappers } from './infra/mappers';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AluguelModel } from './infra/models/aluguel.model';
 import { AluguelDisponibilidadeEventHandler } from './application/event-handlers/aluguel-disponibilidade.event-handler';
+import { CoreQueries } from './application/queries';
 
 @Module({
     imports: [
@@ -21,6 +22,7 @@ import { AluguelDisponibilidadeEventHandler } from './application/event-handlers
     providers: [
         ...CoreUseCases,
         ...CoreMappers,
+        ...CoreQueries,
         AluguelDisponibilidadeEventHandler,
         {
             provide: 'AluguelRepository',

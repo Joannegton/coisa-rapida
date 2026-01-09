@@ -2,7 +2,7 @@ import { Inject } from '@nestjs/common';
 import type { AluguelRepository } from '../../domain/repositories/aluguel.repository';
 import { AluguelDto } from '../dtos/results/Aluguel.dto';
 
-export class ListarAlugueisUsuarioUseCase {
+export class ListarAlugueisUsuarioQuery {
     constructor(
         @Inject('AluguelRepository')
         private readonly aluguelRepository: AluguelRepository,

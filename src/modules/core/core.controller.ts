@@ -6,14 +6,14 @@ import { SolicitarAluguelDto } from './application/dtos/solicitar-aluguel.dto';
 import { SolicitarAluguelUseCase } from './application/usecases/solicitar-aluguel.usecase';
 import type { UsuarioPayload } from '../auth/infra/services/jwt.service';
 import { AluguelDto } from './application/dtos/results/Aluguel.dto';
-import { ListarAlugueisUsuarioUseCase } from './application/usecases/listar-alugueis-usuario.usecase';
+import { ListarAlugueisUsuarioQuery } from './application/queries/listar-alugueis-usuario.query';
 
 @ApiTags('core')
 @Controller()
 export class CoreController {
     constructor(
         private readonly solicitarAluguelUseCase: SolicitarAluguelUseCase,
-        private readonly listarAlugueisPorUsuarioUseCase: ListarAlugueisUsuarioUseCase,
+        private readonly listarAlugueisPorUsuarioUseCase: ListarAlugueisUsuarioQuery,
     ) {}
 
     @ApiOperation({
