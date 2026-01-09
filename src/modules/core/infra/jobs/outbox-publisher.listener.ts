@@ -35,8 +35,8 @@ export class OutboxPublisherListener implements OnModuleInit, OnModuleDestroy {
 
     constructor(
         private readonly outboxRepository: OutboxRepository,
-        private readonly eventBus: EventBus,
         private readonly auditoriaService: AuditoriaService,
+        private readonly eventBus: EventBus,
     ) {}
 
     /**

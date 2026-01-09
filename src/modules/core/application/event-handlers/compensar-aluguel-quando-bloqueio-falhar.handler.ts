@@ -4,6 +4,7 @@ import { FalhaNoBloqueioEvent } from '../../domain/events/falha-no-bloqueio.even
 import type { AluguelRepository } from '../../domain/repositories/aluguel.repository';
 import { AuditoriaService } from 'src/shared/infra/services/auditoria.service';
 import { AuditoriaAcao } from 'src/shared/constants/auditoria-actions';
+import { DeadLetterQueueService } from 'src/shared/infra/services/dead-letter-queue.service';
 
 /**
  * 🔄 HANDLER DE COMPENSAÇÃO - SAGA Coreografada
@@ -33,6 +34,7 @@ export class CompensarAluguelQuandoBloqueioFalharHandler
         @Inject('AluguelRepository')
         private readonly aluguelRepository: AluguelRepository,
         private readonly auditoriaService: AuditoriaService,
+        private readonly servicoFilaMortaService: DeadLetterQueueService,
     ) {}
 
     async handle(event: FalhaNoBloqueioEvent): Promise<void> {
@@ -103,7 +105,32 @@ export class CompensarAluguelQuandoBloqueioFalharHandler
                 timestamp: new Date(),
             });
 
-            // Em produção: adicionar à DLQ (Dead Letter Queue) para investigação manual
+            await this.servicoFilaMortaService.enviar({
+                modulo: 'core',
+                recurso: 'Aluguel',
+                recursoId: event.aluguelId,
+                evento: event,
+                erro: error.message,
+                rastreamentoErro: error.stack,
+                tentativasRetorno: 0,
+                contexto: {
+                    estadoAntes: { status: 'CONFIRMADO' },
+                    estadoDepois: { status: 'DESCONHECIDO' },
+                    usuarioId: 'sistema',
+                    metadados: {
+                        sagaType: 'aluguel-bloqueio',
+                        compensationStep: 'reverter-aluguel',
+                        itemId: event.itemId,
+                        motivoOriginal: event.motivo,
+                    },
+                },
+                idCorrelacao: `compensacao-${event.aluguelId}-${Date.now()}`,
+                prioridade: 'alta',
+            });
+
+            this.logger.error(
+                `🚨 [FILA MORTA] Mensagem enviada para Fila Morta: compensacao-${event.aluguelId}`,
+            );
         }
     }
 }

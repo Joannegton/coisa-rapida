@@ -37,6 +37,9 @@ export enum AuditoriaAcao {
     EVENTO_FALHA_DEFINITIVA = 'evento_falha_definitiva',
     COMPENSACAO_EXECUTADA = 'compensacao_executada',
     COMPENSACAO_FALHA = 'compensacao_falha',
+
+    // Dead Letter Queue
+    DDEAD_LETTER_QUEUE_ENVIADA = 'dead_letter_queue_enviada',
 }
 
 /**

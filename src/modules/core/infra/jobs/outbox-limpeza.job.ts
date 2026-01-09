@@ -3,11 +3,11 @@ import { OutboxRepository } from '../repositories/outbox.repository';
 import { AuditoriaService } from 'src/shared/infra/services/auditoria.service';
 import { LoggerService } from '@nestjs/common';
 
-export class OutboxLimpeaJob {
+export class OutboxEventLimpezaJob {
     constructor(
         private readonly outboxRepository: OutboxRepository,
-        private readonly logger: LoggerService,
         private readonly auditoriaService: AuditoriaService,
+        private readonly logger: LoggerService,
     ) {}
 
     @Cron('0 3 * * *')

@@ -17,8 +17,14 @@ export const EVENT_CONFIG = {
         MAX_RETRIES: 3,
         RETRY_DELAY: 1000,
 
-        // Dead letter queue (para futuro uso com Kafka)
-        DEAD_LETTER_TOPIC: 'events.dead-letter',
+        // Dead Letter Queue
+        DEAD_LETTER_QUEUE: {
+            ENABLED: true,
+            MAX_RETRIES_BEFORE_DLQ: 3,
+            RETENTION_DAYS: 30,
+            ALERT_CHANNELS: ['slack', 'email'],
+            AUTO_RETRY_ENABLED: false, // Para futuro
+        },
     },
 } as const;
 

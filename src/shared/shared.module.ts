@@ -7,6 +7,7 @@ import { AuditoriaModel } from './infra/models/auditoria.model';
 import { AuditoriaRepository } from './infra/repositories/auditoria.repository';
 import { AuditoriaCleanupJob } from './infra/jobs/auditoria-cleanup.job';
 import { AuditoriaAdminController } from './controllers/auditoria-admin.controller';
+import { ControladorAdminFilaMortaController } from './controllers/controlador-admin-fila-morta.controller';
 import { sharedServices } from './infra/services';
 import { EmailProcessor } from './infra/jobs/email.processor.worker';
 import { VerificacaoVirusFilaService } from './infra/services/verificacao-virus.fila.service';
@@ -40,7 +41,7 @@ import { VerificacaoVirusProcessor } from './infra/jobs/verificacao-virus.proces
         ScheduleModule.forRoot(),
         CqrsModule.forRoot(),
     ],
-    controllers: [AuditoriaAdminController],
+    controllers: [AuditoriaAdminController, ControladorAdminFilaMortaController],
     providers: [
         AuditoriaRepository,
         ...sharedServices,

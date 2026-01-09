@@ -6,6 +6,8 @@ import { GeocodingService } from './geocoding.service';
 import { EmailFilaService } from './email.service';
 import { TemplateService } from './template.service';
 import { VerificacaoVirusFilaService } from './verificacao-virus.fila.service';
+import { DeadLetterQueueService } from './dead-letter-queue.service';
+import { NotificationService } from './notification.service';
 
 export const sharedServices = [
     AuditoriaService,
@@ -16,4 +18,6 @@ export const sharedServices = [
     EmailFilaService,
     TemplateService,
     VerificacaoVirusFilaService,
+    DeadLetterQueueService,
+    NotificationService,
 ];
