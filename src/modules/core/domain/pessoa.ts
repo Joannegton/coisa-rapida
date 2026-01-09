@@ -37,4 +37,11 @@ export class Pessoa {
     get nome(): string {
         return this.props.nome;
     }
+
+    toDto() {
+        return {
+            id: this.props.id,
+            nome: this.props.nome,
+        };
+    }
 }

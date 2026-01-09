@@ -28,11 +28,7 @@ export class Multa {
 
     static carregar(props: MultaProps): Multa {
         const domain = new Multa();
-        domain.setDiasAtraso(props.diasAtraso);
-        domain.setMultiplicador(props.multiplicador);
-        domain.setValorDiariaSnapshot(props.valorDiariaSnapshot);
-        domain.setCalculadaEm(props.calculadaEm);
-        domain.setValorTotal(props.valorTotal);
+        Object.assign(domain.props, props);
         return domain;
     }
 
@@ -130,5 +126,15 @@ export class Multa {
 
     get calculadaEm(): Date | undefined {
         return this.props.calculadaEm;
+    }
+
+    toDto() {
+        return {
+            diasAtraso: this.props.diasAtraso,
+            multiplicador: this.props.multiplicador,
+            valorDiariaSnapshot: this.props.valorDiariaSnapshot,
+            valorTotal: this.props.valorTotal,
+            calculadaEm: this.props.calculadaEm,
+        };
     }
 }

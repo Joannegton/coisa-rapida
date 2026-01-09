@@ -37,11 +37,7 @@ export class Contrato {
 
     static carregar(props: ContratoProps): Contrato {
         const domain = new Contrato();
-        domain.setVersao(props.versao);
-        domain.setConteudoHtml(props.conteudoHtml);
-        domain.setAceiteLocador(props.aceiteLocador);
-        domain.setAceiteLocatario(props.aceiteLocatario);
-        domain.setCriadoEm(props.criadoEm);
+        Object.assign(domain.props, props);
         return domain;
     }
 
@@ -91,5 +87,15 @@ export class Contrato {
 
     get criadoEm(): Date {
         return this.props.criadoEm;
+    }
+
+    toDto() {
+        return {
+            versao: this.props.versao,
+            conteudoHtml: this.props.conteudoHtml,
+            aceiteLocador: this.props.aceiteLocador,
+            aceiteLocatario: this.props.aceiteLocatario,
+            criadoEm: this.props.criadoEm,
+        };
     }
 }

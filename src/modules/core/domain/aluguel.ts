@@ -12,6 +12,7 @@ import { DomainEvent } from 'src/shared/utils/domian.event';
 import { AluguelConfirmadoEvent } from './events/aluguel-confirmado.event';
 import { AluguelCanceladoEvent } from './events/aluguel-cancelado.event';
 import { AluguelFinalizadoEvent } from './events/aluguel-finalizado.event';
+import { AluguelDto } from '../application/dtos/results/Aluguel.dto';
 
 export type AluguelProps = {
     locador: Pessoa;
@@ -125,22 +126,7 @@ export class Aluguel {
 
     static carregar(props: AluguelProps, id: string): Aluguel {
         const domain = new Aluguel(id);
-        domain.setLocador(props.locador);
-        domain.setLocatario(props.locatario);
-        domain.setItemId(props.itemId);
-        domain.setItemSnapshot(props.itemSnapshot);
-        domain.setPrecoTotal(props.precoTotal);
-        domain.setCaucao(props.caucao);
-        domain.setMulta(props.multa);
-        domain.setContrato(props.contrato);
-        domain.setDataInicio(props.dataInicio);
-        domain.setDataFim(props.dataFim);
-        domain.setStatus(props.status);
-        domain.props.observacoesLocatario = props.observacoesLocatario;
-        domain.props.motivoRecusaLocador = props.motivoRecusaLocador;
-        domain.props.criadoEm = props.criadoEm;
-        domain.props.atualizadoEm = props.atualizadoEm;
-
+        Object.assign(domain.props, props);
         return domain;
     }
 
@@ -614,5 +600,31 @@ export class Aluguel {
 
     get atualizadoEm(): Date {
         return this.props.atualizadoEm;
+    }
+
+    toDto(): AluguelDto {
+        return {
+            id: this._id,
+            locador: this.props.locador.toDto(),
+            locatario: this.props.locatario.toDto(),
+            item: {
+                id: this.props.itemId,
+                descricao: this.props.itemSnapshot.descricao,
+                nome: this.props.itemSnapshot.nome,
+                precoDiaria: this.props.itemSnapshot.precoDiaria,
+                precoHora: this.props.itemSnapshot.precoHora,
+                caucaoObrigatoria: this.props.itemSnapshot.caucaoObrigatoria,
+                fotoUrl: this.props.itemSnapshot.fotoUrl,
+                valorCaucao: this.props.itemSnapshot.valorCaucao,
+            },
+            precoTotal: this.props.precoTotal,
+            caucao: this.props.caucao?.toDto(),
+            dataInicio: this.props.dataInicio,
+            dataFim: this.props.dataFim,
+            status: this.props.status,
+            observacoesLocatario: this.props.observacoesLocatario,
+            motivoRecusaLocador: this.props.motivoRecusaLocador,
+            criadoEm: this.props.criadoEm,
+        };
     }
 }

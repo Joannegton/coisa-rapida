@@ -62,21 +62,7 @@ export class ItemSnapshot {
 
     static carregar(props: CarregarItemSnapshotProps): ItemSnapshot {
         const domain = new ItemSnapshot();
-        domain.setNome(props.nome);
-        domain.setDescricao(props.descricao);
-        domain.setPrecoDiaria(props.precoDiaria);
-        domain.setPrecoHora(props.precoHora);
-        domain.setFotoUrl(props.fotoUrl);
-        domain.setCapturadoEm(props.capturadoEm);
-        domain.setVersao(props.versao);
-        domain.setPermiteAluguelPorHora(props.permiteAluguelPorHora);
-        domain.setDiasMinimosAluguel(props.diasMinimosAluguel);
-        domain.setDiasMaximosAluguel(props.diasMaximosAluguel);
-        domain.setHorasMinimosAluguel(props.horasMinimosAluguel);
-        domain.setHorasMaximosAluguel(props.horasMaximosAluguel);
-        domain.setValorCaucao(props.valorCaucao);
-        domain.setCaucaoObrigatoria(props.caucaoObrigatoria);
-
+        Object.assign(domain.props, props);
         return domain;
     }
 
@@ -238,5 +224,26 @@ export class ItemSnapshot {
 
     get datasBloqueadas(): DatasBloqueadas[] | undefined {
         return this.props.datasBloqueadas;
+    }
+
+    toDto() {
+        return {
+            nome: this.props.nome,
+            descricao: this.props.descricao,
+            precoDiaria: this.props.precoDiaria,
+            precoHora: this.props.precoHora,
+            fotoUrl: this.props.fotoUrl,
+            capturadoEm: this.props.capturadoEm,
+            versao: this.props.versao,
+            permiteAluguelPorHora: this.props.permiteAluguelPorHora,
+            diasMinimosAluguel: this.props.diasMinimosAluguel,
+            diasMaximosAluguel: this.props.diasMaximosAluguel,
+            horasMinimosAluguel: this.props.horasMinimosAluguel,
+            horasMaximosAluguel: this.props.horasMaximosAluguel,
+            valorCaucao: this.props.valorCaucao,
+            caucaoObrigatoria: this.props.caucaoObrigatoria,
+            disponivel: this.props.disponivel,
+            datasBloqueadas: this.props.datasBloqueadas,
+        };
     }
 }

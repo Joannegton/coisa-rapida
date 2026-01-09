@@ -29,10 +29,7 @@ export class Caucao {
 
     static carregar(props: CaucaoProps): Caucao {
         const domain = new Caucao();
-        domain.setValor(props.valor);
-        domain.setStatus(props.status);
-        domain.setDataPagamento(props.dataPagamento);
-        domain.setDataDevolucao(props.dataDevolucao);
+        Object.assign(domain.props, props);
         return domain;
     }
 
@@ -131,5 +128,14 @@ export class Caucao {
 
     get dataDevolucao(): Date | undefined {
         return this.props.dataDevolucao;
+    }
+
+    toDto() {
+        return {
+            valor: this.props.valor,
+            status: this.props.status,
+            dataPagamento: this.props.dataPagamento,
+            dataDevolucao: this.props.dataDevolucao,
+        };
     }
 }
