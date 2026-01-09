@@ -217,7 +217,7 @@ O sistema de aluguel segue uma máquina de estados rigorosa. Cada transição de
 | Check | Regra                            | Descrição                                                                                                                                 | Prioridade |
 | ----- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
 | [ ]   | **Fluxo de Solicitação**         | Locatário solicita aluguel especificando datas de início/fim. Sistema calcula automaticamente: dias, valor total, taxa plataforma.        | Alta       |
-| [ ]   | **Validação de Disponibilidade** | verificação se item está disponível nas datas solicitadas.                                                                                | Alta       |
+| [x]   | **Validação de Disponibilidade** | verificação se item está disponível nas datas solicitadas.                                                                                | Alta       |
 | [ ]   | **Aprovação Automática**         | Se locador configurou `aprovacaoAutomatica=true` no item, aluguel é aprovado instantaneamente. Caso contrário, requer aprovação manual.   | Alta       |
 | [ ]   | **Janela de Resposta**           | Locador tem 24h para aprovar/recusar. Após isso, solicitação expira automaticamente.                                                      | Alta       |
 | [ ]   | **Aprovação Condicional**        | **[FUTURO]** Locador pode aprovar com condições (ex: adiantamento, caução extra). Locatário tem 12h para aceitar.                         | Média      |
@@ -284,7 +284,7 @@ retornoLocatario = caucao - valorAluguel - taxaApp - indenizacao;
 transferenciaLocador = valorLiquidoLocador + indenizacao;
 ```
 
-**Distribuição de Valores (MVP - Conta PF):**
+**Distribuição de Valores (Conta PF):**
 
 Na finalização do aluguel, a caução é distribuída da seguinte forma:
 
@@ -417,7 +417,7 @@ Cada transição de estado possui validações específicas que devem ser cumpri
 | **Checkout Pro**          | **[ATUAL]** Redirecionamento para página de pagamento do Mercado Pago.                               | `init_point` da Preference API  |
 | **Webhooks**              | Notificações automáticas sobre mudanças no status de pagamento. Endpoint: `/aluguel/webhook-caucao`. | `ProcessarWebhookCaucaoUseCase` |
 | **Refund API**            | Reembolso automático da caução para o locatário.                                                     | `/v1/payments/{id}/refunds`     |
-| **Transfer API**          | **[BLOQUEADO EM CONTA PF]** Transferências automáticas. MVP usa Pix manual.                          | Não disponível                  |
+| **Transfer API**          | **[BLOQUEADO EM CONTA PF]** Transferências automáticas. Inicialmente usa Pix manual.                 | Não disponível                  |
 
 **Fluxo de Webhook:**
 
@@ -470,7 +470,7 @@ Todas as transferências são registradas na tabela `transferencias` para audito
 
 **Status `AGUARDANDO_TRANSFERENCIA_MANUAL`:**
 
-- Usado no MVP com conta PF
+- Usado no Modelo com conta PF
 - Backend gera instruções: "Transferir R$X via Pix para [nome] (Chave: [chave])"
 - Admin executa Pix manualmente
 - Admin confirma no sistema via endpoint: `PATCH /aluguel/transferencia/confirmar`

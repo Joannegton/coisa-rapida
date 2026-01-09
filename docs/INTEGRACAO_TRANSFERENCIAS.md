@@ -1,13 +1,13 @@
-# 💸 Distribuição de Valores - Modelo MVP para Conta PF
+# 💸 Distribuição de Valores - Modelo para Conta PF
 
-## ✅ Solução Implementada para MVP
+## ✅ Solução Implementada
 
 Sistema adaptado para **conta Pessoa Física** do Mercado Pago, utilizando **reembolsos automáticos** + **transferências manuais** via Pix/TED.
 
 ### 🎯 Por que essa abordagem?
 
 - ✅ **Conta PF não tem acesso à API de transferências/splits**
-- ✅ **Solução viável para MVP** sem necessidade de conta empresarial
+- ✅ **Solução viável para** sem necessidade de conta empresarial
 - ✅ **Reembolso automático** funciona em contas PF
 - ✅ **Transferências manuais** via Pix são rápidas e gratuitas
 - ✅ **Escalável**: Pode migrar para automação quando virar PJ
@@ -19,11 +19,13 @@ Sistema adaptado para **conta Pessoa Física** do Mercado Pago, utilizando **ree
 Localização: `src/modules/seguranca/infra/services/mercado-pago-transfer.service.ts`
 
 **Funcionalidades:**
+
 - ✅ `reembolsar()` - Reembolsa caução para o locatário (AUTOMÁTICO)
 - ✅ `gerarInstrucoesTransferenciaManual()` - Gera instruções Pix para locador (MANUAL)
 - ✅ `consultarReembolso()` - Consulta status de reembolso
 
 **APIs utilizadas:**
+
 - `/v1/payments/{id}/refunds` - Para reembolsos automáticos
 
 ### 2. Entidade de Domínio (`Transferencia`)
@@ -31,11 +33,13 @@ Localização: `src/modules/seguranca/infra/services/mercado-pago-transfer.servi
 Localização: `src/modules/seguranca/domain/Transferencia.ts`
 
 **Tipos de Transferência:**
+
 - `PAGAMENTO_LOCADOR` - Pagamento do aluguel ao locador
 - `REEMBOLSO_LOCATARIO` - Devolução da caução ao locatário
 - `INDENIZACAO` - Pagamento de indenização ao locador
 
 **Estados:**
+
 - `PENDENTE` - Transferência criada, aguardando processamento
 - `PROCESSANDO` - Em processamento no Mercado Pago
 - `AGUARDANDO_TRANSFERENCIA_MANUAL` - **Aguardando execução manual via Pix/TED**
@@ -45,18 +49,20 @@ Localização: `src/modules/seguranca/domain/Transferencia.ts`
 ### 3. Persistência e Auditoria
 
 **Model TypeORM:** `TransferenciaModel`
+
 - Registra todas as tentativas de transferência
 - Armazena IDs do Mercado Pago para rastreamento
 - Mantém histórico completo de erros
 
 **Repository:** `TransferenciaRepository`
+
 - CRUD completo de transferências
 - Busca por aluguel, status e tipo
 - Lista falhas para retentativa
 
 ### 4. Use Case Atualizado (`FinalizarAluguelUseCase`)
 
-**Fluxo Implementado (Modelo MVP):**
+**Fluxo Implementado (Modelo):**
 
 ```typescript
 1. Valida aluguel e caução
@@ -88,21 +94,21 @@ Content-Type: application/json
 
 ```json
 {
-  "sucesso": true,
-  "dados": {
-    "aluguelId": "uuid-do-aluguel",
-    "mensagem": "Aluguel finalizado sem danos",
-    "detalhes": {
-      "taxaApp": 10.00,
-      "valorLiquidoLocador": 90.00,
-      "retornoLocatario": 100.00
-    },
-    "transferencias": {
-      "transferLocadorId": 123456789,
-      "reembolsoLocatarioId": 987654321,
-      "status": "sucesso"
+    "sucesso": true,
+    "dados": {
+        "aluguelId": "uuid-do-aluguel",
+        "mensagem": "Aluguel finalizado sem danos",
+        "detalhes": {
+            "taxaApp": 10.0,
+            "valorLiquidoLocador": 90.0,
+            "retornoLocatario": 100.0
+        },
+        "transferencias": {
+            "transferLocadorId": 123456789,
+            "reembolsoLocatarioId": 987654321,
+            "status": "sucesso"
+        }
     }
-  }
 }
 ```
 
@@ -113,37 +119,38 @@ GET /aluguel/{aluguelId}/transferencias
 ```
 
 **Response:**
+
 ```json
 {
-  "sucesso": true,
-  "dados": {
-    "aluguelId": "uuid-do-aluguel",
-    "total": 2,
-    "transferencias": [
-      {
-        "id": "uuid-transferencia-1",
-        "tipo": "pagamento_locador",
-        "valor": 90.00,
-        "destinatario": "Maria Santos",
-        "status": "concluida",
-        "descricao": "Aluguel - Furadeira Makita",
-        "mpTransferenciaId": 123456789,
-        "createdAt": "2025-11-07T10:00:00Z",
-        "completedAt": "2025-11-07T10:00:05Z"
-      },
-      {
-        "id": "uuid-transferencia-2",
-        "tipo": "reembolso_locatario",
-        "valor": 100.00,
-        "destinatario": "João Silva",
-        "status": "concluida",
-        "descricao": "Devolução da caução - Furadeira Makita",
-        "mpRefundId": 987654321,
-        "createdAt": "2025-11-07T10:00:06Z",
-        "completedAt": "2025-11-07T10:00:11Z"
-      }
-    ]
-  }
+    "sucesso": true,
+    "dados": {
+        "aluguelId": "uuid-do-aluguel",
+        "total": 2,
+        "transferencias": [
+            {
+                "id": "uuid-transferencia-1",
+                "tipo": "pagamento_locador",
+                "valor": 90.0,
+                "destinatario": "Maria Santos",
+                "status": "concluida",
+                "descricao": "Aluguel - Furadeira Makita",
+                "mpTransferenciaId": 123456789,
+                "createdAt": "2025-11-07T10:00:00Z",
+                "completedAt": "2025-11-07T10:00:05Z"
+            },
+            {
+                "id": "uuid-transferencia-2",
+                "tipo": "reembolso_locatario",
+                "valor": 100.0,
+                "destinatario": "João Silva",
+                "status": "concluida",
+                "descricao": "Devolução da caução - Furadeira Makita",
+                "mpRefundId": 987654321,
+                "createdAt": "2025-11-07T10:00:06Z",
+                "completedAt": "2025-11-07T10:00:11Z"
+            }
+        ]
+    }
 }
 ```
 
@@ -201,6 +208,7 @@ O sistema gera logs completos para auditoria:
 ## 🛡️ Tratamento de Erros
 
 ### Transferência Falhou
+
 - ✅ Erro é registrado na entidade `Transferencia`
 - ✅ Status marcado como `FALHOU`
 - ✅ Mensagem de erro armazenada
@@ -208,11 +216,13 @@ O sistema gera logs completos para auditoria:
 - ✅ Transferência pode ser retentada manualmente
 
 ### Reconciliação Falhou
+
 ```typescript
 if (diferencaValor > 0.01) {
-  throw new BadRequestException('Erro na reconciliação dos valores');
+    throw new BadRequestException('Erro na reconciliação dos valores');
 }
 ```
+
 ❌ Aluguel **NÃO** é finalizado se os valores não batem
 
 ## 🔄 Retentativa de Transferências
@@ -224,9 +234,9 @@ Para transferências que falharam, você pode implementar:
 const falhas = await transferenciaRepository.buscarFalhasParaRetentar();
 
 for (const transferencia of falhas) {
-  if (transferencia.podeSerRetentada()) {
-    // Retentar transferência...
-  }
+    if (transferencia.podeSerRetentada()) {
+        // Retentar transferência...
+    }
 }
 ```
 
@@ -257,25 +267,25 @@ CREATE INDEX idx_transferencias_status ON transferencias(status);
 ## 🚀 Próximos Passos Recomendados
 
 1. **Webhook para Transferências**
-   - Receber notificações do MP sobre status das transferências
-   - Atualizar automaticamente o status no banco
+    - Receber notificações do MP sobre status das transferências
+    - Atualizar automaticamente o status no banco
 
 2. **Dashboard de Finanças**
-   - Visualizar todas as transferências
-   - Relatórios de receita (taxas retidas)
-   - Gráficos de movimentação financeira
+    - Visualizar todas as transferências
+    - Relatórios de receita (taxas retidas)
+    - Gráficos de movimentação financeira
 
 3. **Retentativa Automática**
-   - Job agendado para retentar transferências falhas
-   - Sistema de circuit breaker para falhas recorrentes
+    - Job agendado para retentar transferências falhas
+    - Sistema de circuit breaker para falhas recorrentes
 
 4. **Notificações aos Usuários**
-   - Email/SMS quando receber transferência
-   - Alerta em caso de falha na transferência
+    - Email/SMS quando receber transferência
+    - Alerta em caso de falha na transferência
 
 5. **Split Antecipado**
-   - Implementar split direto na preferência de pagamento
-   - Valores já são distribuídos automaticamente ao pagar a caução
+    - Implementar split direto na preferência de pagamento
+    - Valores já são distribuídos automaticamente ao pagar a caução
 
 ## ⚠️ Requisitos do Mercado Pago
 
@@ -290,6 +300,7 @@ Para usar a API de transferências, você precisa:
 ## 🧪 Testando
 
 ### Ambiente de Sandbox
+
 ```env
 MERCADO_PAGO_ACCESS_TOKEN=seu_token_de_sandbox
 ```

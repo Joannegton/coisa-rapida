@@ -35,7 +35,7 @@ export class MercadoPagoTransferService {
 
     /**
      * Gera instruções para transferência manual (Pix/TED)
-     * Para MVP com conta PF - Locador recebe por transferência manual
+     * Para modelo com conta PF - Locador recebe por transferência manual
      */
     gerarInstrucoesTransferenciaManual(params: DadosTransferenciaManual): {
         instrucoes: string;
