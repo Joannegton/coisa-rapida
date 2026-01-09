@@ -12,6 +12,7 @@ export type EventoOutboxProps = {
     publicadoEm?: Date;
 };
 
+// nao usado pq outboxEvent só é usado na infra
 export class OutboxEvent {
     private readonly _id: string;
     private readonly props: EventoOutboxProps;

@@ -9,6 +9,7 @@ import { CoreUsuarioServiceImpl } from './infra/services/usuario.service';
 import { UsuarioModule } from '../usuario/usuario.module';
 import { CoreItemServiceImpl } from './infra/services/item.service';
 import { ItemModule } from '../item/item.module';
+import { SharedModule } from '../../shared/shared.module';
 import { CoreUseCases } from './application/usecases';
 import { CoreMappers } from './infra/mappers';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -25,6 +26,7 @@ import { OutboxPublisherListener } from './infra/jobs/outbox-publisher.listener'
         TypeOrmModule.forFeature([AluguelModel, OutboxEventModel]),
         UsuarioModule,
         ItemModule,
+        SharedModule,
     ],
     controllers: [CoreController],
     providers: [

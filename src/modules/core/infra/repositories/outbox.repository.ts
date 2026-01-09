@@ -1,12 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, EntityManager, LessThan } from 'typeorm';
-import { OutboxEvent } from '../../domain/outbox-event';
-import { OutboxEventMapper } from '../mappers/outbox-event.mapper';
+import { Repository, LessThan } from 'typeorm';
 import {
     OutboxEventModel,
     StatusOutboxEvent,
 } from '../models/outbox-event.model';
+import { AuditoriaService } from 'src/shared/infra/services/auditoria.service';
+import { AuditoriaAcao } from 'src/shared/constants/auditoria-actions';
 
 @Injectable()
 export class OutboxRepository {
@@ -15,41 +15,22 @@ export class OutboxRepository {
     constructor(
         @InjectRepository(OutboxEventModel)
         private readonly repository: Repository<OutboxEventModel>,
-        private readonly mapper: OutboxEventMapper,
+        private readonly auditoriaService: AuditoriaService,
     ) {}
-
-    /**
-     * Salva evento na outbox (dentro de uma transação externa)
-     */
-    async salvar(evento: OutboxEvent, manager?: EntityManager): Promise<void> {
-        const modelo = OutboxEventMapper.toModel(evento);
-        const repo = manager
-            ? manager.getRepository(OutboxEventModel)
-            : this.repository;
-        await repo.save(modelo);
-    }
-
-    /**
-     * Busca eventos pendentes para publicação
-     * Limita a 100 eventos por vez para não sobrecarregar
-     */
-    async buscarPendentes(limite = 100): Promise<OutboxEvent[]> {
-        const modelos = await this.repository.find({
+    async buscarPorId(props: {
+        eventoId: string;
+        pendentes: boolean;
+    }): Promise<OutboxEventModel | null> {
+        return await this.repository.findOne({
             where: {
-                status: StatusOutboxEvent.PENDENTE,
+                id: props.eventoId,
+                status: props.pendentes
+                    ? StatusOutboxEvent.PENDENTE
+                    : undefined,
             },
-            order: {
-                criadoEm: 'ASC', // Ordem cronológica (FIFO)
-            },
-            take: limite,
         });
-
-        return modelos.map((modelo) => OutboxEventMapper.toDomain(modelo));
     }
 
-    /**
-     * Marca evento como publicado
-     */
     async marcarComoPublicado(eventId: string): Promise<void> {
         await this.repository.update(eventId, {
             status: StatusOutboxEvent.PUBLICADO,
@@ -80,6 +61,39 @@ export class OutboxRepository {
             this.logger.error(
                 `Evento ${eventId} falhou após ${limiteTentativas} tentativas`,
             );
+
+            await this.auditoriaService.criar({
+                usuarioId: 'sistema',
+                modulo: 'core',
+                acao: AuditoriaAcao.EVENTO_FALHA_DEFINITIVA,
+                recurso: 'OutboxEvent',
+                recursoId: eventId,
+                descricao: `Evento ${event.tipoEvento} falhou após ${limiteTentativas} tentativas. Agregado: ${event.tipoAgregado}#${event.idAgregado}`,
+                nivel: 'critico',
+                erro: mensagemErro,
+                estadoAntes: {
+                    status: 'PENDENTE',
+                    quantidadeTentativas: event.quantidadeTentativas,
+                },
+                estadoDepois: {
+                    status: 'FALHADO',
+                    quantidadeTentativas,
+                    mensagemErro: `[${quantidadeTentativas}x] ${mensagemErro}`,
+                },
+                mudancas: [
+                    {
+                        campo: 'status',
+                        valorAntes: 'PENDENTE',
+                        valorDepois: 'FALHADO',
+                    },
+                    {
+                        campo: 'quantidadeTentativas',
+                        valorAntes: event.quantidadeTentativas,
+                        valorDepois: quantidadeTentativas,
+                    },
+                ],
+                timestamp: new Date(),
+            });
         } else {
             // Incrementa contador de retry, mantém PENDING
             await this.repository.update(eventId, {
@@ -89,26 +103,7 @@ export class OutboxRepository {
         }
     }
 
-    /**
-     * Busca eventos que falharam para investigação
-     */
-    async buscarFalhados(): Promise<OutboxEvent[]> {
-        const modelos = await this.repository.find({
-            where: {
-                status: StatusOutboxEvent.FALHADO,
-            },
-            order: {
-                criadoEm: 'DESC',
-            },
-        });
-
-        return modelos.map((modelo) => OutboxEventMapper.toDomain(modelo));
-    }
-
-    /**
-     * Limpa eventos publicados há mais de X dias (manutenção)
-     */
-    async limparEventosAntigos(diasAntigos = 30): Promise<number> {
+    async limparEventosAntigos(diasAntigos = 15): Promise<number> {
         const dataLimite = new Date();
         dataLimite.setDate(dataLimite.getDate() - diasAntigos);
 

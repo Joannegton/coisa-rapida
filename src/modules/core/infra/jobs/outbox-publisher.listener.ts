@@ -8,10 +8,12 @@ import { EventBus } from '@nestjs/cqrs';
 import { Cron } from '@nestjs/schedule';
 import { Client } from 'pg';
 import { OutboxRepository } from '../repositories/outbox.repository';
-import { OutboxEvent } from '../../domain/outbox-event';
 import { AluguelConfirmadoEvent } from '../../domain/events/aluguel-confirmado.event';
 import { AluguelCanceladoEvent } from '../../domain/events/aluguel-cancelado.event';
 import { AluguelFinalizadoEvent } from '../../domain/events/aluguel-finalizado.event';
+import { OutboxEventModel } from '../models/outbox-event.model';
+import { AuditoriaService } from 'src/shared/infra/services/auditoria.service';
+import { AuditoriaAcao } from 'src/shared/constants/auditoria-actions';
 
 // Melhorar padrão DDD
 
@@ -34,6 +36,7 @@ export class OutboxPublisherListener implements OnModuleInit, OnModuleDestroy {
     constructor(
         private readonly outboxRepository: OutboxRepository,
         private readonly eventBus: EventBus,
+        private readonly auditoriaService: AuditoriaService,
     ) {}
 
     /**
@@ -91,8 +94,10 @@ export class OutboxPublisherListener implements OnModuleInit, OnModuleDestroy {
     private async publicarEvento(eventoId: string): Promise<void> {
         try {
             // Busca evento completo
-            const eventos = await this.outboxRepository.buscarPendentes(1);
-            const evento = eventos.find((e) => e.id === eventoId);
+            const evento = await this.outboxRepository.buscarPorId({
+                eventoId,
+                pendentes: true,
+            });
 
             if (!evento) {
                 this.logger.warn(
@@ -115,10 +120,8 @@ export class OutboxPublisherListener implements OnModuleInit, OnModuleDestroy {
                 return;
             }
 
-            // Publica no EventBus
             await this.eventBus.publish(eventoDominio);
 
-            // Marca como publicado
             await this.outboxRepository.marcarComoPublicado(evento.id);
 
             this.logger.log(
@@ -129,20 +132,20 @@ export class OutboxPublisherListener implements OnModuleInit, OnModuleDestroy {
                 `❌ Erro ao publicar evento ${eventoId}: ${error.message}`,
             );
             await this.outboxRepository.registrarFalha(eventoId, error.message);
-        }
-    }
 
-    /**
-     * Limpa eventos antigos (executado diariamente às 3h)
-     */
-    @Cron('0 3 * * *')
-    async limparEventosAntigos(): Promise<void> {
-        try {
-            await this.outboxRepository.limparEventosAntigos(30);
-        } catch (error) {
-            this.logger.error(
-                `❌ Erro ao limpar eventos antigos: ${error.message}`,
-            );
+            await this.auditoriaService.criar({
+                usuarioId: 'sistema',
+                modulo: 'core',
+                acao: AuditoriaAcao.EVENTO_FALHA_PUBLICACAO,
+                recurso: 'OutboxEvent',
+                recursoId: eventoId,
+                descricao: `Falha ao publicar evento: ${error.message}`,
+                nivel: 'alto',
+                erro: error.message,
+                estadoAntes: { status: 'PENDENTE' },
+                estadoDepois: { status: 'FALHADO' },
+                timestamp: new Date(),
+            });
         }
     }
 
@@ -150,7 +153,7 @@ export class OutboxPublisherListener implements OnModuleInit, OnModuleDestroy {
      * Reconstrói evento de domínio a partir do payload da outbox
      */
     private reconstruirEvento(
-        outboxEvent: OutboxEvent,
+        outboxEvent: OutboxEventModel,
     ):
         | AluguelConfirmadoEvent
         | AluguelCanceladoEvent

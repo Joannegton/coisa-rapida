@@ -31,6 +31,12 @@ export enum AuditoriaAcao {
 
     // Aluguéis
     SOLICITAR_ALUGUEL = 'solicitar_aluguel',
+
+    // SAGA (Coreografada)
+    EVENTO_FALHA_PUBLICACAO = 'evento_falha_publicacao',
+    EVENTO_FALHA_DEFINITIVA = 'evento_falha_definitiva',
+    COMPENSACAO_EXECUTADA = 'compensacao_executada',
+    COMPENSACAO_FALHA = 'compensacao_falha',
 }
 
 /**

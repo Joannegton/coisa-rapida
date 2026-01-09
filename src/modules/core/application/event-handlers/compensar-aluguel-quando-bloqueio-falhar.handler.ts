@@ -2,6 +2,8 @@ import { Inject, Logger } from '@nestjs/common';
 import { EventsHandler, IEventHandler } from '@nestjs/cqrs';
 import { FalhaNoBloqueioEvent } from '../../domain/events/falha-no-bloqueio.event';
 import type { AluguelRepository } from '../../domain/repositories/aluguel.repository';
+import { AuditoriaService } from 'src/shared/infra/services/auditoria.service';
+import { AuditoriaAcao } from 'src/shared/constants/auditoria-actions';
 
 /**
  * 🔄 HANDLER DE COMPENSAÇÃO - SAGA Coreografada
@@ -30,6 +32,7 @@ export class CompensarAluguelQuandoBloqueioFalharHandler
     constructor(
         @Inject('AluguelRepository')
         private readonly aluguelRepository: AluguelRepository,
+        private readonly auditoriaService: AuditoriaService,
     ) {}
 
     async handle(event: FalhaNoBloqueioEvent): Promise<void> {
@@ -58,12 +61,48 @@ export class CompensarAluguelQuandoBloqueioFalharHandler
                 `✅ [COMPENSAÇÃO] Aluguel ${event.aluguelId} revertido para SOLICITADO com sucesso`,
             );
 
-            // NOTA: Notificação será implementada em sprint futura
+            await this.auditoriaService.criar({
+                usuarioId: 'sistema',
+                modulo: 'core',
+                acao: AuditoriaAcao.COMPENSACAO_EXECUTADA,
+                recurso: 'Aluguel',
+                recursoId: event.aluguelId,
+                descricao: `Compensação automática: Aluguel revertido para SOLICITADO devido a falha no bloqueio de datas do item ${event.itemId}`,
+                nivel: 'critico',
+                erro: event.motivo,
+                estadoAntes: { status: 'CONFIRMADO' },
+                estadoDepois: { status: 'SOLICITADO' },
+                mudancas: [
+                    {
+                        campo: 'status',
+                        valorAntes: 'CONFIRMADO',
+                        valorDepois: 'SOLICITADO',
+                    },
+                ],
+                timestamp: new Date(),
+            });
+
+            // TODO: Notificação ao usuário será implementada em sprint futura
             // Sistema de notificações ainda não existe
         } catch (error) {
             this.logger.error(
                 `❌ [COMPENSAÇÃO] Erro ao compensar aluguel ${event.aluguelId}: ${error.message}`,
             );
+
+            await this.auditoriaService.criar({
+                usuarioId: 'sistema',
+                modulo: 'core',
+                acao: AuditoriaAcao.COMPENSACAO_FALHA,
+                recurso: 'Aluguel',
+                recursoId: event.aluguelId,
+                descricao: `Falha crítica na compensação automática do aluguel: ${error.message}`,
+                nivel: 'critico',
+                erro: error.message,
+                estadoAntes: { status: 'CONFIRMADO' },
+                estadoDepois: { status: 'DESCONHECIDO' },
+                timestamp: new Date(),
+            });
+
             // Em produção: adicionar à DLQ (Dead Letter Queue) para investigação manual
         }
     }

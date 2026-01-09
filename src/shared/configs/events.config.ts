@@ -1,5 +1,3 @@
-import { Item } from 'src/modules/item/domain/item';
-
 export const EVENT_CONFIG = {
     // Topics/Events do módulo Usuario
     USUARIO: {
