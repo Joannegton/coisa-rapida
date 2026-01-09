@@ -100,13 +100,7 @@ export class Aluguel {
         domain.setStatus(AluguelStatus.SOLICITADO);
         domain.setObservacoesLocatario(props.observacoesLocatario);
 
-        domain.setContrato(
-            Contrato.criar({
-                conteudoHtml: 'a', //TODO Será preenchido posteriormente
-                aceiteLocador: undefined,
-                aceiteLocatario: undefined,
-            }),
-        );
+        domain.setContrato(Contrato.criar());
 
         domain.calcularPrecoTotal();
 

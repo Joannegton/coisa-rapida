@@ -10,7 +10,6 @@ export class ContratoMapper {
     toDomain(model: ContratoModel): Contrato {
         const domain = Contrato.carregar({
             versao: Number(model.versao),
-            conteudoHtml: model.conteudoHtml,
             aceiteLocador: model.aceiteLocador ?? undefined,
             aceiteLocatario: model.aceiteLocatario ?? undefined,
             criadoEm: model.criadoEm,
@@ -21,7 +20,6 @@ export class ContratoMapper {
     toModel(domain: Contrato): ContratoModel {
         const model = ContratoModel.criar({
             versao: domain.versao.toString(),
-            conteudoHtml: domain.conteudoHtml,
             aceiteLocador: domain.aceiteLocador as AceiteContratoModel,
             aceiteLocatario: domain.aceiteLocatario as AceiteContratoModel,
             criadoEm: domain.criadoEm,

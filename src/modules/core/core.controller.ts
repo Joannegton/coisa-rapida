@@ -23,6 +23,7 @@ import { AluguelDto } from './application/dtos/results/Aluguel.dto';
 import { ListarAlugueisUsuarioQuery } from './application/queries/listar-alugueis-usuario.query';
 import { BuscarAluguelIdQuery } from './application/queries/buscar-aluguel-id.query';
 import { ConfirmarAluguelUseCase } from './application/usecases/confirmar-aluguel.usecase';
+import { BuscarContratoAluguelQuery } from './application/queries/buscar-contrato-aluguel.query';
 
 @ApiTags('core')
 @Controller()
@@ -32,6 +33,7 @@ export class CoreController {
         private readonly listarAlugueisPorUsuarioQuery: ListarAlugueisUsuarioQuery,
         private readonly buscarAluguelIdQuery: BuscarAluguelIdQuery,
         private readonly confirmarAluguelUseCase: ConfirmarAluguelUseCase,
+        private readonly buscarContratoAluguelQuery: BuscarContratoAluguelQuery,
     ) {}
 
     @ApiOperation({
@@ -98,6 +100,22 @@ export class CoreController {
             id,
             usuarioId: usuario.sub,
         });
+    }
+
+    @ApiOperation({
+        summary: 'Buscar contrato de aluguel',
+        description: 'Busca o contrato do aluguel em formato HTML.',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Contrato buscado com sucesso.',
+    })
+    @ApiParam({ name: 'id', description: 'ID do aluguel' })
+    @ApiAccessToken()
+    @HttpCode(HttpStatus.OK)
+    @Get('aluguel/:id/contrato')
+    buscarContrato(@Param('id') id: string) {
+        return this.buscarContratoAluguelQuery.execute(id);
     }
 
     @ApiOperation({

@@ -19,14 +19,6 @@ export class ContratoModel {
     versao: string;
 
     @Column({
-        name: 'contrato_conteudo_html',
-        type: 'text',
-        comment:
-            'Conteúdo HTML renderizado do contrato (gerado automaticamente com template)',
-    })
-    conteudoHtml: string;
-
-    @Column({
         name: 'contrato_aceite_locador',
         type: 'jsonb',
         nullable: true,

@@ -10,14 +10,12 @@ export type AceiteContratoProps = {
 };
 
 export type ContratoProps = {
+    id?: string;
     versao: number;
-    conteudoHtml: string;
     aceiteLocatario?: AceiteContratoProps;
     aceiteLocador?: AceiteContratoProps;
     criadoEm: Date;
 };
-
-export type CriarContratoProps = Omit<ContratoProps, 'versao' | 'criadoEm'>;
 
 export class Contrato {
     private readonly props: ContratoProps;
@@ -25,12 +23,9 @@ export class Contrato {
         this.props = {} as ContratoProps;
     }
 
-    static criar(props: CriarContratoProps): Contrato {
+    static criar(): Contrato {
         const domain = new Contrato();
         domain.setVersao(1);
-        domain.setConteudoHtml(props.conteudoHtml);
-        domain.setAceiteLocador(props.aceiteLocador);
-        domain.setAceiteLocatario(props.aceiteLocatario);
         domain.setCriadoEm(new Date());
         return domain;
     }
@@ -49,14 +44,6 @@ export class Contrato {
         this.props.versao = versao;
     }
 
-    private setConteudoHtml(conteudoHtml: string) {
-        if (!conteudoHtml || conteudoHtml.trim().length === 0)
-            throw new InvalidPropsException(
-                'O conteúdo do contrato não pode ser vazio.',
-            );
-        this.props.conteudoHtml = conteudoHtml;
-    }
-
     private setAceiteLocador(aceite?: AceiteContratoProps) {
         this.props.aceiteLocador = aceite;
     }
@@ -73,10 +60,6 @@ export class Contrato {
         return this.props.versao;
     }
 
-    get conteudoHtml(): string {
-        return this.props.conteudoHtml;
-    }
-
     get aceiteLocador(): AceiteContratoProps | undefined {
         return this.props.aceiteLocador;
     }
@@ -89,10 +72,14 @@ export class Contrato {
         return this.props.criadoEm;
     }
 
+    get id(): string | undefined {
+        return this.props.id;
+    }
+
     toDto() {
         return {
+            id: this.props.id,
             versao: this.props.versao,
-            conteudoHtml: this.props.conteudoHtml,
             aceiteLocador: this.props.aceiteLocador,
             aceiteLocatario: this.props.aceiteLocatario,
             criadoEm: this.props.criadoEm,

@@ -76,9 +76,8 @@ export class CreateAluguelTable1735962000000 implements MigrationInterface {
                 multa_valor_total DECIMAL(10, 2),
                 multa_calculada_em TIMESTAMP WITH TIME ZONE,
                 
-                -- Contrato (obrigatório)
+                -- Contrato 
                 contrato_versao VARCHAR(10) NOT NULL,
-                contrato_conteudo_html TEXT NOT NULL,
                 contrato_aceite_locador JSONB,
                 contrato_aceite_locatario JSONB,
                 contrato_criado_em TIMESTAMP WITH TIME ZONE NOT NULL,
