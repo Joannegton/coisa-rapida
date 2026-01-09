@@ -6,20 +6,36 @@ import {
 } from '@nestjs/common';
 import type { AluguelRepository } from '../../domain/repositories/aluguel.repository';
 import { AluguelConfirmadoEvent } from '../../domain/events/aluguel-confirmado.event';
-import { EventBus } from '@nestjs/cqrs';
+import { OutboxEvent } from '../../domain/outbox-event';
+import type { UnitOfWork } from '../../domain/repositories/unit-of-work';
 
 type ConfirmarAluguelUseCaseProps = {
     aluguelId: string;
     usuarioId: string;
 };
 
+/**
+ * Padrão SAGA COREOGRAFADA - Microsserviços
+ *
+ * Usa Unit of Work + Outbox Pattern para garantir atomicidade.
+ * O UseCase NÃO conhece detalhes de infraestrutura (DataSource, EntityManager).
+ *
+ * Fluxo:
+ * 1. Buscar aluguel
+ * 2. Confirmar (regra de negócio)
+ * 3. UnitOfWork: Salvar aluguel + evento na outbox (mesma transação)
+ * 4. Worker assíncrono publica evento
+ * 5. Microsserviço Item bloqueia datas
+ * 6. Se bloqueio falhar → CompensarAluguelHandler
+ */
 export class ConfirmarAluguelUseCase {
     private readonly logger = new Logger(ConfirmarAluguelUseCase.name);
 
     constructor(
         @Inject('AluguelRepository')
         private readonly aluguelRepository: AluguelRepository,
-        private readonly eventBus: EventBus,
+        @Inject('UnitOfWork')
+        private readonly unitOfWork: UnitOfWork,
     ) {}
 
     async execute(props: ConfirmarAluguelUseCaseProps): Promise<void> {
@@ -31,46 +47,44 @@ export class ConfirmarAluguelUseCase {
 
         aluguel.confirmar(props.usuarioId);
 
-        await this.aluguelRepository.salvar(aluguel);
+        const evento = new AluguelConfirmadoEvent(
+            props.aluguelId,
+            aluguel.itemId,
+            aluguel.dataInicio,
+            aluguel.dataFim,
+            aluguel.locador.id,
+            aluguel.locatario.id,
+        );
 
-        // Se falhar aqui, rollback abaixo garante consistência
         try {
-            this.eventBus.publish(
-                new AluguelConfirmadoEvent(
-                    props.aluguelId,
-                    aluguel.itemId,
-                    aluguel.dataInicio,
-                    aluguel.dataFim,
-                    aluguel.locador.id,
-                    aluguel.locatario.id,
-                ),
-            );
-            this.logger.log(
-                `✅ Eventos publicados para aluguel ${props.aluguelId}`,
-            );
+            await this.unitOfWork.executarEmTransacao(async (context) => {
+                await context.salvarAluguel(aluguel);
+
+                const outboxEvent = OutboxEvent.criar({
+                    tipoEvento: evento.eventType,
+                    idAgregado: evento.aggregateId,
+                    tipoAgregado: 'Aluguel',
+                    payload: {
+                        eventId: evento.eventId,
+                        aluguelId: evento.aluguelId,
+                        itemId: evento.itemId,
+                        dataInicio: evento.dataInicio.toISOString(),
+                        dataFim: evento.dataFim.toISOString(),
+                        locadorId: evento.locadorId,
+                        locatarioId: evento.locatarioId,
+                        occurredOn: evento.occurredOn.toISOString(),
+                    },
+                });
+
+                await context.salvarEvento(outboxEvent);
+            });
         } catch (error) {
             this.logger.error(
-                `❌ CRÍTICO: Falha ao publicar evento de confirmação: ${error.message}`,
+                `❌ Falha ao confirmar aluguel ${props.aluguelId}: ${error.message}`,
             );
 
-            // Rollback: Volta para SOLICITADO
-            try {
-                aluguel.voltarParaSolicitado();
-                await this.aluguelRepository.salvar(aluguel);
-                this.logger.warn(
-                    `⚠️ Aluguel ${props.aluguelId} voltou para SOLICITADO (rollback)`,
-                );
-            } catch (rollbackError) {
-                this.logger.error(
-                    `\u274c ERRO DE ROLLBACK: Não conseguiu voltar para SOLICITADO: ${rollbackError.message}`,
-                );
-                throw new Error(
-                    `Erro crítico de consistência. Contate administrador. Erro: ${error.message}`,
-                );
-            }
-
             throw new BadRequestException(
-                `Falha ao confirmar aluguel. Tente novamente.`,
+                'Não foi possível confirmar o aluguel. Tente novamente.',
             );
         }
     }

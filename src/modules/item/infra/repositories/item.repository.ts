@@ -28,6 +28,13 @@ export class ItemRepositoryImpl implements ItemRepository {
         try {
             const model = this.itemMapper.toModel(item);
             const itemSalvo = await this.repository.save(model);
+
+            //descomentar para gerar erro, para testes em sagas de aluguel
+            // if (itemSalvo) {
+            //     throw new RepositoryException(
+            //         'Item não foi salvo corretamente',
+            //     );
+            // }
             return this.itemMapper.toDomain(itemSalvo);
         } catch (error) {
             this.logger.error(
@@ -62,7 +69,10 @@ export class ItemRepositoryImpl implements ItemRepository {
                 const model = await this.repository
                     .createQueryBuilder('item')
                     .leftJoinAndSelect('item.fotos', 'fotos')
-                    .leftJoinAndSelect('item.disponibilidade', 'disponibilidade')
+                    .leftJoinAndSelect(
+                        'item.disponibilidade',
+                        'disponibilidade',
+                    )
                     .leftJoinAndSelect('item.moderacao', 'moderacao')
                     .where('item.id = :id', { id })
                     .getOne();
@@ -79,7 +89,10 @@ export class ItemRepositoryImpl implements ItemRepository {
                 const model = await queryRunner.manager
                     .createQueryBuilder(ItemModel, 'item')
                     .innerJoinAndSelect('item.fotos', 'fotos')
-                    .innerJoinAndSelect('item.disponibilidade', 'disponibilidade')
+                    .innerJoinAndSelect(
+                        'item.disponibilidade',
+                        'disponibilidade',
+                    )
                     .innerJoinAndSelect('item.moderacao', 'moderacao')
                     .where('item.id = :id', { id })
                     .setLock('pessimistic_write')

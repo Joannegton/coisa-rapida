@@ -84,7 +84,7 @@ export class Aluguel {
                 .map((b) => b.motivo || 'Bloqueado')
                 .join(', ');
             throw new AluguelException(
-                `Item indisponível nas datas selecionadas. Motivo(s): ${motivos}`,
+                `Item indisponível nas datas selecionadas.`,
             );
         }
 

@@ -45,8 +45,8 @@ export class CoreItemServiceImpl implements CoreItemService {
     }
 
     async adicionarBloqueio(props: AdicionarBloqueioProps): Promise<void> {
-        //TODO pesquisar como eu faria essa chamada e salvamento se core fosse um microsserviço e o modulo item fosse outro microsserviço, talvez via fila ou via chamada http
-        // isso esta anti ddd
+        // NOTA: Em microsserviços, esta chamada seria via HTTP/gRPC ou evento assíncrono
+        // Ver SAGA_COREOGRAFADA.md para implementação completa
         const item = await this.itemRepository.buscarComLock(
             props.itemId,
             props.useLock,
