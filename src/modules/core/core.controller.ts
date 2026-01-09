@@ -1,5 +1,19 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
-import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+    Body,
+    Controller,
+    Get,
+    HttpCode,
+    HttpStatus,
+    Param,
+    Post,
+} from '@nestjs/common';
+import {
+    ApiBody,
+    ApiOperation,
+    ApiParam,
+    ApiResponse,
+    ApiTags,
+} from '@nestjs/swagger';
 import { AuditarSolicitacaoAluguel, usuarioAtual } from 'src/common/decorators';
 import { ApiAccessToken } from 'src/common/decorators/swagger.decorators';
 import { SolicitarAluguelDto } from './application/dtos/solicitar-aluguel.dto';
@@ -7,13 +21,15 @@ import { SolicitarAluguelUseCase } from './application/usecases/solicitar-alugue
 import type { UsuarioPayload } from '../auth/infra/services/jwt.service';
 import { AluguelDto } from './application/dtos/results/Aluguel.dto';
 import { ListarAlugueisUsuarioQuery } from './application/queries/listar-alugueis-usuario.query';
+import { BuscarAluguelIdQuery } from './application/queries/buscar-aluguel-id.query';
 
 @ApiTags('core')
 @Controller()
 export class CoreController {
     constructor(
         private readonly solicitarAluguelUseCase: SolicitarAluguelUseCase,
-        private readonly listarAlugueisPorUsuarioUseCase: ListarAlugueisUsuarioQuery,
+        private readonly listarAlugueisPorUsuarioQuery: ListarAlugueisUsuarioQuery,
+        private readonly buscarAluguelIdQuery: BuscarAluguelIdQuery,
     ) {}
 
     @ApiOperation({
@@ -52,10 +68,33 @@ export class CoreController {
     })
     @ApiAccessToken()
     @HttpCode(HttpStatus.OK)
-    @Post('aluguel/buscar-por-usuario')
+    @Get('aluguel')
     async listarAlugueisPorUsuario(
         @usuarioAtual() usuario: UsuarioPayload,
     ): Promise<AluguelDto[]> {
-        return this.listarAlugueisPorUsuarioUseCase.execute(usuario.sub);
+        return this.listarAlugueisPorUsuarioQuery.execute(usuario.sub);
+    }
+
+    @ApiOperation({
+        summary: 'Buscar aluguel',
+        description: 'Busca aluguel por id.',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Aluguel buscado com sucesso.',
+        type: AluguelDto,
+    })
+    @ApiParam({ name: 'id', description: 'ID do aluguel' })
+    @ApiAccessToken()
+    @HttpCode(HttpStatus.OK)
+    @Get('aluguel/:id')
+    async buscarAluguel(
+        @Param('id') id: string,
+        @usuarioAtual() usuario: UsuarioPayload,
+    ): Promise<AluguelDto> {
+        return await this.buscarAluguelIdQuery.execute({
+            id,
+            usuarioId: usuario.sub,
+        });
     }
 }
