@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ScheduleModule } from '@nestjs/schedule';
 import { CqrsModule } from '@nestjs/cqrs';
 import { BullModule } from '@nestjs/bull';
 import { AuditoriaModel } from './infra/models/auditoria.model';
@@ -38,7 +37,6 @@ import { VerificacaoVirusProcessor } from './infra/jobs/verificacao-virus.proces
             name: 'verificacao-virus',
         }),
         TypeOrmModule.forFeature([AuditoriaModel]),
-        ScheduleModule.forRoot(),
         CqrsModule.forRoot(),
     ],
     controllers: [AuditoriaAdminController, ControladorAdminFilaMortaController],

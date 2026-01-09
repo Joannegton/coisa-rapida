@@ -15,7 +15,7 @@ import { OutboxEventModel } from '../models/outbox-event.model';
 import { AuditoriaService } from 'src/shared/infra/services/auditoria.service';
 import { AuditoriaAcao } from 'src/shared/constants/auditoria-actions';
 
-// Melhorar padrão DDD
+//TODO Melhorar padrão DDD
 
 /**
  * 🔔 Outbox Publisher com LISTEN/NOTIFY (PostgreSQL)

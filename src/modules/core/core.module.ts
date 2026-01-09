@@ -1,6 +1,5 @@
 import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
-import { ScheduleModule } from '@nestjs/schedule';
 import { CoreController } from './core.controller';
 import { AluguelRepositoryImpl } from './infra/repositories/aluguel.repository';
 import { OutboxRepository } from './infra/repositories/outbox.repository';
@@ -22,7 +21,6 @@ import { OutboxPublisherListener } from './infra/jobs/outbox-publisher.listener'
 @Module({
     imports: [
         CqrsModule,
-        ScheduleModule.forRoot(),
         TypeOrmModule.forFeature([AluguelModel, OutboxEventModel]),
         UsuarioModule,
         ItemModule,
