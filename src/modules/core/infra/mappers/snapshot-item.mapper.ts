@@ -26,8 +26,7 @@ export class SnapshotItemMapper {
     }
 
     toModel(domain: ItemSnapshot): SnapshotItemModel {
-        const model = new SnapshotItemModel();
-        Object.assign(model, {
+        return SnapshotItemModel.criar({
             nome: domain.nome,
             descricao: domain.descricao,
             precoDiaria: domain.precoDiaria,
@@ -43,7 +42,6 @@ export class SnapshotItemMapper {
             valorCaucao: domain.valorCaucao,
             caucaoObrigatoria: domain.caucaoObrigatoria,
         });
-        return model;
     }
 
     toDomainList(models: SnapshotItemModel[]): ItemSnapshot[] {

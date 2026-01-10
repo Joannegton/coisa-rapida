@@ -71,12 +71,14 @@ export class AluguelMapper {
         const multaModel = aluguel.multa
             ? this.multaMapper.toModel(aluguel.multa)
             : undefined;
-        const contratoModel = this.contratoMapper.toModel(aluguel.contrato);
+
+        const contratoModel = aluguel.contrato
+            ? this.contratoMapper.toModel(aluguel.contrato)
+            : undefined;
 
         const itemSnapshotModel = this.snapshotItemMapper.toModel(
             aluguel.itemSnapshot,
         );
-
         const model = AluguelModel.criar({
             id: aluguel.id,
             locador: locadorModel,

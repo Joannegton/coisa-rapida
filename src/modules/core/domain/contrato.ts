@@ -14,7 +14,7 @@ export type ContratoProps = {
     versao: number;
     aceiteLocatario?: AceiteContratoProps;
     aceiteLocador?: AceiteContratoProps;
-    criadoEm: Date;
+    criadoEm?: Date;
 };
 
 export class Contrato {
@@ -68,7 +68,7 @@ export class Contrato {
         return this.props.aceiteLocatario;
     }
 
-    get criadoEm(): Date {
+    get criadoEm(): Date | undefined {
         return this.props.criadoEm;
     }
 

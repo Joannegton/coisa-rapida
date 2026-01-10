@@ -39,7 +39,6 @@ export class SnapshotItemModel {
     @Column({
         name: 'item_foto_url_snapshot',
         type: 'text',
-        nullable: true,
         comment: 'URL da foto principal do item (para histórico/exibição)',
     })
     fotoUrl?: string;
@@ -55,7 +54,6 @@ export class SnapshotItemModel {
     @Column({
         name: 'item_versao_snapshot',
         type: 'integer',
-        default: 1,
         comment: 'Versão do snapshot (incrementa se item é re-capturado)',
     })
     versao: number;
@@ -63,7 +61,6 @@ export class SnapshotItemModel {
     @Column({
         name: 'item_permite_aluguel_hora_snapshot',
         type: 'boolean',
-        default: false,
         comment: 'Indica se este item permite aluguel por hora',
     })
     permiteAluguelPorHora: boolean;
@@ -113,7 +110,6 @@ export class SnapshotItemModel {
     @Column({
         name: 'item_caucao_obrigatoria_snapshot',
         type: 'boolean',
-        default: false,
         comment: 'Indica se caução era obrigatória',
     })
     caucaoObrigatoria: boolean;
@@ -122,7 +118,6 @@ export class SnapshotItemModel {
         const snapshot = new SnapshotItemModel();
         Object.assign(snapshot, {
             capturadoEm: new Date(),
-            versao: 1,
             ...props,
         });
         return snapshot;

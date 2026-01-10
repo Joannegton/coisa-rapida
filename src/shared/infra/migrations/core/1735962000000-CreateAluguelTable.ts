@@ -48,16 +48,16 @@ export class CreateAluguelTable1735962000000 implements MigrationInterface {
                 item_descricao_snapshot TEXT,
                 item_preco_diaria_snapshot DECIMAL(10, 2) NOT NULL,
                 item_preco_hora_snapshot DECIMAL(10, 2),
-                item_foto_url_snapshot TEXT,
+                item_foto_url_snapshot TEXT NOT NULL,
                 item_capturado_em_snapshot TIMESTAMP WITH TIME ZONE NOT NULL,
-                item_versao_snapshot INTEGER DEFAULT 1,
+                item_versao_snapshot INTEGER NOT NULL,
                 item_permite_aluguel_hora_snapshot BOOLEAN DEFAULT FALSE,
                 item_dias_minimos_aluguel_snapshot INTEGER DEFAULT 1,
                 item_dias_maximos_aluguel_snapshot INTEGER DEFAULT 365,
                 item_horas_minimas_aluguel_snapshot INTEGER,
                 item_horas_maximas_aluguel_snapshot INTEGER,
                 item_valor_caucao_snapshot DECIMAL(10, 2),
-                item_caucao_obrigatoria_snapshot BOOLEAN DEFAULT FALSE,
+                item_caucao_obrigatoria_snapshot BOOLEAN NOT NULL,
                 
                 -- Preço Total
                 preco_total DECIMAL(10, 2) NOT NULL,
@@ -77,10 +77,10 @@ export class CreateAluguelTable1735962000000 implements MigrationInterface {
                 multa_calculada_em TIMESTAMP WITH TIME ZONE,
                 
                 -- Contrato 
-                contrato_versao VARCHAR(10) NOT NULL,
+                contrato_versao VARCHAR(10),
                 contrato_aceite_locador JSONB,
                 contrato_aceite_locatario JSONB,
-                contrato_criado_em TIMESTAMP WITH TIME ZONE NOT NULL,
+                contrato_criado_em TIMESTAMP WITH TIME ZONE,
                 
                 -- Datas do Aluguel
                 data_inicio TIMESTAMP WITH TIME ZONE NOT NULL,

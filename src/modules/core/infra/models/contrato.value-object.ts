@@ -15,8 +15,9 @@ export class ContratoModel {
         type: 'varchar',
         length: 10,
         comment: 'Versão do contrato (ex: 1.0, 1.1, 2.0)',
+        nullable: true,
     })
-    versao: string;
+    versao?: string;
 
     @Column({
         name: 'contrato_aceite_locador',
@@ -41,8 +42,9 @@ export class ContratoModel {
         type: 'timestamp',
         comment:
             'Data/hora de criação do contrato (ou atualização se nova versão)',
+        nullable: true,
     })
-    criadoEm: Date;
+    criadoEm?: Date;
 
     static criar(props: Partial<ContratoModel>): ContratoModel {
         const contrato = new ContratoModel();
