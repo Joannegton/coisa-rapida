@@ -11,6 +11,7 @@ import { sharedServices } from './infra/services';
 import { EmailProcessor } from './infra/jobs/email.processor.worker';
 import { VerificacaoVirusFilaService } from './infra/services/verificacao-virus.fila.service';
 import { VerificacaoVirusProcessor } from './infra/jobs/verificacao-virus.processor.worker';
+import { AuditoriaFilaProcessor } from './infra/jobs/auditoria.processor.worker';
 
 @Module({
     imports: [
@@ -36,10 +37,16 @@ import { VerificacaoVirusProcessor } from './infra/jobs/verificacao-virus.proces
         BullModule.registerQueue({
             name: 'verificacao-virus',
         }),
+        BullModule.registerQueue({
+            name: 'auditoria',
+        }),
         TypeOrmModule.forFeature([AuditoriaModel]),
         CqrsModule.forRoot(),
     ],
-    controllers: [AuditoriaAdminController, ControladorAdminFilaMortaController],
+    controllers: [
+        AuditoriaAdminController,
+        ControladorAdminFilaMortaController,
+    ],
     providers: [
         AuditoriaRepository,
         ...sharedServices,
@@ -47,6 +54,7 @@ import { VerificacaoVirusProcessor } from './infra/jobs/verificacao-virus.proces
         EmailProcessor,
         VerificacaoVirusFilaService,
         VerificacaoVirusProcessor,
+        AuditoriaFilaProcessor,
     ],
     exports: [...sharedServices],
 })

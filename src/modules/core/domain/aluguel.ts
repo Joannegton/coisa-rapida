@@ -50,15 +50,21 @@ type AssinarContratoProps = {
     longitude?: number;
 };
 
+type ConfirmarAluguelProps = {
+    usuarioId: string;
+    enderecoIp: string;
+    assinaturaDigital: string;
+    userAgent: string;
+    latitude?: number;
+    longitude?: number;
+};
+
 export class Aluguel {
     private readonly _id: string;
     private readonly props: AluguelProps;
     private readonly taxaApp = Number.parseFloat(
         process.env.PERCENTUAL_TAXA_APP as string,
     );
-
-    private readonly UMA_HORA = 1000 * 60 * 60;
-    private readonly UM_DIA = this.UMA_HORA * 24;
 
     constructor(id?: string) {
         if (id) this._id = id;
@@ -120,8 +126,8 @@ export class Aluguel {
         return domain;
     }
 
-    confirmar(usuarioId: string): void {
-        if (this.locador.id !== usuarioId) {
+    confirmar(props: ConfirmarAluguelProps): void {
+        if (this.locador.id !== props.usuarioId) {
             throw new ForbiddenException(
                 `Você não tem permissão para confirmar este aluguel.`,
             );
@@ -130,6 +136,19 @@ export class Aluguel {
         if (this.status !== AluguelStatus.SOLICITADO) {
             throw new AluguelException(`Aluguel não pode ser confirmado.`);
         }
+
+        if (!this.contrato.aceiteLocatario) {
+            throw new AluguelException(`Locatário não assinou o contrato.`);
+        }
+
+        this.assinarContrato({
+            usuarioId: this.locador.id,
+            enderecoIp: props.enderecoIp,
+            assinaturaDigital: props.assinaturaDigital,
+            userAgent: props.userAgent,
+            latitude: props.latitude,
+            longitude: props.longitude,
+        });
 
         this.setStatus(AluguelStatus.CONFIRMADO);
     }

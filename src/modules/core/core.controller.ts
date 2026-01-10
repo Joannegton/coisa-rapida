@@ -166,10 +166,12 @@ export class CoreController {
     async confirmarAluguel(
         @Param('id') id: string,
         @usuarioAtual() usuario: UsuarioPayload,
+        @Req() req: Request,
     ): Promise<void> {
         return await this.confirmarAluguelUseCase.execute({
             aluguelId: id,
             usuarioId: usuario.sub,
+            request: req,
         });
     }
 }

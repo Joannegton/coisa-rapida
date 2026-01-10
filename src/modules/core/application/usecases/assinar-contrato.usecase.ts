@@ -4,7 +4,7 @@ import type { AssinaturaService } from '../../domain/services/assinatura.service
 import { Request } from 'express';
 import { Utils, DataUtils } from 'src/shared/utils';
 import { AssinarContratoDto } from '../dtos/assinar-contrato.dto';
-import { AuditoriaService } from 'src/shared/infra/services/auditoria.service';
+import { AuditoriaFilaService } from 'src/shared/infra/services/auditoria.fila.service';
 import { AuditoriaAcao } from 'src/shared/constants/auditoria-actions';
 
 type AssinarContratoProps = AssinarContratoDto & {
@@ -19,7 +19,7 @@ export class AssinarContratoUsecase {
         private readonly aluguelRepository: AluguelRepository,
         @Inject('AssinaturaService')
         private readonly assinaturaService: AssinaturaService,
-        private readonly auditoriaService: AuditoriaService,
+        private readonly auditoriaFilaService: AuditoriaFilaService,
     ) {}
 
     async execute(props: AssinarContratoProps): Promise<void> {
@@ -55,7 +55,8 @@ export class AssinarContratoUsecase {
 
         await this.aluguelRepository.salvar(aluguel);
 
-        await this.auditoriaService.criar({
+        // Agenda auditoria na fila com retry automático
+        await this.auditoriaFilaService.agendarAuditoria({
             timestamp: DataUtils.agoraDate(),
             usuarioId: props.usuarioId,
             acao: AuditoriaAcao.ASSINAR_CONTRATO,
