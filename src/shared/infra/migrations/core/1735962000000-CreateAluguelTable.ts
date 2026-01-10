@@ -175,7 +175,7 @@ export class CreateAluguelTable1735962000000 implements MigrationInterface {
         await queryRunner.query(`
             ALTER TABLE core.aluguel
             ADD CONSTRAINT check_multiplicador_positivo 
-            CHECK (multa_multiplicador > 0);
+            CHECK (multa_multiplicador >= 0);
         `);
 
         await queryRunner.query(`
