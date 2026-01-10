@@ -4,6 +4,8 @@ import type { AssinaturaService } from '../../domain/services/assinatura.service
 import { Request } from 'express';
 import { Utils, DataUtils } from 'src/shared/utils';
 import { AssinarContratoDto } from '../dtos/assinar-contrato.dto';
+import { AuditoriaService } from 'src/shared/infra/services/auditoria.service';
+import { AuditoriaAcao } from 'src/shared/constants/auditoria-actions';
 
 type AssinarContratoProps = AssinarContratoDto & {
     aluguelId: string;
@@ -17,6 +19,7 @@ export class AssinarContratoUsecase {
         private readonly aluguelRepository: AluguelRepository,
         @Inject('AssinaturaService')
         private readonly assinaturaService: AssinaturaService,
+        private readonly auditoriaService: AuditoriaService,
     ) {}
 
     async execute(props: AssinarContratoProps): Promise<void> {
@@ -51,5 +54,31 @@ export class AssinarContratoUsecase {
         });
 
         await this.aluguelRepository.salvar(aluguel);
+
+        await this.auditoriaService.criar({
+            timestamp: DataUtils.agoraDate(),
+            usuarioId: props.usuarioId,
+            acao: AuditoriaAcao.ASSINAR_CONTRATO,
+            recurso: 'contrato',
+            recursoId: props.aluguelId,
+            descricao: `Assinatura digital de contrato de aluguel - ${isLocador ? 'Locador' : 'Locatário'}`,
+            nivel: 'critico',
+            ip: enderecoIp,
+            userAgent: userAgent,
+            estadoAntes: {
+                contratoAssinado: aluguel.contrato.estaAssinado()
+                    ? 'parcialmente'
+                    : 'nao_assinado',
+            },
+            estadoDepois: {
+                contratoAssinado: aluguel.contrato.estaAssinado()
+                    ? 'totalmente'
+                    : 'parcialmente',
+                assinaturaDigitalHash:
+                    assinaturaDigital.substring(0, 20) + '...',
+                latitude: props.latitude,
+                longitude: props.longitude,
+            },
+        });
     }
 }

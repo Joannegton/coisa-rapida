@@ -31,6 +31,7 @@ export enum AuditoriaAcao {
 
     // Aluguéis
     SOLICITAR_ALUGUEL = 'solicitar_aluguel',
+    ASSINAR_CONTRATO = 'assinar_contrato',
 
     // SAGA (Coreografada)
     EVENTO_FALHA_PUBLICACAO = 'evento_falha_publicacao',
@@ -53,4 +54,5 @@ export const ACOES_COMPLIANCE = [
     AuditoriaAcao.SOLICITAR_RECUPERACAO_SENHA,
     AuditoriaAcao.VALIDAR_CODIGO_RECUPERACAO,
     AuditoriaAcao.ALTERAR_ENDERECO,
+    AuditoriaAcao.ASSINAR_CONTRATO,
 ] as const;
