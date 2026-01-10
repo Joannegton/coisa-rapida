@@ -9,12 +9,11 @@ import { AluguelConfirmadoEvent } from '../../domain/events/aluguel-confirmado.e
 import { OutboxEvent } from '../../domain/outbox-event';
 import type { UnitOfWork } from '../../domain/repositories/unit-of-work';
 import type { AssinaturaService } from '../../domain/services/assinatura.service';
-import { AuditoriaService } from 'src/shared/infra/services/auditoria.service';
 import { AuditoriaAcao } from 'src/shared/constants/auditoria-actions';
 import { DataUtils, Utils } from 'src/shared/utils';
-import { DeadLetterQueueService } from 'src/shared/infra/services/dead-letter-queue.service';
 import { Request } from 'express';
 import { AssinarContratoDto } from '../dtos/assinar-contrato.dto';
+import { AuditoriaFilaService } from 'src/shared/infra/services/auditoria.fila.service';
 
 type ConfirmarAluguelUseCaseProps = AssinarContratoDto & {
     aluguelId: string;
@@ -46,8 +45,7 @@ export class ConfirmarAluguelUseCase {
         private readonly unitOfWork: UnitOfWork,
         @Inject('AssinaturaService')
         private readonly assinaturaService: AssinaturaService,
-        private readonly auditoriaService: AuditoriaService,
-        private readonly deadLetterfilaService: DeadLetterQueueService,
+        private readonly auditoriaFilaService: AuditoriaFilaService,
     ) {}
 
     async execute(props: ConfirmarAluguelUseCaseProps): Promise<void> {
@@ -112,9 +110,20 @@ export class ConfirmarAluguelUseCase {
 
                 await context.salvarEvento(outboxEvent);
             });
+        } catch (error) {
+            this.logger.error(
+                `❌ Falha crítica ao confirmar aluguel ${props.aluguelId}: ${error.message}`,
+                error.stack,
+            );
+            throw new BadRequestException(
+                'Não foi possível confirmar o aluguel. Tente novamente.',
+            );
+        }
 
-            const resultadosAuditoria = await Promise.allSettled([
-                this.auditoriaService.criar({
+        // Auditorias com try-catch separado (não quebra a operação principal)
+        try {
+            await Promise.all([
+                this.auditoriaFilaService.agendarAuditoria({
                     timestamp: DataUtils.agoraDate(),
                     usuarioId: props.usuarioId,
                     acao: AuditoriaAcao.CONFIRMAR_ALUGUEL,
@@ -135,7 +144,7 @@ export class ConfirmarAluguelUseCase {
                             assinaturaDigital.substring(0, 20) + '...',
                     },
                 }),
-                this.auditoriaService.criar({
+                this.auditoriaFilaService.agendarAuditoria({
                     timestamp: DataUtils.agoraDate(),
                     usuarioId: props.usuarioId,
                     acao: AuditoriaAcao.ASSINAR_CONTRATO,
@@ -161,56 +170,13 @@ export class ConfirmarAluguelUseCase {
                     },
                 }),
             ]);
-
-            resultadosAuditoria.forEach((resultado, index) => {
-                if (resultado.status === 'rejected') {
-                    this.logger.error(
-                        `❌ Falha na auditoria ${index + 1} para aluguel ${props.aluguelId}: ${resultado.reason.message}`,
-                    );
-
-                    this.deadLetterfilaService
-                        .enviar({
-                            modulo: 'core',
-                            recurso: 'auditoria',
-                            recursoId: props.aluguelId,
-                            evento: {
-                                tipo:
-                                    index === 0
-                                        ? AuditoriaAcao.CONFIRMAR_ALUGUEL
-                                        : AuditoriaAcao.ASSINAR_CONTRATO,
-                                aluguelId: props.aluguelId,
-                                usuarioId: props.usuarioId,
-                                enderecoIp: enderecoIp,
-                                userAgent: userAgent,
-                            },
-                            erro: resultado.reason.message,
-                            rastreamentoErro: resultado.reason.stack,
-                            tentativasRetorno: 0,
-                            contexto: {
-                                usuarioId: props.usuarioId,
-                                metadados: {
-                                    aluguelId: props.aluguelId,
-                                    indexAuditoria: index,
-                                },
-                            },
-                            idCorrelacao: `audit-${props.aluguelId}-${index}`,
-                            prioridade: 'alta',
-                        })
-                        .catch((error) => {
-                            this.logger.error(
-                                `❌ Falha ao enviar auditoria para fila: ${error.message}`,
-                            );
-                        });
-                }
-            });
         } catch (error) {
-            this.logger.error(
-                `❌ Falha ao confirmar aluguel ${props.aluguelId}: ${error.message}`,
+            this.logger.warn(
+                `⚠️ Falha ao agendar auditoria para aluguel ${props.aluguelId} (aluguel já confirmado): ${error.message}`,
+                error.stack,
             );
-
-            throw new BadRequestException(
-                'Não foi possível confirmar o aluguel. Tente novamente.',
-            );
+            // Não relança o erro - o aluguel foi confirmado com sucesso
+            // A auditoria será processada pela fila ou irá para Dead Letter Queue
         }
     }
 }
