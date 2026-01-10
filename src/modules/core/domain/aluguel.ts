@@ -11,6 +11,7 @@ import { UsuarioResult } from './services/usuario.service';
 import { AluguelDto } from '../application/dtos/results/Aluguel.dto';
 import { ForbiddenException } from '@nestjs/common';
 import { DinheiroUtils } from '../../../shared/utils';
+import { Decimal } from 'decimal.js';
 
 export type AluguelProps = {
     locador: Pessoa;
@@ -170,7 +171,10 @@ export class Aluguel {
             this.props.itemSnapshot.permiteAluguelPorHora &&
             this.props.itemSnapshot.precoHora
         ) {
-            const horas = totalMs / this.UMA_HORA;
+            const horas = new Decimal(totalMs)
+                .dividedBy(this.UMA_HORA)
+                .toNumber();
+
             const precoTotal = DinheiroUtils.multiplicar(
                 horas,
                 this.props.itemSnapshot.precoHora,
@@ -178,11 +182,17 @@ export class Aluguel {
             this.setPrecoTotal(precoTotal);
             this.setPrecoTotalComTaxa(this.calcularPrecoTotalComTaxa());
         } else {
-            const dias = totalMs / this.UM_DIA;
+            // Para aluguel por dia: calcula dias exatos com precisão decimal
+            // Exemplo: 2.375 dias = 2 dias + 9 horas = 2.375 diárias
+            const diasExatos = new Decimal(totalMs)
+                .dividedBy(this.UM_DIA)
+                .toNumber();
+
             const precoTotal = DinheiroUtils.multiplicar(
-                dias,
+                diasExatos,
                 this.props.itemSnapshot.precoDiaria,
             );
+
             this.setPrecoTotal(precoTotal);
             this.setPrecoTotalComTaxa(this.calcularPrecoTotalComTaxa());
         }
