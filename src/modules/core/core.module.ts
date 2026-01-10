@@ -17,11 +17,20 @@ import { OutboxEventModel } from './infra/models/outbox-event.model';
 import { CoreQueries } from './application/queries';
 import { CoreEventHandlers } from './application/event-handlers';
 import { OutboxPublisherListener } from './infra/jobs/outbox-publisher.listener';
+import { AssinaturaServiceImpl } from './infra/services/assinatura.service';
+import { JwtModule, JwtService } from '@nestjs/jwt';
 
 @Module({
     imports: [
         CqrsModule,
         TypeOrmModule.forFeature([AluguelModel, OutboxEventModel]),
+        JwtModule.register({
+            secret: process.env.JWT_CONTRATOS_SECRET,
+            signOptions: {
+                issuer: 'coisa-rapida-contratos',
+                algorithm: 'HS256',
+            },
+        }),
         UsuarioModule,
         ItemModule,
         SharedModule,
@@ -49,6 +58,13 @@ import { OutboxPublisherListener } from './infra/jobs/outbox-publisher.listener'
         {
             provide: 'UnitOfWork',
             useClass: TypeOrmUnitOfWork,
+        },
+        {
+            provide: 'AssinaturaService',
+            useFactory: (jwtService: JwtService) => {
+                return new AssinaturaServiceImpl(jwtService);
+            },
+            inject: [JwtService],
         },
     ],
     exports: [],

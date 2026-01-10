@@ -5,7 +5,9 @@ import {
     HttpCode,
     HttpStatus,
     Param,
+    Patch,
     Post,
+    Req,
 } from '@nestjs/common';
 import {
     ApiBody,
@@ -20,10 +22,13 @@ import { SolicitarAluguelDto } from './application/dtos/solicitar-aluguel.dto';
 import { SolicitarAluguelUseCase } from './application/usecases/solicitar-aluguel.usecase';
 import type { UsuarioPayload } from '../auth/infra/services/jwt.service';
 import { AluguelDto } from './application/dtos/results/Aluguel.dto';
+import { AssinarContratoDto } from './application/dtos/assinar-contrato.dto';
 import { ListarAlugueisUsuarioQuery } from './application/queries/listar-alugueis-usuario.query';
 import { BuscarAluguelIdQuery } from './application/queries/buscar-aluguel-id.query';
 import { ConfirmarAluguelUseCase } from './application/usecases/confirmar-aluguel.usecase';
 import { BuscarContratoAluguelQuery } from './application/queries/buscar-contrato-aluguel.query';
+import { AssinarContratoUsecase } from './application/usecases/assinar-contrato.usecase';
+import type { Request } from 'express';
 
 @ApiTags('core')
 @Controller()
@@ -34,6 +39,7 @@ export class CoreController {
         private readonly buscarAluguelIdQuery: BuscarAluguelIdQuery,
         private readonly confirmarAluguelUseCase: ConfirmarAluguelUseCase,
         private readonly buscarContratoAluguelQuery: BuscarContratoAluguelQuery,
+        private readonly assinarContratoUseCase: AssinarContratoUsecase,
     ) {}
 
     @ApiOperation({
@@ -116,6 +122,33 @@ export class CoreController {
     @Get('aluguel/:id/contrato')
     buscarContrato(@Param('id') id: string) {
         return this.buscarContratoAluguelQuery.execute(id);
+    }
+
+    @ApiOperation({
+        summary: 'Assinar contrato de aluguel',
+        description: 'Assina o contrato de aluguel.',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Contrato assinado com sucesso.',
+    })
+    @ApiParam({ name: 'id', description: 'ID do aluguel' })
+    @ApiBody({ type: AssinarContratoDto })
+    @ApiAccessToken()
+    @HttpCode(HttpStatus.OK)
+    @Patch('aluguel/:id/contrato/assinar')
+    async assinarContrato(
+        @Param('id') id: string,
+        @usuarioAtual() usuario: UsuarioPayload,
+        @Req() req: Request,
+        @Body() body: AssinarContratoDto,
+    ): Promise<void> {
+        return this.assinarContratoUseCase.execute({
+            aluguelId: id,
+            usuarioId: usuario.sub,
+            request: req,
+            ...body,
+        });
     }
 
     @ApiOperation({

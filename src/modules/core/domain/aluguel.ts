@@ -6,12 +6,11 @@ import { Multa } from './multa';
 import { Pessoa } from './pessoa';
 import { ItemSnapshot } from './item-snapshot';
 import { DatasBloqueadas, ItemResult } from './services/item.service';
-import { AluguelException } from './exceptions/aluguel.exception';
 import { UsuarioResult } from './services/usuario.service';
 import { AluguelDto } from '../application/dtos/results/Aluguel.dto';
 import { ForbiddenException } from '@nestjs/common';
-import { DinheiroUtils } from '../../../shared/utils';
-import { Decimal } from 'decimal.js';
+import { DinheiroUtils, DataUtils } from '../../../shared/utils';
+import { AluguelException } from './exceptions/aluguel.exception';
 
 export type AluguelProps = {
     locador: Pessoa;
@@ -40,6 +39,15 @@ export type CriarAluguelProps = {
     dataFim: string;
     observacoesLocatario?: string;
     itemData: ItemResult;
+};
+
+type AssinarContratoProps = {
+    usuarioId: string;
+    assinaturaDigital: string;
+    enderecoIp: string;
+    userAgent: string;
+    latitude?: number;
+    longitude?: number;
 };
 
 export class Aluguel {
@@ -163,17 +171,51 @@ export class Aluguel {
         this.setStatus(AluguelStatus.CONCLUIDO);
     }
 
-    private calcularPrecoTotal(): void {
-        const totalMs =
-            this.props.dataFim.getTime() - this.props.dataInicio.getTime();
+    assinarContrato(props: AssinarContratoProps): void {
+        if (
+            this.locador.id !== props.usuarioId &&
+            this.locatario.id !== props.usuarioId
+        ) {
+            throw new ForbiddenException(
+                `Você não tem permissão para assinar este contrato.`,
+            );
+        }
 
+        const isLocador = this.locador.id === props.usuarioId;
+
+        if (!this.contrato) {
+            const contrato = Contrato.criar();
+            contrato.assinarContrato({
+                usuarioTipo: isLocador ? 'locador' : 'locatario',
+                assinaturaDigital: props.assinaturaDigital,
+                dataHora: DataUtils.agoraDate(),
+                enderecoIp: props.enderecoIp,
+                userAgent: props.userAgent,
+                latitude: props.latitude,
+                longitude: props.longitude,
+            });
+        }
+
+        this.contrato.assinarContrato({
+            usuarioTipo: isLocador ? 'locador' : 'locatario',
+            assinaturaDigital: props.assinaturaDigital,
+            dataHora: DataUtils.agoraDate(),
+            enderecoIp: props.enderecoIp,
+            userAgent: props.userAgent,
+            latitude: props.latitude,
+            longitude: props.longitude,
+        });
+    }
+
+    private calcularPrecoTotal(): void {
         if (
             this.props.itemSnapshot.permiteAluguelPorHora &&
             this.props.itemSnapshot.precoHora
         ) {
-            const horas = new Decimal(totalMs)
-                .dividedBy(this.UMA_HORA)
-                .toNumber();
+            const horas = DataUtils.calcularHoras(
+                this.props.dataInicio,
+                this.props.dataFim,
+            );
 
             const precoTotal = DinheiroUtils.multiplicar(
                 horas,
@@ -184,9 +226,10 @@ export class Aluguel {
         } else {
             // Para aluguel por dia: calcula dias exatos com precisão decimal
             // Exemplo: 2.375 dias = 2 dias + 9 horas = 2.375 diárias
-            const diasExatos = new Decimal(totalMs)
-                .dividedBy(this.UM_DIA)
-                .toNumber();
+            const diasExatos = DataUtils.calcularDias(
+                this.props.dataInicio,
+                this.props.dataFim,
+            );
 
             const precoTotal = DinheiroUtils.multiplicar(
                 diasExatos,
@@ -199,11 +242,11 @@ export class Aluguel {
     }
 
     private validarPeriodoAluguel(): void {
-        const totalMs =
-            this.props.dataFim.getTime() - this.props.dataInicio.getTime();
-
         if (this.props.itemSnapshot.permiteAluguelPorHora) {
-            const horas = totalMs / (1000 * 60 * 60);
+            const horas = DataUtils.calcularHoras(
+                this.props.dataInicio,
+                this.props.dataFim,
+            );
             const horasMinimas =
                 this.props.itemSnapshot.horasMinimosAluguel || 1;
             const horasMaximas =
@@ -221,7 +264,10 @@ export class Aluguel {
                 );
             }
         } else {
-            const dias = totalMs / (1000 * 60 * 60 * 24);
+            const dias = DataUtils.calcularDias(
+                this.props.dataInicio,
+                this.props.dataFim,
+            );
             const diasMinimos = this.props.itemSnapshot.diasMinimosAluguel || 1;
             const diasMaximos =
                 this.props.itemSnapshot.diasMaximosAluguel || 365;

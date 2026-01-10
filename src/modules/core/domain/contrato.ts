@@ -1,4 +1,5 @@
 import { InvalidPropsException } from 'src/common/exceptions/invalidProps.exception';
+import { ContratoException } from './exceptions/contrato.exception';
 
 export type AceiteContratoProps = {
     assinaturaDigital: string;
@@ -34,6 +35,33 @@ export class Contrato {
         const domain = new Contrato();
         Object.assign(domain.props, props);
         return domain;
+    }
+
+    assinarContrato(
+        props: AceiteContratoProps & { usuarioTipo: 'locador' | 'locatario' },
+    ) {
+        if (props.usuarioTipo === 'locador') {
+            if (this.props.aceiteLocador !== undefined) {
+                throw new ContratoException(
+                    'O locador já assinou este contrato.',
+                );
+            }
+            this.setAceiteLocador(props);
+        } else if (props.usuarioTipo === 'locatario') {
+            if (this.props.aceiteLocatario !== undefined) {
+                throw new ContratoException(
+                    'O locatário já assinou este contrato.',
+                );
+            }
+            this.setAceiteLocatario(props);
+        }
+    }
+
+    estaAssinado(): boolean {
+        return (
+            this.props.aceiteLocador !== undefined &&
+            this.props.aceiteLocatario !== undefined
+        );
     }
 
     private setVersao(versao: number) {
