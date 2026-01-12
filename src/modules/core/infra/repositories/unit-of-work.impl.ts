@@ -9,6 +9,7 @@ import { OutboxEvent } from '../../domain/outbox-event';
 import { AluguelMapper } from '../mappers/aluguel.mapper';
 import { OutboxEventMapper } from '../mappers/outbox-event.mapper';
 import { OutboxEventModel } from '../models/outbox-event.model';
+import { RepositoryException } from 'src/common/exceptions/repository.exception';
 
 @Injectable()
 export class TypeOrmUnitOfWork implements UnitOfWork {
@@ -56,7 +57,7 @@ export class TypeOrmUnitOfWork implements UnitOfWork {
                 `Transação falhou: ${error.message}`,
                 error.stack,
             );
-            throw error;
+            throw new RepositoryException('Erro ao salvar dados.');
         } finally {
             await queryRunner.release();
         }

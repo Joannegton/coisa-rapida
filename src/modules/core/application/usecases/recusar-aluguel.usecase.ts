@@ -56,36 +56,26 @@ export class RecusarAluguelUseCase {
             props.motivo,
         );
 
-        try {
-            await this.unitOfWork.executarEmTransacao(async (context) => {
-                await context.salvarAluguel(aluguel);
+        await this.unitOfWork.executarEmTransacao(async (context) => {
+            await context.salvarAluguel(aluguel);
 
-                const outboxEvent = OutboxEvent.criar({
-                    tipoEvento: evento.eventType,
-                    idAgregado: evento.aggregateId,
-                    tipoAgregado: 'Aluguel',
-                    payload: {
-                        eventId: evento.eventId,
-                        aluguelId: evento.aluguelId,
-                        itemId: evento.itemId,
-                        dataInicio: evento.dataInicio.toISOString(),
-                        dataFim: evento.dataFim.toISOString(),
-                        motivoRecusa: evento.motivoRecusa,
-                        occurredOn: evento.occurredOn.toISOString(),
-                    },
-                });
-
-                await context.salvarEvento(outboxEvent);
+            const outboxEvent = OutboxEvent.criar({
+                tipoEvento: evento.eventType,
+                idAgregado: evento.aggregateId,
+                tipoAgregado: 'Aluguel',
+                payload: {
+                    eventId: evento.eventId,
+                    aluguelId: evento.aluguelId,
+                    itemId: evento.itemId,
+                    dataInicio: evento.dataInicio.toISOString(),
+                    dataFim: evento.dataFim.toISOString(),
+                    motivoRecusa: evento.motivoRecusa,
+                    occurredOn: evento.occurredOn.toISOString(),
+                },
             });
-        } catch (error) {
-            this.logger.error(
-                `❌ Falha crítica ao recusar aluguel ${props.aluguelId}: ${error.message}`,
-                error.stack,
-            );
-            throw new BadRequestException(
-                'Não foi possível recusar a solicitação. Tente novamente.',
-            );
-        }
+
+            await context.salvarEvento(outboxEvent);
+        });
 
         try {
             await this.auditoriaFilaService.agendarAuditoria({

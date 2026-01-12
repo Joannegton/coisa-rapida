@@ -34,6 +34,7 @@ export enum AuditoriaAcao {
     CONFIRMAR_ALUGUEL = 'confirmar_aluguel',
     CANCELAR_ALUGUEL = 'cancelar_aluguel',
     RECUSAR_ALUGUEL = 'recusar_aluguel',
+    FINALIZAR_ALUGUEL = 'finalizar_aluguel',
     ASSINAR_CONTRATO = 'assinar_contrato',
 
     // SAGA (Coreografada)

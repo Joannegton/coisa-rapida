@@ -88,37 +88,27 @@ export class ConfirmarAluguelUseCase {
             aluguel.locatario.id,
         );
 
-        try {
-            await this.unitOfWork.executarEmTransacao(async (context) => {
-                await context.salvarAluguel(aluguel);
+        await this.unitOfWork.executarEmTransacao(async (context) => {
+            await context.salvarAluguel(aluguel);
 
-                const outboxEvent = OutboxEvent.criar({
-                    tipoEvento: evento.eventType,
-                    idAgregado: evento.aggregateId,
-                    tipoAgregado: 'Aluguel',
-                    payload: {
-                        eventId: evento.eventId,
-                        aluguelId: evento.aluguelId,
-                        itemId: evento.itemId,
-                        dataInicio: evento.dataInicio.toISOString(),
-                        dataFim: evento.dataFim.toISOString(),
-                        locadorId: evento.locadorId,
-                        locatarioId: evento.locatarioId,
-                        occurredOn: evento.occurredOn.toISOString(),
-                    },
-                });
-
-                await context.salvarEvento(outboxEvent);
+            const outboxEvent = OutboxEvent.criar({
+                tipoEvento: evento.eventType,
+                idAgregado: evento.aggregateId,
+                tipoAgregado: 'Aluguel',
+                payload: {
+                    eventId: evento.eventId,
+                    aluguelId: evento.aluguelId,
+                    itemId: evento.itemId,
+                    dataInicio: evento.dataInicio.toISOString(),
+                    dataFim: evento.dataFim.toISOString(),
+                    locadorId: evento.locadorId,
+                    locatarioId: evento.locatarioId,
+                    occurredOn: evento.occurredOn.toISOString(),
+                },
             });
-        } catch (error) {
-            this.logger.error(
-                `❌ Falha crítica ao confirmar aluguel ${props.aluguelId}: ${error.message}`,
-                error.stack,
-            );
-            throw new BadRequestException(
-                'Não foi possível confirmar o aluguel. Tente novamente.',
-            );
-        }
+
+            await context.salvarEvento(outboxEvent);
+        });
 
         // Auditorias com try-catch separado (não quebra a operação principal)
         try {
