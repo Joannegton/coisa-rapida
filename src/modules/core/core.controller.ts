@@ -33,6 +33,7 @@ import { RecusarAluguelDto } from './application/dtos/recusar-aluguel.dto';
 import { CancelarAluguelUseCase } from './application/usecases/cancelar-aluguel.usecase';
 import { RecusarAluguelUseCase } from './application/usecases/recusar-aluguel.usecase';
 import type { Request } from 'express';
+import { FinalizarAluguelUseCase } from './application/usecases/finalizar-aluguel.usecase';
 
 @ApiTags('core')
 @Controller()
@@ -46,6 +47,7 @@ export class CoreController {
         private readonly assinarContratoUseCase: AssinarContratoUsecase,
         private readonly cancelarAluguelUseCase: CancelarAluguelUseCase,
         private readonly recusarAluguelUseCase: RecusarAluguelUseCase,
+        private readonly finalizarAluguelUseCase: FinalizarAluguelUseCase,
     ) {}
 
     @ApiOperation({
@@ -180,6 +182,7 @@ export class CoreController {
             request: req,
         });
     }
+
     @ApiOperation({
         summary: 'Cancelar aluguel (solicitante)',
         description:
@@ -231,6 +234,28 @@ export class CoreController {
             usuarioId: usuario.sub,
             request: req,
             ...body,
+        });
+    }
+
+    @ApiOperation({
+        summary: 'Finalizar aluguel',
+        description: 'Finaliza um aluguel em andamento.',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Aluguel finalizado com sucesso.',
+    })
+    @ApiParam({ name: 'id', description: 'ID do aluguel' })
+    @ApiAccessToken()
+    @HttpCode(HttpStatus.OK)
+    @Post('aluguel/:id/finalizar')
+    async finalizarAluguel(
+        @Param('id') id: string,
+        @usuarioAtual() usuario: UsuarioPayload,
+    ): Promise<void> {
+        return this.finalizarAluguelUseCase.execute({
+            aluguelId: id,
+            usuarioId: usuario.sub,
         });
     }
 }

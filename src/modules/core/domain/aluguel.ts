@@ -219,7 +219,13 @@ export class Aluguel {
         this.setStatus(AluguelStatus.SOLICITADO);
     }
 
-    finalizar(): void {
+    finalizar(usuarioId: string): void {
+        if (this.locatario.id !== usuarioId) {
+            throw new ForbiddenException(
+                `Você não tem permissão para finalizar este aluguel.`,
+            );
+        }
+
         if (this.status !== AluguelStatus.ATIVO) {
             throw new AluguelException(
                 `Aluguel não pode ser finalizado do status ${this.status}`,
