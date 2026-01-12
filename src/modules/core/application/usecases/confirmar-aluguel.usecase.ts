@@ -1,9 +1,4 @@
-import {
-    BadRequestException,
-    Inject,
-    Logger,
-    NotFoundException,
-} from '@nestjs/common';
+import { Inject, Logger, NotFoundException } from '@nestjs/common';
 import type { AluguelRepository } from '../../domain/repositories/aluguel.repository';
 import { AluguelConfirmadoEvent } from '../../domain/events/aluguel-confirmado.event';
 import { OutboxEvent } from '../../domain/outbox-event';

@@ -1,9 +1,4 @@
-import {
-    BadRequestException,
-    Inject,
-    Logger,
-    NotFoundException,
-} from '@nestjs/common';
+import { Inject, Logger, NotFoundException } from '@nestjs/common';
 import type { AluguelRepository } from '../../domain/repositories/aluguel.repository';
 import { AluguelCanceladoEvent } from '../../domain/events/aluguel-cancelado.event';
 import { OutboxEvent } from '../../domain/outbox-event';
@@ -19,8 +14,6 @@ type CancelarAluguelUseCaseProps = CancelarAluguelDto & {
 };
 
 /**
- * Cancela um aluguel solicitado pelo locatário (quem fez a solicitação).
- *
  * Regras de negócio:
  * - Só pode ser cancelado por quem solicitou (locatário)
  * - Status deve permitir cancelamento (não confirmado ou finalizado)
