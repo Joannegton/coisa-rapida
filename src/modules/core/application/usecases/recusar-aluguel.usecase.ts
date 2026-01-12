@@ -5,30 +5,31 @@ import {
     NotFoundException,
 } from '@nestjs/common';
 import type { AluguelRepository } from '../../domain/repositories/aluguel.repository';
-import { AluguelCanceladoEvent } from '../../domain/events/aluguel-cancelado.event';
+import { AluguelRecusadoEvent } from '../../domain/events/aluguel-recusado.event';
 import { OutboxEvent } from '../../domain/outbox-event';
 import type { UnitOfWork } from '../../domain/repositories/unit-of-work';
 import { AuditoriaAcao } from 'src/shared/constants/auditoria-actions';
 import { DataUtils } from 'src/shared/utils';
-import { CancelarAluguelDto } from '../dtos/cancelar-aluguel.dto';
+import { Request } from 'express';
+import { RecusarAluguelDto } from '../dtos/recusar-aluguel.dto';
 import { AuditoriaFilaService } from 'src/shared/infra/services/auditoria.fila.service';
 
-type CancelarAluguelUseCaseProps = CancelarAluguelDto & {
+type RecusarAluguelUseCaseProps = RecusarAluguelDto & {
     aluguelId: string;
     usuarioId: string;
+    request: Request;
 };
 
 /**
- * Cancela um aluguel solicitado pelo locatário (quem fez a solicitação).
+ * Recusa uma solicitação de aluguel pelo proprietário/anunciante.
  *
  * Regras de negócio:
- * - Só pode ser cancelado por quem solicitou (locatário)
- * - Status deve permitir cancelamento (não confirmado ou finalizado)
- * - Pode gerar penalidade dependendo da política
- * - Usa Unit of Work + Outbox Pattern para atomicidade
+ * - Só pode ser recusado pelo dono do item (locador)
+ * - Status deve ser PENDENTE/SOLICITADO
+ * - Motivo é obrigatório
  */
-export class CancelarAluguelUseCase {
-    private readonly logger = new Logger(CancelarAluguelUseCase.name);
+export class RecusarAluguelUseCase {
+    private readonly logger = new Logger(RecusarAluguelUseCase.name);
 
     constructor(
         @Inject('AluguelRepository')
@@ -38,21 +39,21 @@ export class CancelarAluguelUseCase {
         private readonly auditoriaFilaService: AuditoriaFilaService,
     ) {}
 
-    async execute(props: CancelarAluguelUseCaseProps): Promise<void> {
+    async execute(props: RecusarAluguelUseCaseProps): Promise<void> {
         const aluguel = await this.aluguelRepository.buscar(props.aluguelId);
 
         if (!aluguel) {
             throw new NotFoundException(`Aluguel não encontrado`);
         }
 
-        aluguel.cancelar(props.usuarioId, props.motivo);
+        aluguel.recusar(props.motivo, props.usuarioId);
 
-        const evento = new AluguelCanceladoEvent(
+        const evento = new AluguelRecusadoEvent(
             props.aluguelId,
             aluguel.itemId,
             aluguel.dataInicio,
             aluguel.dataFim,
-            props.motivo || 'Cancelado pelo usuário',
+            props.motivo,
         );
 
         try {
@@ -69,7 +70,7 @@ export class CancelarAluguelUseCase {
                         itemId: evento.itemId,
                         dataInicio: evento.dataInicio.toISOString(),
                         dataFim: evento.dataFim.toISOString(),
-                        motivoCancelamento: evento.motivoCancelamento,
+                        motivoRecusa: evento.motivoRecusa,
                         occurredOn: evento.occurredOn.toISOString(),
                     },
                 });
@@ -78,11 +79,11 @@ export class CancelarAluguelUseCase {
             });
         } catch (error) {
             this.logger.error(
-                `❌ Falha crítica ao cancelar aluguel ${props.aluguelId}: ${error.message}`,
+                `❌ Falha crítica ao recusar aluguel ${props.aluguelId}: ${error.message}`,
                 error.stack,
             );
             throw new BadRequestException(
-                'Não foi possível cancelar o aluguel. Tente novamente.',
+                'Não foi possível recusar a solicitação. Tente novamente.',
             );
         }
 
@@ -90,27 +91,27 @@ export class CancelarAluguelUseCase {
             await this.auditoriaFilaService.agendarAuditoria({
                 timestamp: DataUtils.agoraDate(),
                 usuarioId: props.usuarioId,
-                acao: AuditoriaAcao.CANCELAR_ALUGUEL,
+                acao: AuditoriaAcao.RECUSAR_ALUGUEL,
                 recurso: 'aluguel',
                 recursoId: props.aluguelId,
-                descricao: `Cancelamento de aluguel pelo locatário - Motivo: ${props.motivo || 'Não informado'}`,
+                descricao: `Recusa de solicitação de aluguel pelo proprietário - Motivo: ${props.motivo}`,
                 nivel: 'medio',
                 estadoAntes: {
                     status: aluguel.status,
-                    cancelado: false,
+                    recusado: false,
                 },
                 estadoDepois: {
-                    status: 'cancelado',
-                    cancelado: true,
+                    status: 'recusado',
+                    recusado: true,
                     motivo: props.motivo,
                 },
             });
         } catch (error) {
             this.logger.warn(
-                `⚠️ Falha ao agendar auditoria para cancelamento de aluguel ${props.aluguelId} (aluguel já cancelado): ${error.message}`,
+                `⚠️ Falha ao agendar auditoria para recusa de aluguel ${props.aluguelId} (aluguel já recusado): ${error.message}`,
                 error.stack,
             );
-            // Não relança o erro - o aluguel foi cancelado com sucesso
+            // Não relança o erro - o aluguel foi recusado com sucesso
         }
     }
 }

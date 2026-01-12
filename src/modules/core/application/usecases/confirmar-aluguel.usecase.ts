@@ -25,7 +25,6 @@ type ConfirmarAluguelUseCaseProps = AssinarContratoDto & {
  * Padrão SAGA COREOGRAFADA - Microsserviços
  *
  * Usa Unit of Work + Outbox Pattern para garantir atomicidade.
- * O UseCase NÃO conhece detalhes de infraestrutura (DataSource, EntityManager).
  *
  * Fluxo:
  * 1. Buscar aluguel
@@ -34,6 +33,7 @@ type ConfirmarAluguelUseCaseProps = AssinarContratoDto & {
  * 4. Worker assíncrono publica evento
  * 5. Microsserviço Item bloqueia datas
  * 6. Se bloqueio falhar → CompensarAluguelHandler
+ * 7. O handler de confirmado faz o restante
  */
 export class ConfirmarAluguelUseCase {
     private readonly logger = new Logger(ConfirmarAluguelUseCase.name);

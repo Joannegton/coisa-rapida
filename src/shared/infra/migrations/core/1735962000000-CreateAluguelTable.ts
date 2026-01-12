@@ -15,6 +15,7 @@ export class CreateAluguelTable1735962000000 implements MigrationInterface {
                 'ativo',
                 'devolvido',
                 'concluido',
+                'recusado',
                 'cancelado',
                 'disputado'
             );

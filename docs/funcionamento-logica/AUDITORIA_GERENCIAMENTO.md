@@ -101,6 +101,253 @@ auditoria (tabela principal)
 
 **Resultado**: Consultas complexas executam em < 200ms mesmo com milhões de registros.
 
+## 🔄 Processor: Processamento em Background
+
+### **Como Funciona**
+
+O `AuditoriaFilaProcessor` é um worker que processa jobs de auditoria enfileirados:
+
+```typescript
+@Processor('auditoria') // Escuta fila 'auditoria'
+@Injectable()
+export class AuditoriaFilaProcessor {
+    @Process('registrar-auditoria') // Processa jobs 'registrar-auditoria'
+    async processarAuditoria(job: Job<AuditoriaFilaJob>): Promise<void> {
+        try {
+            // Insere log no banco
+            await this.auditoriaService.criar(logAuditoria);
+            // ✅ Job completo
+        } catch (error) {
+            // ❌ Job falha → Retry automático
+            throw error;
+        }
+    }
+}
+```
+
+### **Fluxo Detalhado**
+
+```
+1️⃣  auditoriaFilaService.agendarAuditoria()
+    ↓
+    Queue.add('registrar-auditoria', {...}, {
+        priority: 2,           // Alta prioridade
+        attempts: 10,          // Máx 10 tentativas
+        backoff: exponential   // Espera aumenta: 3s, 9s, 27s...
+    })
+    ↓
+2️⃣  Job aguarda em Redis
+
+3️⃣  AuditoriaFilaProcessor recebe job
+    ├─ Tenta inserir no banco
+    ├─ ✅ Sucesso → Job removido, log gravado
+    └─ ❌ Falha → Retry automático
+
+4️⃣  Se falhar 10 vezes
+    → Enviado para Dead Letter Queue
+    → Admin pode investigar
+```
+
+### **Configuração do Retry**
+
+```typescript
+{
+    priority: 2,           // 1=baixa, 2=média, 3=alta
+    attempts: 10,          // Máximo de tentativas
+    backoff: {
+        type: 'exponential',
+        delay: 3000        // 3s inicial
+    }
+}
+
+// Cronograma de retry:
+Tentativa 1: Imediata
+Tentativa 2: +3s = 3 segundos
+Tentativa 3: +9s = 12 segundos
+Tentativa 4: +27s = 39 segundos
+Tentativa 5: +81s = 2 minutos
+...
+Tentativa 10: Desiste → Dead Letter Queue
+```
+
+### **Vantagens**
+
+- ✅ **Não bloqueia requisição** - Fire and forget
+- ✅ **Retry automático** - Recupera falhas temporárias
+- ✅ **Priorização** - Logs críticos processados primeiro
+- ✅ **Escalável** - Múltiplos workers em paralelo
+- ✅ **Observável** - Cada tentativa logada
+
+---
+
+## 🚨 Dead Letter Queue (DLQ)
+
+### **O que é?**
+
+A Dead Letter Queue é um **repositório de falhas críticas** - jobs que falharam 10 vezes e não puderam ser processados:
+
+```typescript
+interface DeadLetterItem {
+    id: UUID;
+    modulo: 'auditoria' | 'eventos' | ...;
+    recurso: string;          // 'aluguel', 'item', etc
+    recursoId: string;        // ID específico
+    evento: any;              // Dados originais do job
+    erro: string;             // Mensagem de erro
+    rastreamentoErro: string; // Stack trace completo
+    tentativasRetorno: number;// Quantas vezes tentou
+    contexto: {
+        usuarioId: string;
+        metadados: any;
+    };
+    prioridade: 'alta' | 'média' | 'baixa';
+    criadoEm: Date;           // Quando entrou na DLQ
+    resolvidoEm?: Date;       // Quando foi resolvido
+    status: 'pendente' | 'investigado' | 'resolvido';
+}
+```
+
+### **Fluxo de Uma Falha**
+
+```
+Auditoria falha
+    ↓
+Retry 1: +3s → Falha novamente
+    ↓
+Retry 2: +9s → Falha novamente
+    ↓
+Retry 3: +27s → Falha novamente
+    ↓
+...
+    ↓
+Retry 10: Desistiu após 10 tentativas
+    ↓
+🚨 ENVIADO PARA DEAD LETTER QUEUE
+    ↓
+Salvo em: shared.dead_letter_queue
+    ↓
+Admin notificado (pode ser por Slack/Email)
+    ↓
+Admin investiga via API
+    ↓
+Opções:
+├─ Reprocessar (se problema foi corrigido)
+├─ Ignorar (falso positivo)
+└─ Escalar (caso crítico)
+```
+
+### **Causas Comuns de DLQ**
+
+| Causa                    | Exemplo             | Solução                                |
+| ------------------------ | ------------------- | -------------------------------------- |
+| **Banco fora**           | PostgreSQL down     | Aguardar recovery, reprocessar         |
+| **Constraint violation** | Duplicação de ID    | Investigar lógica, corrigir dados      |
+| **Permissão negada**     | User sem privilégio | Ajustar roles PostgreSQL               |
+| **Limite de recursos**   | Memória esgotada    | Aumentar recursos, reduzir batch       |
+| **Bug no código**        | Erro na lógica      | Corrigir código, redeploy, reprocessar |
+
+### **Acessando DLQ**
+
+```bash
+# Ver itens em DLQ
+GET /admin/auditoria/dead-letter-queue
+
+# Resposta
+{
+    "total": 42,
+    "pendentes": 38,
+    "investigados": 4,
+    "itens": [
+        {
+            "id": "uuid-123",
+            "modulo": "auditoria",
+            "recurso": "aluguel",
+            "erro": "violates unique constraint \"auditoria_pkey\"",
+            "tentativasRetorno": 10,
+            "criadoEm": "2026-01-12T14:30:00Z",
+            "status": "pendente"
+        },
+        ...
+    ]
+}
+```
+
+```bash
+# Reprocessar item específico
+POST /admin/auditoria/dead-letter-queue/:id/reprocessar
+
+# Marcar como investigado
+PATCH /admin/auditoria/dead-letter-queue/:id
+{
+    "status": "investigado",
+    "notas": "Problema foi corrigido no código v2.1.0"
+}
+```
+
+### **Monitoramento de DLQ**
+
+```bash
+# Alert: Mais de 10 itens em DLQ
+GET /admin/auditoria/dead-letter-queue/stats
+
+{
+    "total": 42,
+    "porModulo": {
+        "auditoria": 38,
+        "eventos": 4
+    },
+    "porErro": {
+        "duplicate key": 15,
+        "connection refused": 12,
+        "permission denied": 10,
+        "timeout": 5
+    },
+    "mediaIdadeHoras": 2.5
+}
+```
+
+### **Boas Práticas com DLQ**
+
+1. **Monitorar diariamente**
+
+    ```bash
+    GET /admin/auditoria/dead-letter-queue
+    # Se total > 5, investigar
+    ```
+
+2. **Agrupar por erro**
+
+    ```bash
+    # Agrupa por tipo de erro
+    # Mesma causa = mesma solução
+    ```
+
+3. **Reprocessar após corrigir**
+
+    ```bash
+    # Após corrigir o problema
+    POST /admin/auditoria/dead-letter-queue/:id/reprocessar
+    ```
+
+4. **Documentar soluções**
+
+    ```typescript
+    PATCH /admin/auditoria/dead-letter-queue/:id
+    {
+        "status": "resolvido",
+        "notas": "Fix: Adicionar índice em usuario_id. Deploy v2.1.0"
+    }
+    ```
+
+5. **Alertas automáticos**
+    ```
+    Se DLQ > 5 itens por 1 hora
+    → Slack notification
+    → PagerDuty alert
+    ```
+
+---
+
 ## 🔄 Job de Limpeza Automática
 
 Executado **mensalmente** (1º dia às 2h), o job realiza:

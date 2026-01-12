@@ -153,7 +153,13 @@ export class Aluguel {
         this.setStatus(AluguelStatus.CONFIRMADO);
     }
 
-    cancelar(motivo: string): void {
+    cancelar(usuarioId: string, motivo?: string): void {
+        if (this.locatario.id !== usuarioId) {
+            throw new ForbiddenException(
+                `Somente o locatário pode cancelar este aluguel.`,
+            );
+        }
+
         if (
             ![
                 AluguelStatus.SOLICITADO,
@@ -166,7 +172,40 @@ export class Aluguel {
             );
         }
 
+        if (!this.podeSerCancelado()) {
+            throw new AluguelException(
+                'Este aluguel não pode ser cancelado no status atual',
+            );
+        }
+
         this.setStatus(AluguelStatus.CANCELADO);
+        this.setMotivoRecusaLocador(motivo ?? 'Cancelado pelo usuário');
+    }
+
+    recusar(motivo: string, usuarioId: string): void {
+        if (this.locador.id !== usuarioId) {
+            throw new ForbiddenException(
+                'Apenas o proprietário pode recusar a solicitação',
+            );
+        }
+
+        if (this.status !== AluguelStatus.SOLICITADO) {
+            throw new AluguelException(
+                `Aluguel não pode ser recusado do status ${this.status}. Apenas solicitações pendentes podem ser recusadas.`,
+            );
+        }
+
+        if (!this.podeSerRecusado()) {
+            throw new AluguelException(
+                'Esta solicitação não pode ser recusada no status atual',
+            );
+        }
+
+        this.setStatus(AluguelStatus.RECUSADO);
+
+        if (!motivo || motivo.trim().length === 0) {
+            throw new InvalidPropsException('Motivo da recusa é obrigatório.');
+        }
         this.setMotivoRecusaLocador(motivo);
     }
 
@@ -648,6 +687,18 @@ export class Aluguel {
 
     get atualizadoEm(): Date {
         return this.props.atualizadoEm;
+    }
+
+    podeSerCancelado(): boolean {
+        return [
+            AluguelStatus.SOLICITADO,
+            AluguelStatus.ATIVO,
+            AluguelStatus.CONFIRMADO,
+        ].includes(this.status);
+    }
+
+    podeSerRecusado(): boolean {
+        return this.status === AluguelStatus.SOLICITADO;
     }
 
     toDto(): AluguelDto {

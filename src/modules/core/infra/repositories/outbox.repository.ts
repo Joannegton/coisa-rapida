@@ -103,6 +103,17 @@ export class OutboxRepository {
         }
     }
 
+    async buscarPendentes(): Promise<OutboxEventModel[]> {
+        return await this.repository.find({
+            where: {
+                status: StatusOutboxEvent.PENDENTE,
+            },
+            order: {
+                criadoEm: 'ASC',
+            },
+        });
+    }
+
     async limparEventosAntigos(diasAntigos = 15): Promise<number> {
         const dataLimite = new Date();
         dataLimite.setDate(dataLimite.getDate() - diasAntigos);

@@ -28,6 +28,10 @@ import { BuscarAluguelIdQuery } from './application/queries/buscar-aluguel-id.qu
 import { ConfirmarAluguelUseCase } from './application/usecases/confirmar-aluguel.usecase';
 import { BuscarContratoAluguelQuery } from './application/queries/buscar-contrato-aluguel.query';
 import { AssinarContratoUsecase } from './application/usecases/assinar-contrato.usecase';
+import { CancelarAluguelDto } from './application/dtos/cancelar-aluguel.dto';
+import { RecusarAluguelDto } from './application/dtos/recusar-aluguel.dto';
+import { CancelarAluguelUseCase } from './application/usecases/cancelar-aluguel.usecase';
+import { RecusarAluguelUseCase } from './application/usecases/recusar-aluguel.usecase';
 import type { Request } from 'express';
 
 @ApiTags('core')
@@ -40,6 +44,8 @@ export class CoreController {
         private readonly confirmarAluguelUseCase: ConfirmarAluguelUseCase,
         private readonly buscarContratoAluguelQuery: BuscarContratoAluguelQuery,
         private readonly assinarContratoUseCase: AssinarContratoUsecase,
+        private readonly cancelarAluguelUseCase: CancelarAluguelUseCase,
+        private readonly recusarAluguelUseCase: RecusarAluguelUseCase,
     ) {}
 
     @ApiOperation({
@@ -172,6 +178,59 @@ export class CoreController {
             aluguelId: id,
             usuarioId: usuario.sub,
             request: req,
+        });
+    }
+    @ApiOperation({
+        summary: 'Cancelar aluguel (solicitante)',
+        description:
+            'Cancela um aluguel solicitado pelo locatário (quem fez a solicitação).',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Aluguel cancelado com sucesso.',
+    })
+    @ApiParam({ name: 'id', description: 'ID do aluguel' })
+    @ApiBody({ type: CancelarAluguelDto })
+    @ApiAccessToken()
+    @HttpCode(HttpStatus.OK)
+    @Post('aluguel/:id/cancelar')
+    async cancelarAluguel(
+        @Param('id') id: string,
+        @usuarioAtual() usuario: UsuarioPayload,
+        @Body() body: CancelarAluguelDto,
+    ): Promise<void> {
+        return this.cancelarAluguelUseCase.execute({
+            aluguelId: id,
+            usuarioId: usuario.sub,
+            ...body,
+        });
+    }
+
+    @ApiOperation({
+        summary: 'Recusar solicitação de aluguel (proprietário)',
+        description:
+            'Recusa uma solicitação de aluguel pelo proprietário/anunciante.',
+    })
+    @ApiResponse({
+        status: 200,
+        description: 'Solicitação recusada com sucesso.',
+    })
+    @ApiParam({ name: 'id', description: 'ID do aluguel' })
+    @ApiBody({ type: RecusarAluguelDto })
+    @ApiAccessToken()
+    @HttpCode(HttpStatus.OK)
+    @Post('aluguel/:id/recusar')
+    async recusarAluguel(
+        @Param('id') id: string,
+        @usuarioAtual() usuario: UsuarioPayload,
+        @Req() req: Request,
+        @Body() body: RecusarAluguelDto,
+    ): Promise<void> {
+        return this.recusarAluguelUseCase.execute({
+            aluguelId: id,
+            usuarioId: usuario.sub,
+            request: req,
+            ...body,
         });
     }
 }

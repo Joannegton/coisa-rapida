@@ -50,6 +50,7 @@ export class OutboxPublisherListener implements OnModuleInit, OnModuleDestroy {
 
     /**
      * Inicializa listener do PostgreSQL ao carregar o módulo
+     * Também processa eventos pendentes que podem estar "presos"
      */
     async onModuleInit() {
         try {
@@ -58,6 +59,8 @@ export class OutboxPublisherListener implements OnModuleInit, OnModuleDestroy {
                 '✅ OutboxPublisherListener iniciado (PostgreSQL LISTEN/NOTIFY)',
             );
             this.logger.log('📊 Latência esperada: ~100-200ms');
+
+            await this.processarEventosPendentes();
         } catch (error) {
             this.logger.error(
                 `❌ Erro ao iniciar LISTEN/NOTIFY: ${error.message}`,
@@ -81,6 +84,42 @@ export class OutboxPublisherListener implements OnModuleInit, OnModuleDestroy {
                     `❌ Erro ao desconectar listener: ${error.message}`,
                 );
             }
+        }
+    }
+
+    private async processarEventosPendentes(): Promise<void> {
+        try {
+            const eventosPendentes =
+                await this.outboxRepository.buscarPendentes();
+
+            if (eventosPendentes.length === 0) {
+                this.logger.log(
+                    '✅ Nenhum evento pendente encontrado no startup',
+                );
+                return;
+            }
+
+            this.logger.log(
+                `🔄 Processando ${eventosPendentes.length} evento(s) pendente(s) do startup...`,
+            );
+
+            for (const evento of eventosPendentes) {
+                try {
+                    await this.publicarEvento(evento.id);
+                } catch (error) {
+                    this.logger.warn(
+                        `⚠️ Erro ao processar evento ${evento.id} no startup: ${error.message}`,
+                    );
+                }
+            }
+
+            this.logger.log(
+                `✅ Processamento de eventos pendentes concluído (${eventosPendentes.length} eventos)`,
+            );
+        } catch (error) {
+            this.logger.error(
+                `❌ Erro crítico ao processar eventos pendentes: ${error.message}`,
+            );
         }
     }
 

@@ -20,6 +20,7 @@ export enum AluguelStatus {
     DEVOLVIDO = 'devolvido',
     CONCLUIDO = 'concluido',
     CANCELADO = 'cancelado',
+    RECUSADO = 'recusado',
     DISPUTADO = 'disputado',
 }
 
