@@ -221,9 +221,9 @@ O sistema de aluguel segue uma máquina de estados rigorosa. Cada transição de
 | [ ]   | **Aprovação Automática**         | Se locador configurou `aprovacaoAutomatica=true` no item, aluguel é aprovado instantaneamente. Caso contrário, requer aprovação manual.   | Alta       |
 | [ ]   | **Janela de Resposta**           | Locador tem 24h para aprovar/recusar. Após isso, solicitação expira automaticamente.                                                      | Alta       |
 | [ ]   | **Aprovação Condicional**        | **[FUTURO]** Locador pode aprovar com condições (ex: adiantamento, caução extra). Locatário tem 12h para aceitar.                         | Média      |
-| [x]   | **Cancelamento pelo Locatário**  | Antes de `CONFIRMADO`: cancelamento gratuito. Após `CONFIRMADO`: multa de 10% do valor se < 12h antes da data início.                     | Alta       |
-| [ ]   | **Recusa pelo Locador**          | Obrigatório fornecer motivo. Opções: `indisponivel`, `perfil_inadequado`, `problema_datas`, `outro`. Armazenado em `motivoRecusaLocador`. | Alta       |
-| [ ]   | **Criação de Contrato**          | Ao aprovar, sistema gera contrato digital com termos, valores, datas e assinaturas digitais. Armazenado em tabela `contratos`.            | Alta       |
+| [x]   | **Cancelamento pelo Locatário**  | Antes de `CONFIRMADO`: cancelamento gratuito. Após `CONFIRMADO`: multa de 25% do valor se < 12h antes da data início.                     | Alta       |
+| [x]   | **Recusa pelo Locador**          | Obrigatório fornecer motivo. Opções: `indisponivel`, `perfil_inadequado`, `problema_datas`, `outro`. Armazenado em `motivoRecusaLocador`. | Alta       |
+| [x]   | **Criação de Contrato**          | Ao aprovar, sistema gera contrato digital com termos, valores, datas e assinaturas digitais. Armazenado em tabela `contratos`.            | Alta       |
 
 ### **3.3 Sistema de Caução (Escrow)**
 
