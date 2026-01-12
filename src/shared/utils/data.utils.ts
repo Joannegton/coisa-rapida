@@ -87,4 +87,22 @@ export class DataUtils {
         const dtFim = DateTime.fromJSDate(fim).setZone('America/Sao_Paulo');
         return dtFim.diff(dtInicio, 'hours').hours;
     }
+
+    /**
+     * Calcula a diferença em horas entre duas datas
+     *
+     * @param dataInicio - Data de início
+     * @param dataFim - Data de fim
+     * @returns Diferença em horas
+     *
+     * @example
+     * const horas = DataUtils.diferencaEmHoras(
+     *   new Date('2026-01-10T10:00:00'),
+     *   new Date('2026-01-15T10:00:00')
+     * );
+     * → 120
+     */
+    static diferencaEmHoras(dataInicio: Date, dataFim: Date): number {
+        return this.calcularHoras(dataInicio, dataFim);
+    }
 }

@@ -10,6 +10,7 @@ export class MultaMapper {
             multiplicador: Number(model.multiplicador),
             valorDiariaSnapshot: Number(model.valorDiariaSnapshot),
             valorTotal: Number(model.valorTotal),
+            motivo: model.motivo,
             calculadaEm: model.calculadaEm,
         });
         return domain;
@@ -21,6 +22,7 @@ export class MultaMapper {
             multiplicador: domain.multiplicador,
             valorDiariaSnapshot: domain.valorDiariaSnapshot,
             valorTotal: domain.valorTotal,
+            motivo: domain.motivo,
             calculadaEm: domain.calculadaEm,
         });
         return model;

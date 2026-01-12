@@ -70,11 +70,12 @@ export class CreateAluguelTable1735962000000 implements MigrationInterface {
                 caucao_data_pagamento TIMESTAMP WITH TIME ZONE,
                 caucao_data_devolucao TIMESTAMP WITH TIME ZONE,
                 
-                -- Multa (opcional - apenas se houver atraso)
+                -- Multa (opcional - apenas se houver atraso ou cancelamento)
                 multa_dias_atraso INTEGER,
                 multa_multiplicador DECIMAL(3, 2),
                 multa_valor_diaria_snapshot DECIMAL(10, 2),
                 multa_valor_total DECIMAL(10, 2),
+                multa_motivo VARCHAR(255),
                 multa_calculada_em TIMESTAMP WITH TIME ZONE,
                 
                 -- Contrato 

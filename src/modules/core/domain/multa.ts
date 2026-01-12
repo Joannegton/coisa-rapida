@@ -6,9 +6,10 @@ export type MultaProps = {
     valorDiariaSnapshot?: number;
     valorTotal?: number;
     calculadaEm?: Date;
+    motivo?: string;
 };
 
-export type CriarMultaProps = Omit<MultaProps, 'valorTotal' | 'calculadaEm'>;
+export type CriarMultaProps = Omit<MultaProps, 'calculadaEm'>;
 
 export class Multa {
     private readonly props: MultaProps;
@@ -19,6 +20,12 @@ export class Multa {
 
     static criar(props: CriarMultaProps): Multa {
         const domain = new Multa();
+        if (props.valorTotal && props.valorTotal > 0) {
+            domain.setValorTotal(props.valorTotal);
+            domain.setmotivo(props.motivo);
+            return domain;
+        }
+
         domain.setDiasAtraso(props.diasAtraso);
         domain.setMultiplicador(props.multiplicador);
         domain.setValorDiariaSnapshot(props.valorDiariaSnapshot);
@@ -107,6 +114,10 @@ export class Multa {
         this.props.valorTotal = valor;
     }
 
+    private setmotivo(motivo?: string) {
+        this.props.motivo = motivo;
+    }
+
     // Getters
     get diasAtraso(): number | undefined {
         return this.props.diasAtraso;
@@ -128,12 +139,17 @@ export class Multa {
         return this.props.calculadaEm;
     }
 
+    get motivo(): string | undefined {
+        return this.props.motivo;
+    }
+
     toDto() {
         return {
             diasAtraso: this.props.diasAtraso,
             multiplicador: this.props.multiplicador,
             valorDiariaSnapshot: this.props.valorDiariaSnapshot,
             valorTotal: this.props.valorTotal,
+            motivo: this.props.motivo,
             calculadaEm: this.props.calculadaEm,
         };
     }

@@ -178,6 +178,27 @@ export class Aluguel {
             );
         }
 
+        // Aplicar multa se cancelamento após confirmação e < 12h antes da data início
+        if (this.status === AluguelStatus.CONFIRMADO) {
+            const horasAteInicio = DataUtils.diferencaEmHoras(
+                DataUtils.agoraDate(),
+                this.props.dataInicio,
+            );
+
+            if (horasAteInicio < 48) {
+                const multaValue = DinheiroUtils.aplicarPercentual(
+                    this.props.precoTotal,
+                    25,
+                );
+                const multa = Multa.criar({
+                    valorTotal: multaValue,
+                    motivo: 'Cancelamento com menos de 12h de antecedência',
+                });
+
+                this.setMulta(multa);
+            }
+        }
+
         this.setStatus(AluguelStatus.CANCELADO);
         this.setMotivoRecusaLocador(motivo ?? 'Cancelado pelo usuário');
     }

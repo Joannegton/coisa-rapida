@@ -42,6 +42,15 @@ export class MultaModel {
     valorTotal?: number;
 
     @Column({
+        name: 'multa_motivo',
+        type: 'varchar',
+        length: 255,
+        comment: 'Motivo da multa (ex: Cancelamento com menos de 48h de antecedência)',
+        nullable: true,
+    })
+    motivo?: string;
+
+    @Column({
         name: 'multa_calculada_em',
         type: 'timestamp',
         nullable: true,

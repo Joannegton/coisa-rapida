@@ -93,4 +93,21 @@ export class DinheiroUtils {
             .toDecimalPlaces(2)
             .toNumber();
     }
+
+    /**
+     * Aplica um percentual a um valor
+     *
+     * @param valor - Valor base
+     * @param percentual - Percentual a aplicar (ex: 10 para 10%)
+     * @returns Valor com o percentual aplicado
+     *
+     * @example
+     * ```typescript
+     * DinheiroUtils.aplicarPercentual(100.00, 10); // 10.00 (10% de 100)
+     * DinheiroUtils.aplicarPercentual(250.00, 5); // 12.50 (5% de 250)
+     * ```
+     */
+    static aplicarPercentual(valor: number, percentual: number): number {
+        return this.multiplicar(valor, percentual / 100);
+    }
 }
