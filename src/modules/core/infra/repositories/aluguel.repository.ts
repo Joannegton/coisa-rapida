@@ -1,11 +1,12 @@
 import { InjectRepository } from '@nestjs/typeorm';
 import { Aluguel } from '../../domain/aluguel';
 import { AluguelRepository } from '../../domain/repositories/aluguel.repository';
-import { AluguelModel } from '../models/aluguel.model';
+import { AluguelModel, AluguelStatus } from '../models/aluguel.model';
 import { Repository } from 'typeorm';
 import { AluguelMapper } from '../mappers/aluguel.mapper';
 import { Logger } from '@nestjs/common';
 import { RepositoryException } from 'src/common/exceptions/repository.exception';
+import { StatusCaucao } from '../models/caucao.value-object';
 
 export class AluguelRepositoryImpl implements AluguelRepository {
     private readonly logger: Logger = new Logger(AluguelRepositoryImpl.name);
@@ -58,6 +59,34 @@ export class AluguelRepositoryImpl implements AluguelRepository {
                 `Erro ao listar aluguéis do usuário ${usuarioId}: ${error.message}`,
             );
             throw new RepositoryException(`Erro ao listar aluguéis`);
+        }
+    }
+
+    async atualizarPagamento(props: {
+        aluguelId: string;
+        status: StatusCaucao | AluguelStatus;
+        dataPagamento: Date;
+        eCaucao: boolean;
+    }): Promise<void> {
+        try {
+            const updateData: any = {};
+
+            if (props.eCaucao) {
+                updateData.caucaoPagamentoStatus = props.status;
+                updateData.caucaoPagamentoData = props.dataPagamento;
+            } else {
+                updateData.aluguelPagamentoStatus = props.status;
+                updateData.aluguelDataPagamento = props.dataPagamento;
+            }
+
+            await this.repository.update({ id: props.aluguelId }, updateData);
+        } catch (error) {
+            this.logger.error(
+                `Erro ao atualizar pagamento do aluguel ${props.aluguelId}: ${error.message}`,
+            );
+            throw new RepositoryException(
+                `Erro ao atualizar pagamento do aluguel`,
+            );
         }
     }
 }

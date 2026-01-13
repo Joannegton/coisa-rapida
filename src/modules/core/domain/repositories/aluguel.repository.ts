@@ -1,7 +1,17 @@
 import { Aluguel } from '../aluguel';
+import { StatusCaucao } from '../../infra/models/caucao.value-object';
+import { AluguelStatus } from '../../infra/models/aluguel.model';
+
+export type AtualizarPagamento = {
+    aluguelId: string;
+    status: StatusCaucao | AluguelStatus;
+    dataPagamento?: Date;
+    eCaucao: boolean;
+};
 
 export interface AluguelRepository {
     salvar(aluguel: Aluguel): Promise<void>;
     buscar(id: string): Promise<Aluguel | null>;
     listarPorUsuario(usuarioId: string): Promise<Aluguel[]>;
+    atualizarPagamento(props: AtualizarPagamento): Promise<void>;
 }
