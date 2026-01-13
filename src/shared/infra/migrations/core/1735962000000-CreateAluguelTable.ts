@@ -32,6 +32,16 @@ export class CreateAluguelTable1735962000000 implements MigrationInterface {
         `);
 
         await queryRunner.query(`
+            CREATE TYPE core.aluguel_pagamento_status AS ENUM (
+                'aguardando_pagamento',
+                'pago',
+                'processando',
+                'recusado',
+                'cancelado'
+            );
+        `);
+
+        await queryRunner.query(`
             CREATE TABLE IF NOT EXISTS core.aluguel (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 
@@ -84,6 +94,11 @@ export class CreateAluguelTable1735962000000 implements MigrationInterface {
                 contrato_aceite_locatario JSONB,
                 contrato_criado_em TIMESTAMP WITH TIME ZONE,
                 
+                -- Pagamento do Aluguel (valor a ser pago do aluguel, separado da caução)
+                aluguel_pagamento_valor DECIMAL(10, 2),
+                aluguel_pagamento_status core.aluguel_pagamento_status,
+                aluguel_data_pagamento TIMESTAMP WITH TIME ZONE,
+                
                 -- Datas do Aluguel
                 data_inicio TIMESTAMP WITH TIME ZONE NOT NULL,
                 data_fim TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -129,6 +144,11 @@ export class CreateAluguelTable1735962000000 implements MigrationInterface {
         await queryRunner.query(`
             CREATE INDEX IF NOT EXISTS idx_aluguel_criado_em 
             ON core.aluguel (criado_em DESC);
+        `);
+
+        await queryRunner.query(`
+            CREATE INDEX IF NOT EXISTS idx_aluguel_pagamento_status
+            ON core.aluguel (aluguel_pagamento_status);
         `);
 
         await queryRunner.query(`
@@ -184,6 +204,12 @@ export class CreateAluguelTable1735962000000 implements MigrationInterface {
             ALTER TABLE core.aluguel
             ADD CONSTRAINT check_valor_caucao_positivo 
             CHECK (caucao_valor IS NULL OR caucao_valor > 0);
+        `);
+
+        await queryRunner.query(`
+            ALTER TABLE core.aluguel
+            ADD CONSTRAINT check_aluguel_pagamento_valor_positivo 
+            CHECK (aluguel_pagamento_valor IS NULL OR aluguel_pagamento_valor > 0);
         `);
 
         await queryRunner
@@ -269,6 +295,16 @@ export class CreateAluguelTable1735962000000 implements MigrationInterface {
             DROP CONSTRAINT IF EXISTS check_valor_caucao_positivo;
         `);
 
+        await queryRunner.query(`
+            ALTER TABLE core.aluguel
+            DROP CONSTRAINT IF EXISTS check_aluguel_pagamento_valor_positivo;
+        `);
+
+        // Remover índice
+        await queryRunner.query(`
+            DROP INDEX IF EXISTS idx_aluguel_pagamento_status;
+        `);
+
         // Remover tabela principal
         await queryRunner.query(`
             DROP TABLE IF EXISTS core.aluguel CASCADE;
@@ -281,6 +317,10 @@ export class CreateAluguelTable1735962000000 implements MigrationInterface {
 
         await queryRunner.query(`
             DROP TYPE IF EXISTS core.caucao_status;
+        `);
+
+        await queryRunner.query(`
+            DROP TYPE IF EXISTS core.aluguel_pagamento_status;
         `);
         console.log('✅ Tabela core.aluguel removida com sucesso');
     }

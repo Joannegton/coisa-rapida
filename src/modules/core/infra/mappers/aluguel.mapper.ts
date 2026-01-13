@@ -6,6 +6,7 @@ import { MultaMapper } from './multa.mapper';
 import { ContratoMapper } from './contrato.mapper';
 import { PessoaMapper } from './pessoa.mapper';
 import { SnapshotItemMapper } from './snapshot-item.mapper';
+import { AluguelPagamentoMapper } from './aluguel-pagamento.mapper';
 
 @Injectable()
 export class AluguelMapper {
@@ -15,6 +16,7 @@ export class AluguelMapper {
         private readonly contratoMapper: ContratoMapper,
         private readonly pessoaMapper: PessoaMapper,
         private readonly snapshotItemMapper: SnapshotItemMapper,
+        private readonly aluguelPagamentoMapper: AluguelPagamentoMapper,
     ) {}
 
     toDomain(model: AluguelModel): Aluguel {
@@ -29,6 +31,11 @@ export class AluguelMapper {
         const multa = model.multa
             ? this.multaMapper.toDomain(model.multa)
             : undefined;
+
+        const aluguelPagamento = model.aluguelPagamento
+            ? this.aluguelPagamentoMapper.toDomain(model.aluguelPagamento)
+            : undefined;
+
         const contrato = this.contratoMapper.toDomain(model.contrato);
         const itemSnapshot = this.snapshotItemMapper.toDomain(
             model.snapshotItem,
@@ -49,6 +56,7 @@ export class AluguelMapper {
                 atualizadoEm: model.atualizadoEm,
                 caucao: caucao,
                 multa: multa,
+                aluguelPagamento: aluguelPagamento,
                 contrato: contrato,
                 observacoesLocatario: model.observacoesLocatario,
                 motivoRecusaLocador: model.motivoRecusaLocador,
@@ -72,6 +80,10 @@ export class AluguelMapper {
             ? this.multaMapper.toModel(aluguel.multa)
             : undefined;
 
+        const aluguelPagamentoModel = aluguel.aluguelPagamento
+            ? this.aluguelPagamentoMapper.toModel(aluguel.aluguelPagamento)
+            : undefined;
+
         const contratoModel = aluguel.contrato
             ? this.contratoMapper.toModel(aluguel.contrato)
             : undefined;
@@ -89,6 +101,7 @@ export class AluguelMapper {
             precoTotalComTaxa: aluguel.precoTotalComTaxa,
             caucao: caucaoModel,
             multa: multaModel,
+            aluguelPagamento: aluguelPagamentoModel,
             contrato: contratoModel,
             dataInicio: aluguel.dataInicio,
             dataFim: aluguel.dataFim,

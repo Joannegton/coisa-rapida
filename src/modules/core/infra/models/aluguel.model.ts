@@ -11,6 +11,7 @@ import { MultaModel } from './multa.value-object';
 import { ContratoModel } from './contrato.value-object';
 import { LocadorModel, LocatarioModel } from './pessoa-aluguel.value-object';
 import { SnapshotItemModel } from './snapshot-item.value-object';
+import { AluguelPagamentoModel } from './aluguel-pagamento.value-object';
 
 export enum AluguelStatus {
     PAGAMENTO_PENDENTE = 'pagamento_pendente',
@@ -65,6 +66,9 @@ export class AluguelModel {
 
     @Column(() => MultaModel, { prefix: false })
     multa?: MultaModel;
+
+    @Column(() => AluguelPagamentoModel, { prefix: false })
+    aluguelPagamento?: AluguelPagamentoModel;
 
     @Column(() => ContratoModel, { prefix: false })
     contrato: ContratoModel;

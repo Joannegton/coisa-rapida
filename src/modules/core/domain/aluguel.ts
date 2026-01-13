@@ -5,6 +5,7 @@ import { Contrato } from './contrato';
 import { Multa } from './multa';
 import { Pessoa } from './pessoa';
 import { ItemSnapshot } from './item-snapshot';
+import { AluguelPagamento } from './aluguel-pagamento';
 import { DatasBloqueadas, ItemResult } from './services/item.service';
 import { UsuarioResult } from './services/usuario.service';
 import { AluguelDto } from '../application/dtos/results/Aluguel.dto';
@@ -29,6 +30,7 @@ export type AluguelProps = {
     itemSnapshot: ItemSnapshot;
     caucao?: Caucao;
     multa?: Multa;
+    aluguelPagamento?: AluguelPagamento;
     contrato: Contrato;
 };
 
@@ -108,7 +110,19 @@ export class Aluguel {
             );
         }
 
-        //TODO criar caucaoo se for obrigatorio
+        if (itemSnapshot.valorCaucao && itemSnapshot.caucaoObrigatoria) {
+            const caucao = Caucao.criar({
+                valor: itemSnapshot.valorCaucao,
+            });
+            domain.setCaucao(caucao);
+        }
+
+        if (!itemSnapshot.caucaoObrigatoria) {
+            const pagamentoAluguel = AluguelPagamento.criar({
+                valor: domain.precoTotalComTaxa,
+            });
+            domain.setAluguelPagamento(pagamentoAluguel);
+        }
 
         domain.validarPeriodoAluguel();
 
@@ -650,6 +664,10 @@ export class Aluguel {
         this.props.motivoRecusaLocador = motivoRecusaLocador;
     }
 
+    private setAluguelPagamento(aluguelPagamento?: AluguelPagamento): void {
+        this.props.aluguelPagamento = aluguelPagamento;
+    }
+
     get id(): string {
         return this._id;
     }
@@ -684,6 +702,10 @@ export class Aluguel {
 
     get multa(): Multa | undefined {
         return this.props.multa;
+    }
+
+    get aluguelPagamento(): AluguelPagamento | undefined {
+        return this.props.aluguelPagamento;
     }
 
     get precoTotal(): number {

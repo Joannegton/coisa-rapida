@@ -15,6 +15,7 @@ export class AluguelDto {
 
     item: ItemSnapshotDto;
     caucao?: CaucaoDto;
+    aluguelPagamento?: AluguelPagamentoDto;
     multa?: {
         valor: number;
         status: string;
@@ -42,4 +43,10 @@ export type CaucaoDto = {
     status: string;
     dataPagamento?: Date;
     dataDevolucao?: Date;
+};
+
+export type AluguelPagamentoDto = {
+    valor?: number;
+    status: string;
+    dataPagamento?: Date;
 };
