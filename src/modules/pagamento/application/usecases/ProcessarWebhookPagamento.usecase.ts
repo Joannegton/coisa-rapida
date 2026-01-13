@@ -10,14 +10,10 @@ import type { PagamentoUnitOfWork } from '../../domain/repositories/pagamento-un
 import * as crypto from 'node:crypto';
 import type { MercadoPagoService } from '../../domain/services/mercado-pago.service';
 import { InvalidPropsException } from 'src/common/exceptions/invalidProps.exception';
-import {
-    PagamentoAprovadoEvent,
-    TipoServico,
-} from '../../domain/events/pagamento-aprovado.event';
-import { PagamentoRecusadoEvent } from '../../domain/events/pagamento-recusado.event';
-import { PagamentoPendingEvent } from '../../domain/events/pagamento-pending.event';
-import { PagamentoCanceladoEvent } from '../../domain/events/pagamento-cancelado.event';
-import { OutboxEvent } from 'src/modules/core/domain/outbox-event';
+import type { Queue } from 'bull';
+import { InjectQueue } from '@nestjs/bull';
+import { TipoServico } from '../../domain/events/pagamento-aprovado.event';
+import type { PagamentoJobData } from 'src/shared/infra/jobs/pagamento.processor.worker';
 
 type ProcessarWebhookProps = {
     signature?: string;
@@ -38,6 +34,8 @@ export class ProcessarWebhookPagamentoUsecase {
         private readonly pagamentoRepository: PagamentoRepository,
         @Inject('PagamentoUnitOfWork')
         private readonly unitOfWork: PagamentoUnitOfWork,
+        @InjectQueue('pagamento')
+        private readonly pagamentoQueue: Queue<PagamentoJobData>,
     ) {}
 
     async execute(props: ProcessarWebhookProps): Promise<void> {
@@ -69,140 +67,68 @@ export class ProcessarWebhookPagamentoUsecase {
 
             const status = paymentResult.status;
 
+            // ===== ETAPA 1: Persistir pagamento e salvar no Outbox =====
+            // Isso garante idempotência: se o job falhar e retry, saberemos que já foi salvo
             if (status === 'approved') {
                 await this.unitOfWork.executarEmTransacao(async (ctx) => {
                     pagamento.aprovar(paymentResult.id.toString());
-
                     await ctx.salvarPagamento(pagamento);
-
-                    const evento = new PagamentoAprovadoEvent({
-                        aluguelId: aluguelId,
-                        pagamentoId: pagamento.id,
-                        aprovadoEm: pagamento.aprovadoEm!,
-                        usuarioId: pagamento.usuarioId,
-                        tipoServico: tipoServico as TipoServico,
-                    });
-
-                    const outboxEvent = OutboxEvent.criar({
-                        tipoEvento: evento.eventType,
-                        idAgregado: pagamento.id,
-                        tipoAgregado: 'Pagamento',
-                        payload: {
-                            eventId: evento.eventId,
-                            aluguelId: evento.aggregateId,
-                            pagamentoId: evento.aggregateId,
-                            usuarioId: pagamento.usuarioId,
-                            aprovadoEm: pagamento.aprovadoEm,
-                            occurredOn: evento.occurredOn.toISOString(),
-                        },
-                    });
-
-                    await ctx.salvarEvento(outboxEvent);
-
                     this.logger.log(
-                        `Pagamento ${pagamento.id} aprovado e evento publicado no Outbox`,
+                        `✅ Pagamento ${pagamento.id} aprovado e persistido`,
                     );
                 });
             } else if (status === 'rejected') {
                 await this.unitOfWork.executarEmTransacao(async (ctx) => {
                     pagamento.rejeitar(paymentResult.status_detail);
                     await ctx.salvarPagamento(pagamento);
-
-                    const evento = new PagamentoRecusadoEvent({
-                        aluguelId: aluguelId,
-                        pagamentoId: pagamento.id,
-                        recusadoEm: new Date(),
-                        usuarioId: pagamento.usuarioId,
-                        motivo: paymentResult.status_detail,
-                    });
-
-                    const outboxEvent = OutboxEvent.criar({
-                        tipoEvento: evento.eventType,
-                        idAgregado: pagamento.id,
-                        tipoAgregado: 'Pagamento',
-                        payload: {
-                            eventId: evento.eventId,
-                            aluguelId: evento.aluguelId,
-                            pagamentoId: evento.pagamentoId,
-                            usuarioId: pagamento.usuarioId,
-                            motivo: evento.motivo,
-                            occurredOn: evento.occurredOn.toISOString(),
-                        },
-                    });
-
-                    await ctx.salvarEvento(outboxEvent);
-
-                    this.logger.warn(
-                        `Pagamento ${pagamento.id} foi recusado. Motivo: ${paymentResult.status_detail}`,
-                    );
+                    this.logger.warn(`❌ Pagamento ${pagamento.id} recusado`);
                 });
             } else if (status === 'pending') {
                 await this.unitOfWork.executarEmTransacao(async (ctx) => {
                     pagamento.processar();
                     await ctx.salvarPagamento(pagamento);
-
-                    const evento = new PagamentoPendingEvent({
-                        aluguelId: aluguelId,
-                        pagamentoId: pagamento.id,
-                        pendingEm: new Date(),
-                        usuarioId: pagamento.usuarioId,
-                    });
-
-                    const outboxEvent = OutboxEvent.criar({
-                        tipoEvento: evento.eventType,
-                        idAgregado: pagamento.id,
-                        tipoAgregado: 'Pagamento',
-                        payload: {
-                            eventId: evento.eventId,
-                            aluguelId: evento.aluguelId,
-                            pagamentoId: evento.pagamentoId,
-                            usuarioId: pagamento.usuarioId,
-                            occurredOn: evento.occurredOn.toISOString(),
-                        },
-                    });
-
-                    await ctx.salvarEvento(outboxEvent);
-
-                    this.logger.log(`Pagamento ${pagamento.id} está pendente`);
+                    this.logger.log(`⏳ Pagamento ${pagamento.id} pendente`);
                 });
             } else if (status === 'cancelled') {
                 await this.unitOfWork.executarEmTransacao(async (ctx) => {
                     pagamento.cancelar();
                     await ctx.salvarPagamento(pagamento);
-
-                    const evento = new PagamentoCanceladoEvent({
-                        aluguelId: aluguelId,
-                        pagamentoId: pagamento.id,
-                        canceladoEm: new Date(),
-                        usuarioId: pagamento.usuarioId,
-                        motivo: paymentResult.status_detail,
-                    });
-
-                    const outboxEvent = OutboxEvent.criar({
-                        tipoEvento: evento.eventType,
-                        idAgregado: pagamento.id,
-                        tipoAgregado: 'Pagamento',
-                        payload: {
-                            eventId: evento.eventId,
-                            aluguelId: evento.aluguelId,
-                            pagamentoId: evento.pagamentoId,
-                            usuarioId: pagamento.usuarioId,
-                            motivo: evento.motivo,
-                            occurredOn: evento.occurredOn.toISOString(),
-                        },
-                    });
-
-                    await ctx.salvarEvento(outboxEvent);
-
-                    this.logger.warn(
-                        `Pagamento ${pagamento.id} foi cancelado. Motivo: ${paymentResult.status_detail}`,
-                    );
+                    this.logger.warn(`🚫 Pagamento ${pagamento.id} cancelado`);
                 });
             } else {
                 this.logger.warn(
                     `Pagamento ${pagamento.id} com status desconhecido: ${status}`,
                 );
+                return;
             }
+
+            // ===== ETAPA 2: Enfileirar job CRÍTICO com retry automático =====
+            // Bull vai fazer 3 tentativas + backoff exponencial
+            await this.pagamentoQueue.add(
+                {
+                    aluguelId,
+                    pagamentoId: pagamento.id,
+                    usuarioId: pagamento.usuarioId,
+                    tipoServico: tipoServico as TipoServico,
+                    status: status as any,
+                    motivo: paymentResult.status_detail,
+                    aprovadoEm: pagamento.aprovadoEm,
+                } as PagamentoJobData,
+                {
+                    jobId: `pagamento-${pagamento.id}-${Date.now()}`, // Evita duplicatas
+                    attempts: 3,
+                    backoff: {
+                        type: 'exponential',
+                        delay: 2000,
+                    },
+                    removeOnComplete: true, // Remove após sucesso
+                    removeOnFail: false, // Mantém registro em falha
+                },
+            );
+
+            this.logger.log(
+                `🔄 Job de processamento enfileirado para pagamento ${pagamento.id}`,
+            );
         } else if (type === 'merchant_order') {
             this.logger.log(
                 `Webhook de merchant_order recebido - ignorando (ID: ${props.dataId})`,

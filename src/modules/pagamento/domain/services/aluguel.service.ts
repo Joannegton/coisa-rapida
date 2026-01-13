@@ -1,3 +1,6 @@
+import { AluguelPagamentoStatusModel } from 'src/modules/core/infra/models/aluguel-pagamento.value-object';
+import { StatusCaucao } from 'src/modules/core/infra/models/caucao.value-object';
+
 export type AluguelResult = {
     id: string;
     locador: PessoaDto;
@@ -39,6 +42,14 @@ export type CaucaoDto = {
     dataDevolucao?: Date;
 };
 
+export type AtualizarPagamentoProps = {
+    aluguelId: string;
+    status: StatusCaucao | AluguelPagamentoStatusModel;
+    dataPagamento?: Date;
+    eCaucao: boolean;
+};
+
 export interface AluguelService {
     buscar(aluguelId: string): Promise<AluguelResult | null>;
+    atualizarPagamento(props: AtualizarPagamentoProps): Promise<void>;
 }

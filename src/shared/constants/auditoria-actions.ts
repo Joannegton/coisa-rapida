@@ -37,6 +37,13 @@ export enum AuditoriaAcao {
     FINALIZAR_ALUGUEL = 'finalizar_aluguel',
     ASSINAR_CONTRATO = 'assinar_contrato',
 
+    // Pagamentos
+    PAGAMENTO_APROVADO = 'pagamento_aprovado',
+    PAGAMENTO_RECUSADO = 'pagamento_recusado',
+    PAGAMENTO_PENDING = 'pagamento_pending',
+    PAGAMENTO_CANCELADO = 'pagamento_cancelado',
+    PAGAMENTO_PROCESSAMENTO_FALHA = 'pagamento_processamento_falha',
+
     // SAGA (Coreografada)
     EVENTO_FALHA_PUBLICACAO = 'evento_falha_publicacao',
     EVENTO_FALHA_DEFINITIVA = 'evento_falha_definitiva',
@@ -59,4 +66,9 @@ export const ACOES_COMPLIANCE = [
     AuditoriaAcao.VALIDAR_CODIGO_RECUPERACAO,
     AuditoriaAcao.ALTERAR_ENDERECO,
     AuditoriaAcao.ASSINAR_CONTRATO,
+    AuditoriaAcao.PAGAMENTO_APROVADO,
+    AuditoriaAcao.PAGAMENTO_RECUSADO,
+    AuditoriaAcao.PAGAMENTO_PENDING,
+    AuditoriaAcao.PAGAMENTO_CANCELADO,
+    AuditoriaAcao.PAGAMENTO_PROCESSAMENTO_FALHA,
 ] as const;

@@ -12,6 +12,7 @@ import { EmailProcessor } from './infra/jobs/email.processor.worker';
 import { VerificacaoVirusFilaService } from './infra/services/verificacao-virus.fila.service';
 import { VerificacaoVirusProcessor } from './infra/jobs/verificacao-virus.processor.worker';
 import { AuditoriaFilaProcessor } from './infra/jobs/auditoria.processor.worker';
+import { PagamentoProcessor } from './infra/jobs/pagamento.processor.worker';
 
 @Module({
     imports: [
@@ -40,6 +41,9 @@ import { AuditoriaFilaProcessor } from './infra/jobs/auditoria.processor.worker'
         BullModule.registerQueue({
             name: 'auditoria',
         }),
+        BullModule.registerQueue({
+            name: 'pagamento',
+        }),
         TypeOrmModule.forFeature([AuditoriaModel]),
         CqrsModule.forRoot(),
     ],
@@ -55,6 +59,7 @@ import { AuditoriaFilaProcessor } from './infra/jobs/auditoria.processor.worker'
         VerificacaoVirusFilaService,
         VerificacaoVirusProcessor,
         AuditoriaFilaProcessor,
+        PagamentoProcessor,
     ],
     exports: [...sharedServices],
 })
