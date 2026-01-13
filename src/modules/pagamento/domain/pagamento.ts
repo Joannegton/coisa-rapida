@@ -73,10 +73,7 @@ export class Pagamento {
     }
 
     rejeitar(motivo: string): void {
-        if (
-            this.status !== StatusPagamento.PENDENTE &&
-            this.status !== StatusPagamento.EM_PROCESSAMENTO
-        ) {
+        if (this.status !== StatusPagamento.EM_PROCESSAMENTO) {
             throw new PagamentoException(
                 `Pagamento não pode ser rejeitado do status ${this.status}`,
             );

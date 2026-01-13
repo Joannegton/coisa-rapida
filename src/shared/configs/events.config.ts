@@ -10,6 +10,13 @@ export const EVENT_CONFIG = {
         MODERADO: 'ItemModerado',
     },
 
+    PAGAMENTO: {
+        APROVADO: 'PagamentoAprovado',
+        RECUSADO: 'PagamentoRecusado',
+        PENDING: 'PagamentoPending',
+        CANCELADO: 'PagamentoCancelado',
+    },
+
     // Configurações gerais
     GENERAL: {
         PUBLISH_TIMEOUT: 5000,

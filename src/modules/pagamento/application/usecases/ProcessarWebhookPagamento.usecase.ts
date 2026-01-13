@@ -6,10 +6,18 @@ import {
     UnauthorizedException,
 } from '@nestjs/common';
 import type { PagamentoRepository } from '../../domain/repositories/pagamento.repository';
-import { PagamentoException } from '../../domain/exceptions/pagamento.exception';
+import type { PagamentoUnitOfWork } from '../../domain/repositories/pagamento-unit-of-work';
 import * as crypto from 'node:crypto';
 import type { MercadoPagoService } from '../../domain/services/mercado-pago.service';
 import { InvalidPropsException } from 'src/common/exceptions/invalidProps.exception';
+import {
+    PagamentoAprovadoEvent,
+    TipoServico,
+} from '../../domain/events/pagamento-aprovado.event';
+import { PagamentoRecusadoEvent } from '../../domain/events/pagamento-recusado.event';
+import { PagamentoPendingEvent } from '../../domain/events/pagamento-pending.event';
+import { PagamentoCanceladoEvent } from '../../domain/events/pagamento-cancelado.event';
+import { OutboxEvent } from 'src/modules/core/domain/outbox-event';
 
 type ProcessarWebhookProps = {
     signature?: string;
@@ -28,62 +36,180 @@ export class ProcessarWebhookPagamentoUsecase {
         private readonly mercadoPagoService: MercadoPagoService,
         @Inject('PagamentoRepository')
         private readonly pagamentoRepository: PagamentoRepository,
+        @Inject('PagamentoUnitOfWork')
+        private readonly unitOfWork: PagamentoUnitOfWork,
     ) {}
 
     async execute(props: ProcessarWebhookProps): Promise<void> {
-        try {
-            const type = props.body.type;
+        const type = props.body.type;
 
-            if (props.signature && props.requestId && props.dataId) {
-                this.processarWebhook(props);
-            }
+        if (props.signature && props.requestId && props.dataId) {
+            this.processarWebhook(props);
+        }
 
-            // Processar notificações de pagamento
-            if (type === 'payment' && props.dataId) {
-                try {
-                    const paymentResult =
-                        await this.mercadoPagoService.obterStatusPagamento(
-                            props.dataId,
-                        );
+        if (type === 'payment' && props.dataId) {
+            const paymentResult =
+                await this.mercadoPagoService.obterStatusPagamento(
+                    props.dataId,
+                );
 
-                    const [aluguelId, tipo] = paymentResult.external_reference
-                        .split(',')
-                        .map((s: string) => s.trim());
+            const [aluguelId, tipoServico] = paymentResult.external_reference
+                .split(',')
+                .map((s: string) => s.trim());
 
-                    const pagamento =
-                        await this.pagamentoRepository.buscarUltimoPorAluguelId(
-                            aluguelId,
-                        );
+            const pagamento =
+                await this.pagamentoRepository.buscarUltimoPorAluguelId(
+                    aluguelId,
+                );
 
-                    if (!pagamento)
-                        throw new NotFoundException(
-                            'Pagamento não encontrado para o aluguel.',
-                        );
+            if (!pagamento)
+                throw new NotFoundException(
+                    'Pagamento não encontrado para o aluguel.',
+                );
 
+            const status = paymentResult.status;
+
+            if (status === 'approved') {
+                await this.unitOfWork.executarEmTransacao(async (ctx) => {
                     pagamento.aprovar(paymentResult.id.toString());
 
-                    await this.pagamentoRepository.salvar(pagamento);
-                } catch (error) {
-                    this.logger.error(
-                        `Erro ao processar webhook de pagamento: ${error.message}`,
+                    await ctx.salvarPagamento(pagamento);
+
+                    const evento = new PagamentoAprovadoEvent({
+                        aluguelId: aluguelId,
+                        pagamentoId: pagamento.id,
+                        aprovadoEm: pagamento.aprovadoEm!,
+                        usuarioId: pagamento.usuarioId,
+                        tipoServico: tipoServico as TipoServico,
+                    });
+
+                    const outboxEvent = OutboxEvent.criar({
+                        tipoEvento: evento.eventType,
+                        idAgregado: pagamento.id,
+                        tipoAgregado: 'Pagamento',
+                        payload: {
+                            eventId: evento.eventId,
+                            aluguelId: evento.aggregateId,
+                            pagamentoId: evento.aggregateId,
+                            usuarioId: pagamento.usuarioId,
+                            aprovadoEm: pagamento.aprovadoEm,
+                            occurredOn: evento.occurredOn.toISOString(),
+                        },
+                    });
+
+                    await ctx.salvarEvento(outboxEvent);
+
+                    this.logger.log(
+                        `Pagamento ${pagamento.id} aprovado e evento publicado no Outbox`,
                     );
-                }
-            } else if (type === 'merchant_order') {
-                this.logger.log(
-                    `Webhook de merchant_order recebido - ignorando (ID: ${props.dataId})`,
-                );
+                });
+            } else if (status === 'rejected') {
+                await this.unitOfWork.executarEmTransacao(async (ctx) => {
+                    pagamento.rejeitar(paymentResult.status_detail);
+                    await ctx.salvarPagamento(pagamento);
+
+                    const evento = new PagamentoRecusadoEvent({
+                        aluguelId: aluguelId,
+                        pagamentoId: pagamento.id,
+                        recusadoEm: new Date(),
+                        usuarioId: pagamento.usuarioId,
+                        motivo: paymentResult.status_detail,
+                    });
+
+                    const outboxEvent = OutboxEvent.criar({
+                        tipoEvento: evento.eventType,
+                        idAgregado: pagamento.id,
+                        tipoAgregado: 'Pagamento',
+                        payload: {
+                            eventId: evento.eventId,
+                            aluguelId: evento.aluguelId,
+                            pagamentoId: evento.pagamentoId,
+                            usuarioId: pagamento.usuarioId,
+                            motivo: evento.motivo,
+                            occurredOn: evento.occurredOn.toISOString(),
+                        },
+                    });
+
+                    await ctx.salvarEvento(outboxEvent);
+
+                    this.logger.warn(
+                        `Pagamento ${pagamento.id} foi recusado. Motivo: ${paymentResult.status_detail}`,
+                    );
+                });
+            } else if (status === 'pending') {
+                await this.unitOfWork.executarEmTransacao(async (ctx) => {
+                    pagamento.processar();
+                    await ctx.salvarPagamento(pagamento);
+
+                    const evento = new PagamentoPendingEvent({
+                        aluguelId: aluguelId,
+                        pagamentoId: pagamento.id,
+                        pendingEm: new Date(),
+                        usuarioId: pagamento.usuarioId,
+                    });
+
+                    const outboxEvent = OutboxEvent.criar({
+                        tipoEvento: evento.eventType,
+                        idAgregado: pagamento.id,
+                        tipoAgregado: 'Pagamento',
+                        payload: {
+                            eventId: evento.eventId,
+                            aluguelId: evento.aluguelId,
+                            pagamentoId: evento.pagamentoId,
+                            usuarioId: pagamento.usuarioId,
+                            occurredOn: evento.occurredOn.toISOString(),
+                        },
+                    });
+
+                    await ctx.salvarEvento(outboxEvent);
+
+                    this.logger.log(`Pagamento ${pagamento.id} está pendente`);
+                });
+            } else if (status === 'cancelled') {
+                await this.unitOfWork.executarEmTransacao(async (ctx) => {
+                    pagamento.cancelar();
+                    await ctx.salvarPagamento(pagamento);
+
+                    const evento = new PagamentoCanceladoEvent({
+                        aluguelId: aluguelId,
+                        pagamentoId: pagamento.id,
+                        canceladoEm: new Date(),
+                        usuarioId: pagamento.usuarioId,
+                        motivo: paymentResult.status_detail,
+                    });
+
+                    const outboxEvent = OutboxEvent.criar({
+                        tipoEvento: evento.eventType,
+                        idAgregado: pagamento.id,
+                        tipoAgregado: 'Pagamento',
+                        payload: {
+                            eventId: evento.eventId,
+                            aluguelId: evento.aluguelId,
+                            pagamentoId: evento.pagamentoId,
+                            usuarioId: pagamento.usuarioId,
+                            motivo: evento.motivo,
+                            occurredOn: evento.occurredOn.toISOString(),
+                        },
+                    });
+
+                    await ctx.salvarEvento(outboxEvent);
+
+                    this.logger.warn(
+                        `Pagamento ${pagamento.id} foi cancelado. Motivo: ${paymentResult.status_detail}`,
+                    );
+                });
             } else {
                 this.logger.warn(
-                    `Tipo de webhook desconhecido ou sem dataId: ${type}`,
+                    `Pagamento ${pagamento.id} com status desconhecido: ${status}`,
                 );
             }
-        } catch (error) {
-            this.logger.error(
-                `Erro ao processar webhook: ${error.message}`,
-                error.stack,
+        } else if (type === 'merchant_order') {
+            this.logger.log(
+                `Webhook de merchant_order recebido - ignorando (ID: ${props.dataId})`,
             );
-            throw new PagamentoException(
-                `Erro ao processar webhook de pagamento`,
+        } else {
+            this.logger.warn(
+                `Tipo de webhook desconhecido ou sem dataId: ${type}`,
             );
         }
     }
