@@ -24,6 +24,10 @@ function setupSwagger(app: INestApplication<any>) {
             description:
                 'Funcionalidades principais, como de aluguel, caução, contrato, multa, etc.',
         },
+        {
+            name: 'pagamento',
+            description: 'Gerenciamento de pagamentos e integrações',
+        },
     ];
 
     let configBuilder = new DocumentBuilder()

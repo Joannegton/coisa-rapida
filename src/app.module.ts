@@ -15,6 +15,7 @@ import { ItemModule } from './modules/item/item.module';
 import { ItemController } from './modules/item/item.controller';
 import { VerificacaoController } from './modules/usuario/presentation/verificacao.controller';
 import { CoreModule } from './modules/core/core.module';
+import { PagamentoModule } from './modules/pagamento/pagamento.module';
 
 @Module({
     imports: [
@@ -27,6 +28,7 @@ import { CoreModule } from './modules/core/core.module';
         UsuarioModule,
         ItemModule,
         CoreModule,
+        PagamentoModule,
     ],
     controllers: [],
     providers: [...AppProviders],
@@ -40,6 +42,8 @@ export class AppModule implements NestModule {
                 VerificacaoController,
                 UsuarioController,
                 ItemController,
+                CoreModule,
+                PagamentoModule,
             );
     }
 }

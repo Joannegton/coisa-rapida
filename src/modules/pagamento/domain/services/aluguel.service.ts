@@ -1,6 +1,4 @@
-import { AluguelStatus } from 'src/modules/core/infra/models/aluguel.model';
-
-export class AluguelDto {
+export type AluguelResult = {
     id: string;
     locador: PessoaDto;
     locatario: PessoaDto;
@@ -8,18 +6,17 @@ export class AluguelDto {
     precoTotalComTaxa: number;
     dataInicio: Date;
     dataFim: Date;
-    status: AluguelStatus;
+    status: string;
     observacoesLocatario?: string;
     motivoRecusaLocador?: string;
     criadoEm: Date;
-
     item: ItemSnapshotDto;
     caucao?: CaucaoDto;
     multa?: {
         valor: number;
         status: string;
     };
-}
+};
 
 export type PessoaDto = {
     id: string;
@@ -33,13 +30,15 @@ export type ItemSnapshotDto = {
     precoDiaria: number;
     precoHora?: number;
     fotoUrl?: string;
-    valorCaucao?: number;
-    caucaoObrigatoria: boolean;
 };
 
 export type CaucaoDto = {
-    valor: number;
-    status: string;
+    valor?: number;
+    status?: string;
     dataPagamento?: Date;
     dataDevolucao?: Date;
 };
+
+export interface AluguelService {
+    buscar(aluguelId: string): Promise<AluguelResult | null>;
+}

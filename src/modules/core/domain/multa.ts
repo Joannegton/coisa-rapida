@@ -1,5 +1,6 @@
 import { InvalidPropsException } from 'src/common/exceptions/invalidProps.exception';
 
+//TODO adicionar status multa
 export type MultaProps = {
     diasAtraso?: number;
     multiplicador?: number;

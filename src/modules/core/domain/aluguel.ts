@@ -108,6 +108,8 @@ export class Aluguel {
             );
         }
 
+        //TODO criar caucaoo se for obrigatorio
+
         domain.validarPeriodoAluguel();
 
         domain.setLocador(locador);

@@ -67,6 +67,6 @@ import { JwtModule, JwtService } from '@nestjs/jwt';
             inject: [JwtService],
         },
     ],
-    exports: [],
+    exports: ['AluguelRepository'],
 })
 export class CoreModule {}
