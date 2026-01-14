@@ -60,65 +60,12 @@ export class PagamentoProcessor {
             );
 
             // ===== 1️⃣ CRÍTICO: Atualizar status do aluguel =====
-            if (status === 'approved') {
-                if (tipoServico === TipoServico.ALUGUEL) {
-                    await this.aluguelService.atualizarPagamento({
-                        aluguelId: aluguelId,
-                        status: AluguelPagamentoStatusModel.PAGO,
-                        eCaucao: false,
-                        dataPagamento: aprovadoEm,
-                    });
-                } else if (tipoServico === TipoServico.CAUCAO) {
-                    await this.aluguelService.atualizarPagamento({
-                        aluguelId: aluguelId,
-                        status: StatusCaucao.PAGA,
-                        eCaucao: true,
-                        dataPagamento: aprovadoEm,
-                    });
-                }
-            } else if (status === 'rejected') {
-                if (tipoServico === TipoServico.ALUGUEL) {
-                    await this.aluguelService.atualizarPagamento({
-                        aluguelId: aluguelId,
-                        status: AluguelPagamentoStatusModel.RECUSADO,
-                        eCaucao: false,
-                    });
-                } else if (tipoServico === TipoServico.CAUCAO) {
-                    await this.aluguelService.atualizarPagamento({
-                        aluguelId: aluguelId,
-                        status: StatusCaucao.CANCELADA,
-                        eCaucao: true,
-                    });
-                }
-            } else if (status === 'pending') {
-                if (tipoServico === TipoServico.ALUGUEL) {
-                    await this.aluguelService.atualizarPagamento({
-                        aluguelId: aluguelId,
-                        status: AluguelPagamentoStatusModel.PROCESSANDO,
-                        eCaucao: false,
-                    });
-                } else if (tipoServico === TipoServico.CAUCAO) {
-                    await this.aluguelService.atualizarPagamento({
-                        aluguelId: aluguelId,
-                        status: StatusCaucao.PROCESSANDO,
-                        eCaucao: true,
-                    });
-                }
-            } else if (status === 'cancelled') {
-                if (tipoServico === TipoServico.ALUGUEL) {
-                    await this.aluguelService.atualizarPagamento({
-                        aluguelId: aluguelId,
-                        status: AluguelPagamentoStatusModel.CANCELADO,
-                        eCaucao: false,
-                    });
-                } else if (tipoServico === TipoServico.CAUCAO) {
-                    await this.aluguelService.atualizarPagamento({
-                        aluguelId: aluguelId,
-                        status: StatusCaucao.CANCELADA,
-                        eCaucao: true,
-                    });
-                }
-            }
+            await this.atualizarStatusAluguel(
+                aluguelId,
+                status,
+                tipoServico,
+                aprovadoEm,
+            );
 
             // ===== 2️⃣ Registrar sucesso na auditoria =====
             await this.auditoriaService.criar({
@@ -226,6 +173,95 @@ export class PagamentoProcessor {
     }
 
     /**
+     * Atualiza status do aluguel de acordo com o pagamento
+     */
+    private async atualizarStatusAluguel(
+        aluguelId: string,
+        status: string,
+        tipoServico: TipoServico,
+        aprovadoEm?: Date,
+    ): Promise<void> {
+        const statusMap = this.obterMapaStatusAluguel(status, tipoServico);
+        if (!statusMap) return;
+
+        await this.aluguelService.atualizarPagamento({
+            aluguelId,
+            status: statusMap.status,
+            eCaucao: statusMap.eCaucao,
+            dataPagamento: statusMap.dataPagamento,
+        });
+    }
+
+    /**
+     * Mapeia status do pagamento para status do aluguel
+     */
+    private obterMapaStatusAluguel(
+        status: string,
+        tipoServico: TipoServico,
+    ): {
+        status: AluguelPagamentoStatusModel | StatusCaucao;
+        eCaucao: boolean;
+        dataPagamento?: Date;
+    } | null {
+        const mapaStatus: Record<
+            string,
+            Record<
+                string,
+                {
+                    status: AluguelPagamentoStatusModel | StatusCaucao;
+                    eCaucao: boolean;
+                    dataPagamento?: Date;
+                }
+            >
+        > = {
+            approved: {
+                [TipoServico.ALUGUEL]: {
+                    status: AluguelPagamentoStatusModel.PAGO,
+                    eCaucao: false,
+                    dataPagamento: new Date(),
+                },
+                [TipoServico.CAUCAO]: {
+                    status: StatusCaucao.PAGA,
+                    eCaucao: true,
+                    dataPagamento: new Date(),
+                },
+            },
+            rejected: {
+                [TipoServico.ALUGUEL]: {
+                    status: AluguelPagamentoStatusModel.RECUSADO,
+                    eCaucao: false,
+                },
+                [TipoServico.CAUCAO]: {
+                    status: StatusCaucao.CANCELADA,
+                    eCaucao: true,
+                },
+            },
+            pending: {
+                [TipoServico.ALUGUEL]: {
+                    status: AluguelPagamentoStatusModel.PROCESSANDO,
+                    eCaucao: false,
+                },
+                [TipoServico.CAUCAO]: {
+                    status: StatusCaucao.PROCESSANDO,
+                    eCaucao: true,
+                },
+            },
+            cancelled: {
+                [TipoServico.ALUGUEL]: {
+                    status: AluguelPagamentoStatusModel.CANCELADO,
+                    eCaucao: false,
+                },
+                [TipoServico.CAUCAO]: {
+                    status: StatusCaucao.CANCELADA,
+                    eCaucao: true,
+                },
+            },
+        };
+
+        return mapaStatus[status]?.[tipoServico] || null;
+    }
+
+    /**
      * Mapeia status para ação de auditoria
      */
     private mapearAcaoAuditoria(status: string): AuditoriaAcao {
@@ -251,40 +287,8 @@ export class PagamentoProcessor {
         data: PagamentoJobData,
     ): Promise<void> {
         try {
-            if (data.status === 'approved') {
-                const evento = new PagamentoAprovadoEvent({
-                    aluguelId: data.aluguelId,
-                    pagamentoId: data.pagamentoId,
-                    aprovadoEm: data.aprovadoEm || new Date(),
-                    usuarioId: data.usuarioId,
-                    tipoServico: data.tipoServico,
-                });
-                await this.eventBus.publish(evento);
-            } else if (data.status === 'rejected') {
-                const evento = new PagamentoRecusadoEvent({
-                    aluguelId: data.aluguelId,
-                    pagamentoId: data.pagamentoId,
-                    recusadoEm: new Date(),
-                    usuarioId: data.usuarioId,
-                    motivo: data.motivo,
-                });
-                await this.eventBus.publish(evento);
-            } else if (data.status === 'pending') {
-                const evento = new PagamentoPendingEvent({
-                    aluguelId: data.aluguelId,
-                    pagamentoId: data.pagamentoId,
-                    pendingEm: new Date(),
-                    usuarioId: data.usuarioId,
-                });
-                await this.eventBus.publish(evento);
-            } else if (data.status === 'cancelled') {
-                const evento = new PagamentoCanceladoEvent({
-                    aluguelId: data.aluguelId,
-                    pagamentoId: data.pagamentoId,
-                    canceladoEm: new Date(),
-                    usuarioId: data.usuarioId,
-                    motivo: data.motivo,
-                });
+            const evento = this.criarEventoSecundario(data);
+            if (evento) {
                 await this.eventBus.publish(evento);
             }
         } catch (error: any) {
@@ -292,6 +296,47 @@ export class PagamentoProcessor {
             this.logger.warn(
                 `⚠️ Erro ao publicar evento secundário: ${error.message}`,
             );
+        }
+    }
+
+    /**
+     * Cria evento apropriado baseado no status
+     */
+    private criarEventoSecundario(data: PagamentoJobData): any {
+        switch (data.status) {
+            case 'approved':
+                return new PagamentoAprovadoEvent({
+                    aluguelId: data.aluguelId,
+                    pagamentoId: data.pagamentoId,
+                    aprovadoEm: data.aprovadoEm || new Date(),
+                    usuarioId: data.usuarioId,
+                    tipoServico: data.tipoServico,
+                });
+            case 'rejected':
+                return new PagamentoRecusadoEvent({
+                    aluguelId: data.aluguelId,
+                    pagamentoId: data.pagamentoId,
+                    recusadoEm: new Date(),
+                    usuarioId: data.usuarioId,
+                    motivo: data.motivo,
+                });
+            case 'pending':
+                return new PagamentoPendingEvent({
+                    aluguelId: data.aluguelId,
+                    pagamentoId: data.pagamentoId,
+                    pendingEm: new Date(),
+                    usuarioId: data.usuarioId,
+                });
+            case 'cancelled':
+                return new PagamentoCanceladoEvent({
+                    aluguelId: data.aluguelId,
+                    pagamentoId: data.pagamentoId,
+                    canceladoEm: new Date(),
+                    usuarioId: data.usuarioId,
+                    motivo: data.motivo,
+                });
+            default:
+                return null;
         }
     }
 }
