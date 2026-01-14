@@ -51,7 +51,6 @@ export class PagamentoProcessor {
             usuarioId,
             tipoServico,
             status,
-            motivo,
             aprovadoEm,
         } = job.data;
 
@@ -67,12 +66,14 @@ export class PagamentoProcessor {
                         aluguelId: aluguelId,
                         status: AluguelPagamentoStatusModel.PAGO,
                         eCaucao: false,
+                        dataPagamento: aprovadoEm,
                     });
                 } else if (tipoServico === TipoServico.CAUCAO) {
                     await this.aluguelService.atualizarPagamento({
                         aluguelId: aluguelId,
                         status: StatusCaucao.PAGA,
                         eCaucao: true,
+                        dataPagamento: aprovadoEm,
                     });
                 }
             } else if (status === 'rejected') {

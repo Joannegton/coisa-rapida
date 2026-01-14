@@ -4,9 +4,9 @@ import type { Job } from 'bull';
 import { EventBus } from '@nestjs/cqrs';
 import type { CoreItemService } from 'src/modules/core/domain/services/item.service';
 import type { AluguelRepository } from 'src/modules/core/domain/repositories/aluguel.repository';
-import { AuditoriaService } from '../services/auditoria.service';
-import { DeadLetterQueueService } from '../services/dead-letter-queue.service';
 import { AuditoriaAcao } from 'src/shared/constants/auditoria-actions';
+import { AuditoriaService } from 'src/shared/infra/services/auditoria.service';
+import { DeadLetterQueueService } from 'src/shared/infra/services/dead-letter-queue.service';
 
 export type AluguelConfirmadoJobData = {
     aluguelId: string;
