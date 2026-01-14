@@ -1,10 +1,10 @@
 import { Aluguel } from '../aluguel';
 import { StatusCaucao } from '../../infra/models/caucao.value-object';
-import { AluguelStatus } from '../../infra/models/aluguel.model';
+import { AluguelPagamentoStatusModel } from '../../infra/models/aluguel-pagamento.value-object';
 
 export type AtualizarPagamento = {
     aluguelId: string;
-    status: StatusCaucao | AluguelStatus;
+    status: StatusCaucao | AluguelPagamentoStatusModel;
     dataPagamento?: Date;
     eCaucao: boolean;
 };

@@ -101,6 +101,17 @@ export class Disponibilidade {
 
     adicionarDataBloqueio(bloqueio: DataBloqueada): void {
         const bloqueiosAtuais = this.props.datasBloqueadas || [];
+
+        const bloqueioJaExiste = bloqueiosAtuais.some(
+            (b) =>
+                b.dataInicio.getTime() === bloqueio.dataInicio.getTime() &&
+                b.dataFim.getTime() === bloqueio.dataFim.getTime(),
+        );
+
+        if (bloqueioJaExiste) {
+            return;
+        }
+
         bloqueiosAtuais.push(bloqueio);
         this.setDatasBloqueadas(bloqueiosAtuais);
     }

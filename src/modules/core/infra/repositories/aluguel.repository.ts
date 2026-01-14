@@ -1,6 +1,9 @@
 import { InjectRepository } from '@nestjs/typeorm';
 import { Aluguel } from '../../domain/aluguel';
-import { AluguelRepository } from '../../domain/repositories/aluguel.repository';
+import {
+    AluguelRepository,
+    AtualizarPagamento,
+} from '../../domain/repositories/aluguel.repository';
 import { AluguelModel, AluguelStatus } from '../models/aluguel.model';
 import { Repository } from 'typeorm';
 import { AluguelMapper } from '../mappers/aluguel.mapper';
@@ -62,12 +65,7 @@ export class AluguelRepositoryImpl implements AluguelRepository {
         }
     }
 
-    async atualizarPagamento(props: {
-        aluguelId: string;
-        status: StatusCaucao | AluguelStatus;
-        dataPagamento: Date;
-        eCaucao: boolean;
-    }): Promise<void> {
+    async atualizarPagamento(props: AtualizarPagamento): Promise<void> {
         try {
             const updateData: any = {};
 

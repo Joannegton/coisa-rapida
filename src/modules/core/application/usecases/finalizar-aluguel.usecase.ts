@@ -1,39 +1,23 @@
 import { Inject, Logger, NotFoundException } from '@nestjs/common';
+import { EventBus } from '@nestjs/cqrs';
 import type { AluguelRepository } from '../../domain/repositories/aluguel.repository';
 import { AluguelFinalizadoEvent } from '../../domain/events/aluguel-finalizado.event';
-import { OutboxEvent } from '../../domain/outbox-event';
-import type { UnitOfWork } from '../../domain/repositories/unit-of-work';
+import { AuditoriaFilaService } from 'src/shared/infra/services/auditoria.fila.service';
 import { AuditoriaAcao } from 'src/shared/constants/auditoria-actions';
 import { DataUtils } from 'src/shared/utils';
-import { AuditoriaFilaService } from 'src/shared/infra/services/auditoria.fila.service';
 
 type FinalizarAluguelUseCaseProps = {
     aluguelId: string;
     usuarioId: string;
 };
 
-/**
- *
- * Padrão SAGA COREOGRAFADA - Microsserviços
- * Usa Unit of Work + Outbox Pattern para garantir atomicidade.
- *
- * Fluxo:
- * 1. Buscar aluguel em ATIVO
- * 2. Domain finaliza (regra de negócio)
- * 3. UnitOfWork: Salvar aluguel + evento na outbox (mesma transação)
- * 4. Worker assíncrono publica evento
- * 5. Microsserviço Item desbloqueia datas
- * 6. Se desbloqueio falhar → CompensarAluguelHandler
- * 7. Auditoria registrada separadamente (não quebra operação)
- */
 export class FinalizarAluguelUseCase {
     private readonly logger = new Logger(FinalizarAluguelUseCase.name);
 
     constructor(
         @Inject('AluguelRepository')
         private readonly aluguelRepository: AluguelRepository,
-        @Inject('UnitOfWork')
-        private readonly unitOfWork: UnitOfWork,
+        private readonly eventBus: EventBus,
         private readonly auditoriaFilaService: AuditoriaFilaService,
     ) {}
 
@@ -46,6 +30,8 @@ export class FinalizarAluguelUseCase {
 
         aluguel.finalizar(props.usuarioId);
 
+        await this.aluguelRepository.salvar(aluguel);
+
         const evento = new AluguelFinalizadoEvent(
             props.aluguelId,
             aluguel.itemId,
@@ -53,25 +39,14 @@ export class FinalizarAluguelUseCase {
             aluguel.dataFim,
         );
 
-        await this.unitOfWork.executarEmTransacao(async (context) => {
-            await context.salvarAluguel(aluguel);
-
-            const outboxEvent = OutboxEvent.criar({
-                tipoEvento: evento.eventType,
-                idAgregado: evento.aggregateId,
-                tipoAgregado: 'Aluguel',
-                payload: {
-                    eventId: evento.eventId,
-                    aluguelId: evento.aluguelId,
-                    itemId: evento.itemId,
-                    dataInicio: evento.dataInicio.toISOString(),
-                    dataFim: evento.dataFim.toISOString(),
-                    occurredOn: evento.occurredOn.toISOString(),
-                },
-            });
-
-            await context.salvarEvento(outboxEvent);
-        });
+        try {
+            await this.eventBus.publish(evento);
+        } catch (error) {
+            this.logger.warn(
+                `⚠️ Falha ao publicar evento de finalização para aluguel ${props.aluguelId}: ${error.message}`,
+            );
+            // Não relança - aluguel já foi finalizado com sucesso
+        }
 
         try {
             await this.auditoriaFilaService.agendarAuditoria({

@@ -1,34 +1,25 @@
 import { Inject, Logger, NotFoundException } from '@nestjs/common';
+import { EventBus } from '@nestjs/cqrs';
 import type { AluguelRepository } from '../../domain/repositories/aluguel.repository';
 import { AluguelCanceladoEvent } from '../../domain/events/aluguel-cancelado.event';
-import { OutboxEvent } from '../../domain/outbox-event';
-import type { UnitOfWork } from '../../domain/repositories/unit-of-work';
-import { AuditoriaAcao } from 'src/shared/constants/auditoria-actions';
-import { DataUtils } from 'src/shared/utils';
 import { CancelarAluguelDto } from '../dtos/cancelar-aluguel.dto';
 import { AuditoriaFilaService } from 'src/shared/infra/services/auditoria.fila.service';
+import { AuditoriaAcao } from 'src/shared/constants/auditoria-actions';
+import { DataUtils } from 'src/shared/utils';
 
 type CancelarAluguelUseCaseProps = CancelarAluguelDto & {
     aluguelId: string;
     usuarioId: string;
 };
 
-/**
- * Regras de negócio:
- * - Só pode ser cancelado por quem solicitou (locatário)
- * - Status deve permitir cancelamento (não confirmado ou finalizado)
- * - Pode gerar penalidade dependendo da política
- * - Usa Unit of Work + Outbox Pattern para atomicidade
- */
 export class CancelarAluguelUseCase {
     private readonly logger = new Logger(CancelarAluguelUseCase.name);
 
     constructor(
         @Inject('AluguelRepository')
         private readonly aluguelRepository: AluguelRepository,
-        @Inject('UnitOfWork')
-        private readonly unitOfWork: UnitOfWork,
         private readonly auditoriaFilaService: AuditoriaFilaService,
+        private readonly eventBus: EventBus,
     ) {}
 
     async execute(props: CancelarAluguelUseCaseProps): Promise<void> {
@@ -40,6 +31,8 @@ export class CancelarAluguelUseCase {
 
         aluguel.cancelar(props.usuarioId, props.motivo);
 
+        await this.aluguelRepository.salvar(aluguel);
+
         const evento = new AluguelCanceladoEvent(
             props.aluguelId,
             aluguel.itemId,
@@ -48,26 +41,17 @@ export class CancelarAluguelUseCase {
             props.motivo || 'Cancelado pelo usuário',
         );
 
-        await this.unitOfWork.executarEmTransacao(async (context) => {
-            await context.salvarAluguel(aluguel);
-
-            const outboxEvent = OutboxEvent.criar({
-                tipoEvento: evento.eventType,
-                idAgregado: evento.aggregateId,
-                tipoAgregado: 'Aluguel',
-                payload: {
-                    eventId: evento.eventId,
-                    aluguelId: evento.aluguelId,
-                    itemId: evento.itemId,
-                    dataInicio: evento.dataInicio.toISOString(),
-                    dataFim: evento.dataFim.toISOString(),
-                    motivoCancelamento: evento.motivoCancelamento,
-                    occurredOn: evento.occurredOn.toISOString(),
-                },
-            });
-
-            await context.salvarEvento(outboxEvent);
-        });
+        try {
+            await this.eventBus.publish(evento);
+            this.logger.log(
+                `📢 Evento publicado: AluguelCanceladoEvent para aluguel ${props.aluguelId}`,
+            );
+        } catch (eventError: any) {
+            this.logger.warn(
+                `⚠️ Falha ao publicar evento de cancelamento para aluguel ${props.aluguelId}: ${eventError.message}`,
+            );
+            // Não relança - aluguel já foi cancelado com sucesso
+        }
 
         try {
             await this.auditoriaFilaService.agendarAuditoria({
@@ -76,24 +60,21 @@ export class CancelarAluguelUseCase {
                 acao: AuditoriaAcao.CANCELAR_ALUGUEL,
                 recurso: 'aluguel',
                 recursoId: props.aluguelId,
-                descricao: `Cancelamento de aluguel pelo locatário - Motivo: ${props.motivo || 'Não informado'}`,
+                descricao: `Cancelamento de aluguel - Motivo: ${props.motivo || 'Não informado'}`,
                 nivel: 'medio',
+                modulo: 'core',
                 estadoAntes: {
                     status: aluguel.status,
-                    cancelado: false,
                 },
                 estadoDepois: {
-                    status: 'cancelado',
-                    cancelado: true,
+                    status: 'CANCELADO',
                     motivo: props.motivo,
                 },
             });
-        } catch (error) {
+        } catch (auditError: any) {
             this.logger.warn(
-                `⚠️ Falha ao agendar auditoria para cancelamento de aluguel ${props.aluguelId} (aluguel já cancelado): ${error.message}`,
-                error.stack,
+                `⚠️ Auditoria falhou para cancelamento de aluguel ${props.aluguelId}: ${auditError.message}`,
             );
-            // Não relança o erro - o aluguel foi cancelado com sucesso
         }
     }
 }

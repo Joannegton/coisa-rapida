@@ -44,6 +44,9 @@ import { PagamentoProcessor } from './infra/jobs/pagamento.processor.worker';
         BullModule.registerQueue({
             name: 'pagamento',
         }),
+        BullModule.registerQueue({
+            name: 'aluguel',
+        }),
         TypeOrmModule.forFeature([AuditoriaModel]),
         CqrsModule.forRoot(),
     ],

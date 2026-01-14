@@ -1,8 +1,8 @@
-# 🔄 SAGA Coreografada - Fluxo Completo de Aluguel
+# 🔄 SAGA Simplificada - Bull Queues com Compensação Direta
 
-> **Arquitetura**: SAGA Coreografada + Outbox Pattern + PostgreSQL LISTEN/NOTIFY  
-> **Objetivo**: Garantir consistência eventual entre módulos/microsserviços  
-> **Status**: Produção-ready (preparado para migração para microsserviços)
+> **Arquitetura**: Bull Queues + Compensação Direta + PostgreSQL  
+> **Objetivo**: Garantir consistência eventual entre módulos de forma simples e confiável  
+> **Status**: Produção-ready (otimizado para simplicidade e performance)
 
 ## 🎯 Visão Geral
 
@@ -11,7 +11,7 @@ O sistema gerencia aluguéis de itens com **consistência eventual** entre dois 
 - **Contexto Aluguel**: Gerencia reservas, confirmações, cancelamentos
 - **Contexto Item**: Gerencia bloqueios de datas para disponibilidade
 
-A comunicação entre contextos é **assíncrona** via eventos, permitindo evolução futura para microsserviços independentes.
+A comunicação entre contextos usa **Bull Queues** para operações críticas e **Event Handlers** para operações não-críticas, garantindo máxima confiabilidade.
 
 ---
 
@@ -36,37 +36,21 @@ Quando um aluguel é confirmado, **duas operações críticas** devem ocorrer:
 
 ### Padrões Implementados
 
-#### 1️⃣ **SAGA Coreografada**
+#### 1️⃣ **Bull Queues para Operações Críticas**
 
-Coordenação distribuída via eventos (sem orquestrador central):
+Jobs assíncronos com retry automático e compensação:
 
-- Cada serviço escuta eventos e publica novos eventos
-- Compensação automática em caso de falha
-- Desacoplamento entre contextos
+- Retry automático (3 tentativas + backoff exponencial)
+- Compensação direta quando todas as tentativas falham
+- Dead Letter Queue para falhas definitivas
 
-#### 2️⃣ **Outbox Pattern**
+#### 2️⃣ **Event Handlers para Operações Não-Críticas**
 
-Publicação garantida de eventos usando tabela transacional:
+Eventos simples para operações que podem falhar sem quebrar o negócio:
 
-- Eventos salvos na mesma transação que o agregado
-- Worker assíncrono publica eventos pendentes
-- Zero perda de eventos (durabilidade)
-
-#### 3️⃣ **PostgreSQL LISTEN/NOTIFY**
-
-Notificação reativa em tempo real:
-
-- Trigger dispara notificação quando evento é inserido
-- Latência ~100-200ms (vs 5 segundos de polling)
-- Zero overhead de consultas desnecessárias
-
-#### 4️⃣ **Unit of Work**
-
-Gerenciamento transacional encapsulado:
-
-- UseCase não conhece detalhes de infraestrutura
-- Transação atômica para múltiplas operações
-- Separação clara de responsabilidades (DDD)
+- Cancelamento de aluguel
+- Finalização de aluguel
+- Notificações e auditoria
 
 ---
 
@@ -79,25 +63,16 @@ T=0ms     Cliente HTTP → POST /aluguel/:id/confirmar
            ↓
 T=50ms    UseCase busca aluguel e valida regras de negócio
            ↓
-T=80ms    UnitOfWork inicia transação
-          ├─ Aluguel.confirmar() → status = CONFIRMADO
+T=80ms    Aluguel.confirmar() → status = CONFIRMADO
           ├─ Salva aluguel atualizado
-          └─ Salva OutboxEvent (AluguelConfirmado)
+          └─ COMMIT transação
            ↓
-T=100ms   COMMIT → Trigger PostgreSQL dispara
-          pg_notify('outbox_events', {...})
+T=100ms   Enfileira job 'confirmar-aluguel' na fila Bull
            ↓
-T=120ms   OutboxPublisherListener recebe notificação
-          ├─ Busca evento completo do banco
-          ├─ Reconstrói AluguelConfirmadoEvent
-          └─ Publica no EventBus
-           ↓
-T=140ms   OutboxEvent marcado como PUBLICADO
-           ↓
-T=150ms   AluguelConfirmadoEventHandler recebe evento
-          ├─ Chama ItemService.adicionarBloqueio()
-          ├─ Bloqueia datas com pessimistic lock
-          └─ Publica DatasBloqueavasComSucessoEvent
+T=120ms   AluguelConfirmadoProcessor recebe job
+          ├─ Bloqueia datas do item com pessimistic lock
+          ├─ Auditoria de sucesso (não-crítica)
+          └─ Job completo
            ↓
 T=200ms   ✅ SUCESSO COMPLETO
           - Aluguel: CONFIRMADO
@@ -110,25 +85,21 @@ T=200ms   ✅ SUCESSO COMPLETO
 
 - Orquestra o caso de uso
 - Valida regras de negócio
-- Usa UnitOfWork para coordenar transação
+- Confirma aluguel e salva no banco
+- Enfileira job Bull para bloqueio
 
-**2. UnitOfWork** (Infraestrutura)
+**2. AluguelConfirmadoProcessor** (Worker Bull)
 
-- Encapsula transação do banco
-- Salva aluguel + evento atomicamente
-- Commit ou rollback automático
-
-**3. OutboxPublisherListener** (Infraestrutura)
-
-- Escuta notificações PostgreSQL
-- Publica eventos no EventBus em tempo real
-- Marca eventos como publicados
-
-**4. AluguelConfirmadoEventHandler** (Microsserviço Item - simulado)
-
-- Representa contexto separado de Item
+- Processa job de confirmação
 - Bloqueia datas do item
-- Publica evento de sucesso
+- Retry automático (3 tentativas)
+- Auditoria não-crítica
+
+**3. ItemService** (Contexto Item)
+
+- Adiciona bloqueio de datas
+- Operação idempotente
+- Pessimistic lock para consistência
 
 ---
 
@@ -145,22 +116,25 @@ Bloqueio de datas falha por:
 ### Sequência de Compensação
 
 ```
-T=0-150ms  [Igual ao fluxo de sucesso até publicação do evento]
+T=0-120ms  [Igual ao fluxo de sucesso até job ser processado]
             ↓
-T=150ms    AluguelConfirmadoEventHandler tenta bloquear datas
+T=120ms    AluguelConfirmadoProcessor tenta bloquear datas
+           Tentativa 1 → FALHA
             ↓
-T=180ms    ❌ FALHA no bloqueio
-           ├─ Log de erro detalhado
-           ├─ NÃO lança exceção (comunicação via eventos)
-           └─ Publica FalhaNoBloqueioEvent
+T=140ms    Bull retry automático (backoff exponencial)
+           Tentativa 2 → FALHA
             ↓
-T=200ms    CompensarAluguelQuandoBloqueioFalharHandler
+T=200ms    Bull retry automático
+           Tentativa 3 → FALHA
+            ↓
+T=220ms    @OnQueueFailed acionado
            ├─ Busca aluguel
            ├─ Aluguel.voltarParaSolicitado()
            ├─ Salva estado compensado
-           └─ Log de compensação executada
+           ├─ Auditoria de falha (não-crítica)
+           └─ Dead Letter Queue (não-crítico)
             ↓
-T=250ms    ✅ COMPENSAÇÃO COMPLETA
+T=300ms    ✅ COMPENSAÇÃO COMPLETA
            - Aluguel: SOLICITADO (revertido)
            - Item: Sem bloqueios
            - Sistema: Consistente novamente
@@ -168,15 +142,16 @@ T=250ms    ✅ COMPENSAÇÃO COMPLETA
 
 ### Componentes Envolvidos
 
-**1. AluguelConfirmadoEventHandler**
+**1. AluguelConfirmadoProcessor**
 
-- Tenta bloquear datas
-- Captura exceções (não propaga)
-- Publica evento de falha
+- Tenta bloquear datas (3 tentativas)
+- Cada falha é logada
+- Não publica eventos de falha
 
-**2. CompensarAluguelQuandoBloqueioFalharHandler**
+**2. @OnQueueFailed do Processor**
 
-- Escuta eventos de falha
+- Acionado após falha definitiva
+- Compensação direta e síncrona
 - Reverte aluguel para estado anterior
 - Garante consistência eventual
 
@@ -250,62 +225,47 @@ EventHandler desbloqueia datas do item
 
 ---
 
-## 🔔 Arquitetura de Eventos
+## 🔔 Arquitetura de Jobs e Eventos
 
-### Tabela Outbox
+### Bull Queues (Operações Críticas)
 
-**Schema**: `core.outbox_events`
+**Queue**: `aluguel`
 
-**Estrutura**:
+**Jobs**:
 
-- `id`: UUID único do evento
-- `tipo_evento`: Nome do evento (AluguelConfirmado, etc)
-- `id_agregado`: ID do aluguel (rastreabilidade)
-- `tipo_agregado`: "Aluguel" (contexto)
-- `payload`: JSONB com dados completos do evento
-- `status`: PENDENTE | PUBLICADO | FALHADO
-- `quantidade_tentativas`: Contador de retries
-- `mensagem_erro`: Última mensagem de erro
-- `criado_em`: Timestamp de criação
-- `publicado_em`: Timestamp de publicação
+- `confirmar-aluguel`: Bloqueia datas do item
+    - Retry: 3 tentativas + backoff exponencial
+    - Compensação: @OnQueueFailed reverte aluguel
+    - DLQ: Falhas definitivas vão para Dead Letter Queue
 
-### Trigger PostgreSQL
+**Configuração**:
 
-Quando novo evento é inserido:
+- Redis como storage
+- Retry automático
+- Processamento assíncrono
+- Auditoria não-crítica (não quebra se falhar)
 
-```sql
-CREATE TRIGGER trigger_notificar_outbox_events
-AFTER INSERT ON core.outbox_events
-FOR EACH ROW
-EXECUTE FUNCTION core.notificar_novo_evento_outbox();
-```
+### Event Handlers (Operações Não-Críticas)
 
-A função envia notificação:
+**Eventos**:
 
-```sql
-PERFORM pg_notify('outbox_events', json_build_object(
-    'id', NEW.id,
-    'tipo_evento', NEW.tipo_evento,
-    'id_agregado', NEW.id_agregado
-));
-```
+- `AluguelCanceladoEvent`: Desbloqueia datas quando aluguel é cancelado
+- `AluguelFinalizadoEvent`: Desbloqueia datas quando aluguel é finalizado
 
-### Listener Reativo
+**Características**:
 
-**OutboxPublisherListener**:
+- Sem retry automático
+- Podem falhar sem afetar consistência
+- Usados para limpeza e notificações
 
-- Conecta no canal `outbox_events`
-- Recebe notificações em tempo real
-- Publica no EventBus do NestJS
-- Marca como publicado após sucesso
+### Auditoria
 
-### Jobs de Manutenção
+**Centralizada** via `AuditoriaService`:
 
-**Único job**: Limpeza diária (3h da manhã)
-
-- Remove eventos publicados > 30 dias
-- Mantém outbox limpa
-- Zero overhead de processamento
+- Sucesso de confirmação
+- Falhas e compensações
+- Todas as transições de estado
+- Não-crítica (não quebra negócio se falhar)
 
 ---
 
@@ -320,11 +280,15 @@ PERFORM pg_notify('outbox_events', json_build_object(
 │  │ Módulo Core  │  │ Módulo Item  │ │
 │  │  (Aluguel)   │  │  (Bloqueios) │ │
 │  └──────────────┘  └──────────────┘ │
-│          ↓              ↓            │
+│          ↓              ↑            │
+│    ┌──────────────────────────┐     │
+│    │   Redis (Bull Queues)    │     │
+│    │  - aluguel               │     │
+│    └──────────────────────────┘     │
+│          ↓                           │
 │    ┌──────────────────────────┐     │
 │    │   PostgreSQL (core)      │     │
 │    │  - aluguel               │     │
-│    │  - outbox_events         │     │
 │    │  - item_bloqueios        │     │
 │    └──────────────────────────┘     │
 └─────────────────────────────────────┘
@@ -338,46 +302,62 @@ PERFORM pg_notify('outbox_events', json_build_object(
 │  ┌────────────────┐  │      │  ┌────────────────┐  │
 │  │  API (NestJS)  │  │      │  │  API (NestJS)  │  │
 │  └────────────────┘  │      │  └────────────────┘  │
-│         ↓            │      │         ↓            │
+│         ↓            │      │         ↑            │
 │  ┌────────────────┐  │      │  ┌────────────────┐  │
 │  │  PostgreSQL    │  │      │  │  PostgreSQL    │  │
 │  │  - aluguel     │  │      │  │  - item        │  │
-│  │  - outbox      │  │      │  │  - bloqueios   │  │
-│  └────────────────┘  │      │  └────────────────┘  │
-└──────────────────────┘      └──────────────────────┘
-           ↓                            ↑
-           └─────────→ Kafka ←──────────┘
-                   (Message Broker)
+│  └────────────────┘  │      │  │  - bloqueios   │  │
+└──────────────────────┘      │  └────────────────┘  │
+           ↓                  │                     │
+     ┌─────────────┐          │                     │
+     │   Redis     │          │                     │
+     │ Bull Queues │ ─────────┼──────────────────────┘
+     └─────────────┘          │
+                             │
+    ┌─────────────────────────┼─────────────────┐
+    │      Message Broker     │                 │
+    │    (Redis Streams ou    │                 │
+    │     Kafka/RabbitMQ)     │                 │
+    └─────────────────────────┼─────────────────┘
+                             │
+                    ┌────────▼────────┐
+                    │  Monitoring &   │
+                    │   Observability │
+                    │ (Logs, Metrics, │
+                    │    Tracing)     │
+                    └─────────────────┘
 ```
 
 ### Mudanças Necessárias
 
 **Infraestrutura**:
 
-- ✅ SAGA já implementada (pronta para distribuir)
-- ✅ Outbox Pattern já funcional
-- 🔄 EventBus: NestJS → Kafka/RabbitMQ
+- ✅ Bull Queues já implementadas (prontas para distribuir)
+- ✅ Jobs com retry e compensação já funcionais
+- 🔄 Comunicação entre serviços: HTTP/gRPC para jobs
 - 🔄 Bancos de dados separados
 - 🔄 Deploy independente por serviço
 
 **Código**:
 
-- ✅ Handlers já desacoplados (comunicação via eventos)
-- ✅ Unit of Work abstrai infraestrutura
-- 🔄 Configuração de message broker
-- 🔄 Schema registry para eventos (opcional)
+- ✅ Workers já desacoplados (podem rodar em serviços separados)
+- ✅ Compensação já implementada
+- 🔄 Configuração de roteamento de jobs entre serviços
+- 🔄 Service discovery para comunicação
 
 **Observabilidade**:
 
 - 🔄 Distributed tracing (OpenTelemetry)
 - 🔄 Logs centralizados (ELK/Loki)
 - 🔄 Métricas de latência entre serviços
+- ✅ Bull dashboards para monitoring de filas
 
 ### Custo Estimado (Fase 2)
 
 Quando migrar para microsserviços:
 
-- **Kafka Managed**: ~USD 100-500/mês (dependendo do provedor)
+- **Redis Cluster**: ~USD 200-800/mês (high availability)
+- **Message Broker**: ~USD 100-500/mês (Kafka/RabbitMQ managed)
 - **Infraestrutura adicional**: ~USD 500-1k/mês (mais instâncias)
 - **Complexidade operacional**: Maior (deploy, monitoring, debug)
 
@@ -385,14 +365,39 @@ Quando migrar para microsserviços:
 
 ---
 
-## 📚 Referências Técnicas
+## 📊 Vantagens da Arquitetura Atual
 
-- **Padrão SAGA**: [Microsoft - SAGA Pattern](https://docs.microsoft.com/azure/architecture/patterns/saga)
-- **Outbox Pattern**: [Microservices.io - Transactional Outbox](https://microservices.io/patterns/data/transactional-outbox.html)
-- **PostgreSQL LISTEN/NOTIFY**: [PostgreSQL Docs](https://www.postgresql.org/docs/current/sql-notify.html)
-- **DDD Unit of Work**: [Martin Fowler - UoW](https://martinfowler.com/eaaCatalog/unitOfWork.html)
+| Aspecto             | Benefício                                    |
+| ------------------- | -------------------------------------------- |
+| **Simplicidade**    | ✅ Bull Queues são mais simples que eventos  |
+| **Consistência**    | ✅ Compensação direta no mesmo processo      |
+| **Performance**     | ✅ Sem overhead de outbox/eventos            |
+| **Observabilidade** | ✅ Bull dashboard nativo                     |
+| **Confiabilidade**  | ✅ Retry automático + Dead Letter Queue      |
+| **Desenvolvimento** | ✅ Debug mais fácil (tudo no mesmo processo) |
 
 ---
 
-**Última Atualização**: 09 de Janeiro de 2026  
-**Versão**: 2.0 (Consolidada)
+## ❌ Limitações Conhecidas
+
+| Limitação            | Impacto                         | Solução                    |
+| -------------------- | ------------------------------- | -------------------------- |
+| **Redis dependency** | ⚠️ Requer Redis                 | Usar Redis managed/cluster |
+| **Single process**   | ⚠️ Jobs rodam no mesmo processo | OK para volume atual       |
+| **Memory usage**     | ⚠️ Jobs consomem RAM            | Monitorar uso de memória   |
+| **No event replay**  | ⚠️ Não há histórico de eventos  | Bull jobs têm auditoria    |
+
+---
+
+## 📚 Referências Técnicas
+
+- **Bull Queues**: [Bull Documentation](https://optimalbits.github.io/bull/)
+- **NestJS Bull**: [NestJS Bull Integration](https://docs.nestjs.com/techniques/queues)
+- **Redis**: [Redis Documentation](https://redis.io/documentation)
+- **Padrão SAGA**: [Microsoft - SAGA Pattern](https://docs.microsoft.com/azure/architecture/patterns/saga)
+- **Job Processing Patterns**: [Background Jobs Best Practices](https://blog.heroku.com/background-jobs-queueing)
+
+---
+
+**Última Atualização**: 13 de Janeiro de 2026  
+**Versão**: 3.0 (Bull Queues Simplificada)

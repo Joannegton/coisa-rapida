@@ -1,13 +1,12 @@
 import { Inject, Logger, NotFoundException } from '@nestjs/common';
+import { EventBus } from '@nestjs/cqrs';
 import type { AluguelRepository } from '../../domain/repositories/aluguel.repository';
 import { AluguelRecusadoEvent } from '../../domain/events/aluguel-recusado.event';
-import { OutboxEvent } from '../../domain/outbox-event';
-import type { UnitOfWork } from '../../domain/repositories/unit-of-work';
+import { RecusarAluguelDto } from '../dtos/recusar-aluguel.dto';
+import { AuditoriaFilaService } from 'src/shared/infra/services/auditoria.fila.service';
 import { AuditoriaAcao } from 'src/shared/constants/auditoria-actions';
 import { DataUtils } from 'src/shared/utils';
 import { Request } from 'express';
-import { RecusarAluguelDto } from '../dtos/recusar-aluguel.dto';
-import { AuditoriaFilaService } from 'src/shared/infra/services/auditoria.fila.service';
 
 type RecusarAluguelUseCaseProps = RecusarAluguelDto & {
     aluguelId: string;
@@ -15,22 +14,13 @@ type RecusarAluguelUseCaseProps = RecusarAluguelDto & {
     request: Request;
 };
 
-/**
- * Recusa uma solicitação de aluguel pelo proprietário/anunciante.
- *
- * Regras de negócio:
- * - Só pode ser recusado pelo dono do item (locador)
- * - Status deve ser PENDENTE/SOLICITADO
- * - Motivo é obrigatório
- */
 export class RecusarAluguelUseCase {
     private readonly logger = new Logger(RecusarAluguelUseCase.name);
 
     constructor(
         @Inject('AluguelRepository')
         private readonly aluguelRepository: AluguelRepository,
-        @Inject('UnitOfWork')
-        private readonly unitOfWork: UnitOfWork,
+        private readonly eventBus: EventBus,
         private readonly auditoriaFilaService: AuditoriaFilaService,
     ) {}
 
@@ -43,6 +33,8 @@ export class RecusarAluguelUseCase {
 
         aluguel.recusar(props.motivo, props.usuarioId);
 
+        await this.aluguelRepository.salvar(aluguel);
+
         const evento = new AluguelRecusadoEvent(
             props.aluguelId,
             aluguel.itemId,
@@ -51,27 +43,19 @@ export class RecusarAluguelUseCase {
             props.motivo,
         );
 
-        await this.unitOfWork.executarEmTransacao(async (context) => {
-            await context.salvarAluguel(aluguel);
+        try {
+            await this.eventBus.publish(evento);
+            this.logger.log(
+                `📢 Evento publicado: AluguelRecusadoEvent para aluguel ${props.aluguelId}`,
+            );
+        } catch (eventError: any) {
+            this.logger.warn(
+                `⚠️ Falha ao publicar evento de recusa para aluguel ${props.aluguelId}: ${eventError.message}`,
+            );
+            // Não relança - aluguel já foi recusado com sucesso
+        }
 
-            const outboxEvent = OutboxEvent.criar({
-                tipoEvento: evento.eventType,
-                idAgregado: evento.aggregateId,
-                tipoAgregado: 'Aluguel',
-                payload: {
-                    eventId: evento.eventId,
-                    aluguelId: evento.aluguelId,
-                    itemId: evento.itemId,
-                    dataInicio: evento.dataInicio.toISOString(),
-                    dataFim: evento.dataFim.toISOString(),
-                    motivoRecusa: evento.motivoRecusa,
-                    occurredOn: evento.occurredOn.toISOString(),
-                },
-            });
-
-            await context.salvarEvento(outboxEvent);
-        });
-
+        // Auditoria (não-crítica)
         try {
             await this.auditoriaFilaService.agendarAuditoria({
                 timestamp: DataUtils.agoraDate(),
@@ -79,24 +63,21 @@ export class RecusarAluguelUseCase {
                 acao: AuditoriaAcao.RECUSAR_ALUGUEL,
                 recurso: 'aluguel',
                 recursoId: props.aluguelId,
-                descricao: `Recusa de solicitação de aluguel pelo proprietário - Motivo: ${props.motivo}`,
+                descricao: `Recusa de solicitação de aluguel - Motivo: ${props.motivo}`,
                 nivel: 'medio',
+                modulo: 'core',
                 estadoAntes: {
                     status: aluguel.status,
-                    recusado: false,
                 },
                 estadoDepois: {
-                    status: 'recusado',
-                    recusado: true,
+                    status: 'RECUSADO',
                     motivo: props.motivo,
                 },
             });
-        } catch (error) {
+        } catch (auditError: any) {
             this.logger.warn(
-                `⚠️ Falha ao agendar auditoria para recusa de aluguel ${props.aluguelId} (aluguel já recusado): ${error.message}`,
-                error.stack,
+                `⚠️ Auditoria falhou para recusa de aluguel ${props.aluguelId}: ${auditError.message}`,
             );
-            // Não relança o erro - o aluguel foi recusado com sucesso
         }
     }
 }

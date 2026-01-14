@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 import { CoreController } from './core.controller';
 import { AluguelRepositoryImpl } from './infra/repositories/aluguel.repository';
-import { OutboxRepository } from './infra/repositories/outbox.repository';
 import { TypeOrmUnitOfWork } from './infra/repositories/unit-of-work.impl';
 import { CoreUsuarioServiceImpl } from './infra/services/usuario.service';
 import { UsuarioModule } from '../usuario/usuario.module';
@@ -13,17 +12,15 @@ import { CoreUseCases } from './application/usecases';
 import { CoreMappers } from './infra/mappers';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AluguelModel } from './infra/models/aluguel.model';
-import { OutboxEventModel } from './infra/models/outbox-event.model';
 import { CoreQueries } from './application/queries';
 import { CoreEventHandlers } from './application/event-handlers';
-import { OutboxPublisherListener } from './infra/jobs/outbox-publisher.listener';
 import { AssinaturaServiceImpl } from './infra/services/assinatura.service';
 import { JwtModule, JwtService } from '@nestjs/jwt';
 
 @Module({
     imports: [
         CqrsModule,
-        TypeOrmModule.forFeature([AluguelModel, OutboxEventModel]),
+        TypeOrmModule.forFeature([AluguelModel]),
         JwtModule.register({
             secret: process.env.JWT_CONTRATOS_SECRET,
             signOptions: {
@@ -41,8 +38,6 @@ import { JwtModule, JwtService } from '@nestjs/jwt';
         ...CoreMappers,
         ...CoreQueries,
         ...CoreEventHandlers,
-        OutboxRepository,
-        OutboxPublisherListener,
         {
             provide: 'AluguelRepository',
             useClass: AluguelRepositoryImpl,
