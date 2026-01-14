@@ -3,8 +3,8 @@ import type { Job } from 'bull';
 import type { AluguelService } from 'src/modules/pagamento/domain/services/aluguel.service';
 import { AluguelPagamentoStatusModel } from 'src/modules/core/infra/models/aluguel-pagamento.value-object';
 import { StatusCaucao } from 'src/modules/core/infra/models/caucao.value-object';
-import { AuditoriaService } from '../services/auditoria.service';
-import { DeadLetterQueueService } from '../services/dead-letter-queue.service';
+import { AuditoriaService } from '../../../../shared/infra/services/auditoria.service';
+import { DeadLetterQueueService } from '../../../../shared/infra/services/dead-letter-queue.service';
 import { AuditoriaAcao } from 'src/shared/constants/auditoria-actions';
 import { EventBus } from '@nestjs/cqrs';
 import {

@@ -13,7 +13,7 @@ import { AluguelServiceImpl } from './infra/services/aluguel.service';
 import { CoreModule } from '../core/core.module';
 import { SharedModule } from '../../shared/shared.module';
 import { BullModule } from '@nestjs/bull';
-import { PagamentoProcessor } from '../../shared/infra/jobs/pagamento.processor.worker';
+import { PagamentoProcessor } from './infra/jobs/pagamento.processor.worker';
 
 @Module({
     imports: [
