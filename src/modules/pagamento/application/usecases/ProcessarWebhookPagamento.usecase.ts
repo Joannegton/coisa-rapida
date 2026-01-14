@@ -6,7 +6,6 @@ import {
     UnauthorizedException,
 } from '@nestjs/common';
 import type { PagamentoRepository } from '../../domain/repositories/pagamento.repository';
-import type { PagamentoUnitOfWork } from '../../domain/repositories/pagamento-unit-of-work';
 import * as crypto from 'node:crypto';
 import type { MercadoPagoService } from '../../domain/services/mercado-pago.service';
 import { InvalidPropsException } from 'src/common/exceptions/invalidProps.exception';
@@ -32,8 +31,6 @@ export class ProcessarWebhookPagamentoUsecase {
         private readonly mercadoPagoService: MercadoPagoService,
         @Inject('PagamentoRepository')
         private readonly pagamentoRepository: PagamentoRepository,
-        @Inject('PagamentoUnitOfWork')
-        private readonly unitOfWork: PagamentoUnitOfWork,
         @InjectQueue('pagamento')
         private readonly pagamentoQueue: Queue<PagamentoJobData>,
     ) {}
@@ -70,31 +67,23 @@ export class ProcessarWebhookPagamentoUsecase {
             // ===== ETAPA 1: Persistir pagamento e salvar no Outbox =====
             // Isso garante idempotência: se o job falhar e retry, saberemos que já foi salvo
             if (status === 'approved') {
-                await this.unitOfWork.executarEmTransacao(async (ctx) => {
-                    pagamento.aprovar(paymentResult.id.toString());
-                    await ctx.salvarPagamento(pagamento);
-                    this.logger.log(
-                        `✅ Pagamento ${pagamento.id} aprovado e persistido`,
-                    );
-                });
+                pagamento.aprovar(paymentResult.id.toString());
+                await this.pagamentoRepository.salvar(pagamento);
+                this.logger.log(
+                    `✅ Pagamento ${pagamento.id} aprovado e persistido`,
+                );
             } else if (status === 'rejected') {
-                await this.unitOfWork.executarEmTransacao(async (ctx) => {
-                    pagamento.rejeitar(paymentResult.status_detail);
-                    await ctx.salvarPagamento(pagamento);
-                    this.logger.warn(`❌ Pagamento ${pagamento.id} recusado`);
-                });
+                pagamento.rejeitar(paymentResult.status_detail);
+                await this.pagamentoRepository.salvar(pagamento);
+                this.logger.warn(`❌ Pagamento ${pagamento.id} recusado`);
             } else if (status === 'pending') {
-                await this.unitOfWork.executarEmTransacao(async (ctx) => {
-                    pagamento.processar();
-                    await ctx.salvarPagamento(pagamento);
-                    this.logger.log(`⏳ Pagamento ${pagamento.id} pendente`);
-                });
+                pagamento.processar();
+                await this.pagamentoRepository.salvar(pagamento);
+                this.logger.log(`⏳ Pagamento ${pagamento.id} pendente`);
             } else if (status === 'cancelled') {
-                await this.unitOfWork.executarEmTransacao(async (ctx) => {
-                    pagamento.cancelar();
-                    await ctx.salvarPagamento(pagamento);
-                    this.logger.warn(`🚫 Pagamento ${pagamento.id} cancelado`);
-                });
+                pagamento.cancelar();
+                await this.pagamentoRepository.salvar(pagamento);
+                this.logger.warn(`🚫 Pagamento ${pagamento.id} cancelado`);
             } else {
                 this.logger.warn(
                     `Pagamento ${pagamento.id} com status desconhecido: ${status}`,

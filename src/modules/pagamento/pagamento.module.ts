@@ -11,12 +11,18 @@ import { TransferenciaRepositoryImpl } from './infra/repositories/transferencia.
 import { PagamentoMappers } from './infra/mappers';
 import { AluguelServiceImpl } from './infra/services/aluguel.service';
 import { CoreModule } from '../core/core.module';
-import { PagamentoUnitOfWorkImpl } from './infra/repositories/pagamento-unit-of-work.impl';
+import { SharedModule } from '../../shared/shared.module';
+import { BullModule } from '@nestjs/bull';
+import { PagamentoProcessor } from '../../shared/infra/jobs/pagamento.processor.worker';
 
 @Module({
     imports: [
         TypeOrmModule.forFeature([PagamentoModel, TransferenciaModel]),
+        BullModule.registerQueue({
+            name: 'pagamento',
+        }),
         CoreModule,
+        SharedModule,
     ],
     providers: [
         ...PagamentoUsecases,
@@ -38,10 +44,7 @@ import { PagamentoUnitOfWorkImpl } from './infra/repositories/pagamento-unit-of-
             provide: 'AluguelService',
             useClass: AluguelServiceImpl,
         },
-        {
-            provide: 'PagamentoUnitOfWork',
-            useClass: PagamentoUnitOfWorkImpl,
-        },
+        PagamentoProcessor,
     ],
     controllers: [PagamentoController],
 })

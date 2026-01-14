@@ -15,6 +15,7 @@ import { CoreQueries } from './application/queries';
 import { CoreEventHandlers } from './application/event-handlers';
 import { AssinaturaServiceImpl } from './infra/services/assinatura.service';
 import { JwtModule, JwtService } from '@nestjs/jwt';
+import { BullModule } from '@nestjs/bull';
 
 @Module({
     imports: [
@@ -26,6 +27,9 @@ import { JwtModule, JwtService } from '@nestjs/jwt';
                 issuer: 'coisa-rapida-contratos',
                 algorithm: 'HS256',
             },
+        }),
+        BullModule.registerQueue({
+            name: 'aluguel',
         }),
         UsuarioModule,
         ItemModule,
