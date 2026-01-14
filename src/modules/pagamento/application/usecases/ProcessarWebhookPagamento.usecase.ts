@@ -1,7 +1,10 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { PagamentoRepository } from '../../domain/repositories/pagamento.repository';
 import * as crypto from 'node:crypto';
-import type { MercadoPagoService } from '../../domain/services/mercado-pago.service';
+import type {
+    MercadoPagoService,
+    PagamentoStatusResponse,
+} from '../../domain/services/mercado-pago.service';
 import type { Queue } from 'bull';
 import { InjectQueue } from '@nestjs/bull';
 import { AuditoriaFilaService } from 'src/shared/infra/services/auditoria.fila.service';
@@ -9,6 +12,7 @@ import { PagamentoJobData } from 'src/modules/pagamento/infra/jobs/pagamento.pro
 import { TipoServico } from '../../domain/events/pagamento-aprovado.event';
 import { AuditoriaAcao } from 'src/shared/constants/auditoria-actions';
 import { AuditoriaService } from 'src/shared/infra/services/auditoria.service';
+import { Pagamento } from '../../domain/pagamento';
 
 type ProcessarWebhookProps = {
     signature?: string;
@@ -80,40 +84,16 @@ export class ProcessarWebhookPagamentoUsecase {
 
                 const status = paymentResult.status;
 
-                if (status === 'approved') {
-                    pagamento.aprovar(paymentResult.id.toString());
-                    await this.pagamentoRepository.salvar(pagamento);
-                    this.logger.log(
-                        `✅ Pagamento ${pagamento.id} aprovado e persistido`,
+                try {
+                    await this.processarPagamento(
+                        status,
+                        pagamento,
+                        paymentResult,
                     );
-                } else if (status === 'rejected') {
-                    pagamento.rejeitar(paymentResult.status_detail);
-                    await this.pagamentoRepository.salvar(pagamento);
-                    this.logger.warn(`❌ Pagamento ${pagamento.id} recusado`);
-                } else if (status === 'pending') {
-                    pagamento.processar();
-                    await this.pagamentoRepository.salvar(pagamento);
-                    this.logger.log(`⏳ Pagamento ${pagamento.id} pendente`);
-                } else if (status === 'cancelled') {
-                    pagamento.cancelar();
-                    await this.pagamentoRepository.salvar(pagamento);
-                    this.logger.warn(`🚫 Pagamento ${pagamento.id} cancelado`);
-                } else {
-                    this.logger.warn(
-                        `Pagamento ${pagamento.id} com status desconhecido: ${status}`,
+                } catch (statusError) {
+                    this.logger.error(
+                        `Erro ao processar status: ${statusError.message}`,
                     );
-                    await this.auditoriaService.criar({
-                        timestamp: new Date(),
-                        usuarioId: pagamento.usuarioId,
-                        modulo: 'pagamento',
-                        acao: AuditoriaAcao.PAGAMENTO_PROCESSAMENTO_FALHA,
-                        recurso: 'pagamento',
-                        recursoId: pagamento.id,
-                        descricao: `Status de pagamento desconhecido recebido: ${status}`,
-                        nivel: 'medio',
-                        erro: `Status desconhecido: ${status}`,
-                        estadoAntes: { status: pagamento.status },
-                    });
                     return;
                 }
 
@@ -260,6 +240,54 @@ export class ProcessarWebhookPagamentoUsecase {
                 `Erro ao validar webhook: ${error.message}`,
                 error.stack,
             );
+        }
+    }
+
+    private async processarPagamento(
+        status: string,
+        pagamento: Pagamento,
+        paymentResult: PagamentoStatusResponse,
+    ): Promise<void> {
+        switch (status) {
+            case 'approved':
+                pagamento.aprovar(paymentResult.id.toString());
+                await this.pagamentoRepository.salvar(pagamento);
+                this.logger.log(
+                    `✅ Pagamento ${pagamento.id} aprovado e persistido`,
+                );
+                break;
+            case 'rejected':
+                pagamento.rejeitar(paymentResult.status_detail);
+                await this.pagamentoRepository.salvar(pagamento);
+                this.logger.warn(`❌ Pagamento ${pagamento.id} recusado`);
+                break;
+            case 'pending':
+                pagamento.processar();
+                await this.pagamentoRepository.salvar(pagamento);
+                this.logger.log(`⏳ Pagamento ${pagamento.id} pendente`);
+                break;
+            case 'cancelled':
+                pagamento.cancelar();
+                await this.pagamentoRepository.salvar(pagamento);
+                this.logger.warn(`🚫 Pagamento ${pagamento.id} cancelado`);
+                break;
+            default:
+                this.logger.warn(
+                    `Pagamento ${pagamento.id} com status desconhecido: ${status}`,
+                );
+                await this.auditoriaService.criar({
+                    timestamp: new Date(),
+                    usuarioId: pagamento.usuarioId,
+                    modulo: 'pagamento',
+                    acao: AuditoriaAcao.PAGAMENTO_PROCESSAMENTO_FALHA,
+                    recurso: 'pagamento',
+                    recursoId: pagamento.id,
+                    descricao: `Status de pagamento desconhecido recebido: ${status}`,
+                    nivel: 'medio',
+                    erro: `Status desconhecido: ${status}`,
+                    estadoAntes: { status: pagamento.status },
+                });
+                throw new Error(`Status inválido: ${status}`);
         }
     }
 }
