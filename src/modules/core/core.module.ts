@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { CqrsModule } from '@nestjs/cqrs';
 import { CoreController } from './core.controller';
 import { AluguelRepositoryImpl } from './infra/repositories/aluguel.repository';
-import { TypeOrmUnitOfWork } from './infra/repositories/unit-of-work.impl';
 import { CoreUsuarioServiceImpl } from './infra/services/usuario.service';
 import { UsuarioModule } from '../usuario/usuario.module';
 import { CoreItemServiceImpl } from './infra/services/item.service';
@@ -49,10 +48,6 @@ import { JwtModule, JwtService } from '@nestjs/jwt';
         {
             provide: 'ItemService',
             useClass: CoreItemServiceImpl,
-        },
-        {
-            provide: 'UnitOfWork',
-            useClass: TypeOrmUnitOfWork,
         },
         {
             provide: 'AssinaturaService',
