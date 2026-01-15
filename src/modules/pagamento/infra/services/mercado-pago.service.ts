@@ -49,7 +49,7 @@ export class MercadoPagoServiceImpl implements MercadoPagoService {
                 },
                 auto_return: 'approved',
                 statement_descriptor: 'COISARAPIDA',
-                notification_url: `${process.env.API_URL as string}/pagamento/checkout/webhook`,
+                notification_url: `${process.env.API_URL as string}/pagamento/webhook`,
                 expires: true,
                 expiration_date_from: new Date().toISOString(),
                 expiration_date_to: new Date(

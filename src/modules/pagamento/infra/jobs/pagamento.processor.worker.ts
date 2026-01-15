@@ -14,7 +14,7 @@ import {
 import { PagamentoRecusadoEvent } from 'src/modules/pagamento/domain/events/pagamento-recusado.event';
 import { PagamentoPendingEvent } from 'src/modules/pagamento/domain/events/pagamento-pending.event';
 import { PagamentoCanceladoEvent } from 'src/modules/pagamento/domain/events/pagamento-cancelado.event';
-import { Processor, OnQueueFailed } from '@nestjs/bull';
+import { Processor, OnQueueFailed, Process } from '@nestjs/bull';
 
 export type PagamentoJobData = {
     aluguelId: string;
@@ -44,6 +44,7 @@ export class PagamentoProcessor {
     /**
      * Processa job de pagamento com retry automático
      */
+    @Process()
     async process(job: Job<PagamentoJobData>): Promise<void> {
         const {
             aluguelId,
@@ -59,7 +60,6 @@ export class PagamentoProcessor {
                 `🔄 Processando pagamento ${pagamentoId} [${status}] - Tentativa ${job.attemptsMade + 1}/3`,
             );
 
-            // ===== 1️⃣ CRÍTICO: Atualizar status do aluguel =====
             await this.atualizarStatusAluguel(
                 aluguelId,
                 status,
@@ -67,7 +67,6 @@ export class PagamentoProcessor {
                 aprovadoEm,
             );
 
-            // ===== 2️⃣ Registrar sucesso na auditoria =====
             await this.auditoriaService.criar({
                 timestamp: new Date(),
                 usuarioId: usuarioId,
@@ -84,15 +83,15 @@ export class PagamentoProcessor {
                 },
             });
 
-            // ===== 3️⃣ Publicar evento para handlers secundários =====
+            // evento para handlers secundarios
             // (auditoria adicional, cache, notificações, etc)
+            // pesquisar se é mais interessante fazer as diferentes coisas para cada evento aqui na queue, ou passar como evento mesmo
             await this.publicarEventoSecundario(job.data);
 
             this.logger.log(
                 `✅ Pagamento ${pagamentoId} processado com sucesso`,
             );
         } catch (error: any) {
-            // ❌ Erro: Bull vai fazer retry automaticamente
             this.logger.error(
                 `❌ Erro ao processar pagamento ${pagamentoId} (tentativa ${job.attemptsMade + 1}/3): ${error.message}`,
                 error.stack,

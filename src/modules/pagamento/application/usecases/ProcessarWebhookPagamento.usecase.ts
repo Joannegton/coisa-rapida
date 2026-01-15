@@ -74,8 +74,8 @@ export class ProcessarWebhookPagamentoUsecase {
                         acao: AuditoriaAcao.PAGAMENTO_PROCESSAMENTO_FALHA,
                         recurso: 'webhook_pagamento',
                         recursoId: props.dataId,
-                        descricao: `Pagamento não encontrado para aluguel ${aluguelId}`,
-                        nivel: 'alto',
+                        descricao: `Pagamento não encontrado para aluguel ${aluguelId} que foi pago no Mercado Pago`,
+                        nivel: 'critico',
                         erro: `Pagamento não encontrado para aluguel ${aluguelId}`,
                         estadoAntes: { aluguelId, dataId: props.dataId },
                     });
@@ -181,66 +181,34 @@ export class ProcessarWebhookPagamentoUsecase {
             return;
         }
 
-        try {
-            // Extrai ts e v1 do x-signature
-            const parts = props.signature
-                .split(',')
-                .reduce((acc: Record<string, string>, part: string) => {
-                    const [key, value] = part.split('=');
-                    acc[key.trim()] = value.trim();
-                    return acc;
-                }, {});
+        // Extrai ts e v1 do x-signature
+        const parts = props.signature
+            .split(',')
+            .reduce((acc: Record<string, string>, part: string) => {
+                const [key, value] = part.split('=');
+                acc[key.trim()] = value.trim();
+                return acc;
+            }, {});
 
-            const ts = parts.ts;
-            const receivedHash = parts.v1;
+        const ts = parts.ts;
+        const receivedHash = parts.v1;
 
-            // Monta a string no formato: id:123;request-id:abc;ts:123456;
-            const manifest = `id:${props.dataId};request-id:${props.requestId};ts:${ts};`;
+        // Monta a string no formato: id:123;request-id:abc;ts:123456;
+        const manifest = `id:${props.dataId};request-id:${props.requestId};ts:${ts};`;
 
-            // Gera o HMAC SHA256
-            const SECRET_KEY = process.env.MERCADO_PAGO_WEBHOOK_SECRET || '';
-            const hmac = crypto.createHmac('sha256', SECRET_KEY);
-            hmac.update(manifest);
-            const calculatedHash = hmac.digest('hex');
+        // Gera o HMAC SHA256
+        const SECRET_KEY = process.env.MERCADO_PAGO_WEBHOOK_SECRET || '';
+        const hmac = crypto.createHmac('sha256', SECRET_KEY);
+        hmac.update(manifest);
+        const calculatedHash = hmac.digest('hex');
 
-            // Verifica se é do Mercado Pago
-            if (calculatedHash !== receivedHash) {
-                this.logger.error('Assinatura do webhook inválida');
-                // Auditar tentativa de webhook com assinatura inválida (possível ataque)
-                this.auditoriaFilaService
-                    .agendarAuditoria({
-                        timestamp: new Date(),
-                        usuarioId: 'sistema',
-                        modulo: 'pagamento',
-                        acao: AuditoriaAcao.PAGAMENTO_PROCESSAMENTO_FALHA,
-                        recurso: 'webhook_validacao',
-                        recursoId: props.dataId,
-                        descricao:
-                            'Tentativa de webhook com assinatura inválida',
-                        nivel: 'critico',
-                        erro: 'Assinatura HMAC inválida',
-                        estadoAntes: {
-                            signature: props.signature.substring(0, 20) + '...', // Log parcial por segurança
-                            requestId: props.requestId,
-                            dataId: props.dataId,
-                        },
-                    })
-                    .catch((auditError) => {
-                        this.logger.error(
-                            'Erro ao auditar falha de validação:',
-                            auditError,
-                        );
-                    });
-                return;
-            }
-
-            this.logger.log('Webhook validado com sucesso');
-        } catch (error) {
-            this.logger.error(
-                `Erro ao validar webhook: ${error.message}`,
-                error.stack,
-            );
+        // Verifica se é do Mercado Pago
+        if (calculatedHash !== receivedHash) {
+            this.logger.error('Assinatura do webhook inválida');
+            return;
         }
+
+        this.logger.log('Webhook validado com sucesso');
     }
 
     private async processarPagamento(
@@ -275,18 +243,6 @@ export class ProcessarWebhookPagamentoUsecase {
                 this.logger.warn(
                     `Pagamento ${pagamento.id} com status desconhecido: ${status}`,
                 );
-                await this.auditoriaService.criar({
-                    timestamp: new Date(),
-                    usuarioId: pagamento.usuarioId,
-                    modulo: 'pagamento',
-                    acao: AuditoriaAcao.PAGAMENTO_PROCESSAMENTO_FALHA,
-                    recurso: 'pagamento',
-                    recursoId: pagamento.id,
-                    descricao: `Status de pagamento desconhecido recebido: ${status}`,
-                    nivel: 'medio',
-                    erro: `Status desconhecido: ${status}`,
-                    estadoAntes: { status: pagamento.status },
-                });
                 throw new Error(`Status inválido: ${status}`);
         }
     }
