@@ -128,7 +128,7 @@ export class Aluguel {
 
         domain.setLocador(locador);
         domain.setLocatario(locatario);
-        domain.setStatus(AluguelStatus.SOLICITADO);
+        domain.setStatus(AluguelStatus.PAGAMENTO_PENDENTE);
         domain.setObservacoesLocatario(props.observacoesLocatario);
 
         domain.calcularPrecoTotal();

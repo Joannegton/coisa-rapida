@@ -100,7 +100,7 @@ export class AluguelModel {
         type: 'enum',
         enum: AluguelStatus,
         name: 'status',
-        default: AluguelStatus.SOLICITADO,
+        default: AluguelStatus.PAGAMENTO_PENDENTE,
     })
     status: AluguelStatus;
 

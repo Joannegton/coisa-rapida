@@ -108,7 +108,7 @@ export class CreateAluguelTable1735962000000 implements MigrationInterface {
                 motivo_recusa_locador TEXT,
                 
                 -- Status
-                status core.aluguel_status DEFAULT 'solicitado' NOT NULL,
+                status core.aluguel_status DEFAULT 'pagamento_pendente' NOT NULL,
                 
                 -- Timestamps
                 criado_em TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),

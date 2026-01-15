@@ -2,7 +2,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Aluguel } from '../../domain/aluguel';
 import {
     AluguelRepository,
-    AtualizarPagamento,
+    AtualizarPagamentoProps,
 } from '../../domain/repositories/aluguel.repository';
 import { AluguelModel, AluguelStatus } from '../models/aluguel.model';
 import { Repository } from 'typeorm';
@@ -10,6 +10,7 @@ import { AluguelMapper } from '../mappers/aluguel.mapper';
 import { Logger } from '@nestjs/common';
 import { RepositoryException } from 'src/common/exceptions/repository.exception';
 import { StatusCaucao } from '../models/caucao.value-object';
+import { AluguelPagamentoStatusModel } from '../models/aluguel-pagamento.value-object';
 
 export class AluguelRepositoryImpl implements AluguelRepository {
     private readonly logger: Logger = new Logger(AluguelRepositoryImpl.name);
@@ -65,16 +66,32 @@ export class AluguelRepositoryImpl implements AluguelRepository {
         }
     }
 
-    async atualizarPagamento(props: AtualizarPagamento): Promise<void> {
+    async atualizarPagamento(props: AtualizarPagamentoProps): Promise<void> {
         try {
             const updateData: any = {};
 
             if (props.eCaucao) {
-                updateData.caucaoPagamentoStatus = props.status;
-                updateData.caucaoPagamentoData = props.dataPagamento;
+                updateData.caucao = {
+                    status: props.status,
+                };
+                if (props.dataPagamento) {
+                    updateData['caucao.dataPagamento'] = props.dataPagamento;
+                }
             } else {
-                updateData.aluguelPagamentoStatus = props.status;
-                updateData.aluguelDataPagamento = props.dataPagamento;
+                updateData.aluguelPagamento = {
+                    status: props.status,
+                };
+                if (props.dataPagamento) {
+                    updateData['aluguelPagamento.dataPagamento'] =
+                        props.dataPagamento;
+                }
+            }
+
+            if (
+                props.status === StatusCaucao.PAGA ||
+                props.status === AluguelPagamentoStatusModel.PAGO
+            ) {
+                updateData['status'] = AluguelStatus.SOLICITADO;
             }
 
             await this.repository.update({ id: props.aluguelId }, updateData);
