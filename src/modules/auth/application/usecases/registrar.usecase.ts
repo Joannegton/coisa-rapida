@@ -31,6 +31,7 @@ export class RegistrarUsecase {
     ): Promise<{
         access_token: string;
         refresh_token: string;
+        expiresIn: number;
     }> {
         const inicioExecucao = Date.now();
         try {
@@ -64,11 +65,12 @@ export class RegistrarUsecase {
                     cpf: dto.cpf,
                 });
 
-            const accessToken = await this.jwtService.gerarAccessToken(
-                usuario.id,
-                usuarioAuth.email,
-                usuarioAuth.role,
-            );
+            const { token: accessToken, expiresIn } =
+                await this.jwtService.gerarAccessToken(
+                    usuario.id,
+                    usuarioAuth.email,
+                    usuarioAuth.role,
+                );
 
             const refreshTokenString = await this.jwtService.gerarRefreshToken({
                 sub: usuarioAuth.id,
@@ -117,6 +119,7 @@ export class RegistrarUsecase {
             return {
                 access_token: accessToken,
                 refresh_token: refreshTokenString,
+                expiresIn,
             };
         } catch (error) {
             const duracaoMs = Date.now() - inicioExecucao;

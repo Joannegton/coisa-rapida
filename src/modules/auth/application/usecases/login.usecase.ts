@@ -30,6 +30,7 @@ export class LoginUsecase {
     ): Promise<{
         access_token: string;
         refresh_token: string;
+        expiresIn: number;
     }> {
         const inicioExecucao = Date.now();
         try {
@@ -54,11 +55,12 @@ export class LoginUsecase {
             usuarioAuth.dataUltimoLogin = new Date();
             await this.authRepository.salvar(usuarioAuth);
 
-            const access_token = await this.jwtService.gerarAccessToken(
-                usuario.id,
-                usuarioAuth.email,
-                usuarioAuth.role,
-            );
+            const { token: access_token, expiresIn } =
+                await this.jwtService.gerarAccessToken(
+                    usuario.id,
+                    usuarioAuth.email,
+                    usuarioAuth.role,
+                );
 
             const payload = {
                 sub: usuario.id,
@@ -104,6 +106,7 @@ export class LoginUsecase {
             return {
                 access_token,
                 refresh_token: refreshTokenString,
+                expiresIn,
             };
         } catch (error) {
             const duracaoMs = Date.now() - inicioExecucao;

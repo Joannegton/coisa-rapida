@@ -9,7 +9,10 @@ export class RefreshTokenUsecase {
         private readonly jwtService: JwtService,
     ) {}
 
-    async execute(refreshToken: string): Promise<{ accessToken: string }> {
+    async execute(refreshToken: string): Promise<{
+        accessToken: string;
+        expiresIn: number;
+    }> {
         const tokenRecord =
             await this.refreshTokenRepository.buscarPorToken(refreshToken);
 
@@ -33,12 +36,16 @@ export class RefreshTokenUsecase {
             );
         }
 
-        const accessToken = await this.jwtService.gerarAccessToken(
-            tokenRecord.usuarioAuth.usuario.id,
-            tokenRecord.usuarioAuth.email,
-            tokenRecord.usuarioAuth.role,
-        );
+        const { token: accessToken, expiresIn } =
+            await this.jwtService.gerarAccessToken(
+                tokenRecord.usuarioAuth.usuario.id,
+                tokenRecord.usuarioAuth.email,
+                tokenRecord.usuarioAuth.role,
+            );
 
-        return { accessToken };
+        return {
+            accessToken,
+            expiresIn,
+        };
     }
 }

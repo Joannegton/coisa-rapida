@@ -17,14 +17,19 @@ export class JwtService {
         usuarioId: string,
         email: string,
         role: 'USER' | 'MODERADOR' | 'ADMIN' = 'USER',
-    ): Promise<string> {
+    ): Promise<{ token: string; expiresIn: number }> {
         const payload: UsuarioPayload = {
             sub: usuarioId,
             email,
             role,
         };
 
-        return this.sign(payload, { expiresIn: '15m' });
+        const token = this.sign(payload, {
+            expiresIn: Number(process.env.JWT_SECRET_EXPIRES_IN),
+        });
+        const expiresInSeconds = Number(process.env.JWT_SECRET_EXPIRES_IN);
+
+        return { token, expiresIn: expiresInSeconds };
     }
 
     sign(payload: UsuarioPayload, options?: JwtSignOptions): string {

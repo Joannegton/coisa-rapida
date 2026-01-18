@@ -59,6 +59,7 @@ export class AuthController {
         example: {
             accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
             refreshToken: 'dGhpc0lzQXJlZnJlc2hUb2tlbg==',
+            expiresIn: 900,
         },
     })
     @ApiBody({ type: LoginDto })
@@ -88,6 +89,7 @@ export class AuthController {
         example: {
             accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
             refreshToken: 'dGhpc0lzQXJlZnJlc2hUb2tlbg==',
+            expiresIn: 900,
         },
     })
     @ApiBody({ type: RegistrarDto })
@@ -135,7 +137,10 @@ export class AuthController {
     @ApiResponse({
         status: 200,
         description: 'Novo token gerado.',
-        example: { accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' },
+        example: {
+            accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+            expiresIn: 900,
+        },
     })
     @ApiRefreshToken()
     @Publico() // usado para pular o guard global de auth
