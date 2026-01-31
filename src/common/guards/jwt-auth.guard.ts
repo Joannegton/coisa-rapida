@@ -31,7 +31,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
 
         if (!token) {
             throw new UnauthorizedException(
-                'Token não fornecido. Envie via Authorization: Bearer <token>',
+                'Token não fornecido. Envie via Authorization: Bearer <token> ou cookie',
             );
         }
 
@@ -44,6 +44,11 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
         const authHeader = request.headers.authorization;
         if (authHeader?.startsWith('Bearer ')) {
             return authHeader.substring(7);
+        }
+
+        if (request.cookies?.access_token) {
+            request.headers.authorization = `Bearer ${request.cookies.access_token}`;
+            return request.cookies.access_token;
         }
 
         const queryToken = request.query?.token;

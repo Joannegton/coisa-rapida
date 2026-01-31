@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import * as dotenv from 'dotenv';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 dotenv.config();
@@ -58,9 +59,10 @@ async function bootstrap() {
     const app = await NestFactory.create(AppModule);
 
     app.use(helmet());
+    app.use(cookieParser());
 
     const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || [
-        'http://localhost:3000',
+        'http://localhost:3001',
         'http://localhost:8080',
     ];
 

@@ -7,7 +7,9 @@ import {
     UseGuards,
     HttpCode,
     HttpStatus,
+    Res,
 } from '@nestjs/common';
+import express from 'express';
 import { RegistrarUsecase } from './application/usecases/registrar.usecase';
 import { RegistrarDto } from './application/dtos/registrar.dto';
 import { Publico } from 'src/common/decorators/public.decorator';
@@ -69,14 +71,26 @@ export class AuthController {
     })
     @HttpCode(HttpStatus.OK)
     @Post()
-    async login(@Body() props: LoginDto, @Req() request: Request) {
+    async login(
+        @Body() props: LoginDto,
+        @Req() request: Request,
+        @Res() response: express.Response,
+    ) {
         const requestData = {
             ip: Utils.normalizarIp(Utils.obterIpCliente(request)),
             userAgent: request.headers['user-agent'],
             method: request.method,
             rota: request.route?.path || request.url,
         };
-        return await this.loginUsecase.execute(props, requestData);
+
+        const loginResult = await this.loginUsecase.execute(props, requestData);
+        const authResponse = this.setAuthCookiesERetornaTokens(
+            response,
+            loginResult.access_token,
+            loginResult.refresh_token,
+        );
+
+        response.json(authResponse);
     }
 
     @ApiOperation({
@@ -96,14 +110,29 @@ export class AuthController {
     @Publico()
     @HttpCode(HttpStatus.CREATED)
     @Post('registrar')
-    async registrar(@Body() props: RegistrarDto, @Req() request: Request) {
+    async registrar(
+        @Body() props: RegistrarDto,
+        @Req() request: Request,
+        @Res() response: express.Response,
+    ) {
         const requestData = {
             ip: Utils.normalizarIp(Utils.obterIpCliente(request)),
             userAgent: request.headers['user-agent'],
             method: request.method,
             rota: request.route?.path || request.url,
         };
-        return await this.registrarUsecase.execute(props, requestData);
+
+        const registrarResult = await this.registrarUsecase.execute(
+            props,
+            requestData,
+        );
+        const authResponse = this.setAuthCookiesERetornaTokens(
+            response,
+            registrarResult.access_token,
+            registrarResult.refresh_token,
+        );
+
+        response.json(authResponse);
     }
 
     @ApiOperation({
@@ -147,11 +176,28 @@ export class AuthController {
     @UseGuards(RefreshTokenGuard)
     @HttpCode(HttpStatus.OK)
     @Post('atualizar-token')
-    async atualizarToken(@Req() request: Request) {
-        const authHeader = request.headers.authorization;
-        const refreshToken = authHeader!.split(' ')[1];
+    async atualizarToken(
+        @Req() request: Request,
+        @Res() response: express.Response,
+    ) {
+        const refreshToken = (request as any).refreshToken;
 
-        return await this.refreshTokenUsecase.execute(refreshToken);
+        const tokenResult =
+            await this.refreshTokenUsecase.execute(refreshToken);
+
+        const cookieOptions = {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict' as const,
+            maxAge: 15 * 60 * 1000, // 15 minutos
+            path: '/',
+        };
+        response.cookie('access_token', tokenResult.accessToken, cookieOptions);
+
+        response.json({
+            access_token: tokenResult.accessToken,
+            expiresIn: tokenResult.expiresIn,
+        });
     }
 
     @ApiOperation({
@@ -164,12 +210,17 @@ export class AuthController {
     @UseGuards(RefreshTokenGuard)
     @HttpCode(HttpStatus.OK)
     @Post('logout')
-    async logout(@Req() request: Request) {
-        const authHeader = request.headers.authorization;
-        const token = authHeader!.split(' ')[1];
+    async logout(@Req() request: Request, @Res() response: express.Response) {
+        const token = (request as any).refreshToken;
 
-        await this.revogarTokenUsecase.execute(token);
-        return { message: 'Logout realizado com sucesso' };
+        if (token) {
+            await this.revogarTokenUsecase.execute(token);
+        }
+
+        response.clearCookie('access_token', { path: '/' });
+        response.clearCookie('refresh_token', { path: '/' });
+
+        response.json({ message: 'Logout realizado com sucesso' });
     }
 
     @ApiOperation({
@@ -233,5 +284,31 @@ export class AuthController {
             props.tokenTemporario,
             props.novaSenha,
         );
+    }
+
+    private setAuthCookiesERetornaTokens(
+        response: express.Response,
+        accessToken: string,
+        refreshToken: string,
+    ) {
+        const cookieOptions = {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict' as const,
+            maxAge: 15 * 60 * 1000, // 15 minutos
+            path: '/',
+        };
+
+        response.cookie('access_token', accessToken, cookieOptions);
+        response.cookie('refresh_token', refreshToken, {
+            ...cookieOptions,
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dias
+        });
+
+        return {
+            access_token: accessToken,
+            refresh_token: refreshToken,
+            expiresIn: 900,
+        };
     }
 }
