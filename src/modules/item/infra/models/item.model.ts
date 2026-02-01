@@ -32,9 +32,8 @@ export enum CategoriaItem {
 
 export enum EstadoItem {
     NOVO = 'NOVO',
-    COMO_NOVO = 'COMO_NOVO',
-    BOM = 'BOM',
-    REGULAR = 'REGULAR',
+    SEMINOVO = 'SEMINOVO',
+    USADO = 'USADO',
     PARA_CONSERTAR = 'PARA_CONSERTAR',
 }
 
@@ -85,7 +84,7 @@ export class ItemModel {
     @Column({
         type: 'enum',
         enum: EstadoItem,
-        default: EstadoItem.BOM,
+        default: EstadoItem.USADO,
     })
     estado: EstadoItem;
 

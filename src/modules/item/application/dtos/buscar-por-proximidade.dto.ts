@@ -10,7 +10,11 @@ import {
     MinLength,
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
-import { CategoriaItem, EstadoItem } from '../../infra/models/item.model';
+import {
+    CategoriaItem,
+    EstadoItem,
+    TipoAnuncio,
+} from '../../infra/models/item.model';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class BuscarPorProximidadeDto {
@@ -34,7 +38,17 @@ export class BuscarPorProximidadeDto {
     @Min(100)
     @Max(80000)
     @Type(() => Number)
-    raioMetros?: number = 5000;
+    raioMetros?: number = 50000;
+
+    @ApiProperty({
+        description: 'Tipo de anúncio para filtrar',
+        example: 'aluguel',
+        enum: Object.values(TipoAnuncio),
+        required: false,
+    })
+    @IsIn(Object.values(TipoAnuncio))
+    @IsOptional()
+    tipoAnuncio?: TipoAnuncio = TipoAnuncio.AMBOS;
 
     @ApiProperty({
         description: 'Categorias para filtrar',

@@ -55,14 +55,14 @@ export class CriarItemDto {
 
     @ApiProperty({
         description: 'Estado de conservação do item',
-        example: EstadoItem.BOM,
+        example: EstadoItem.USADO,
         enum: EstadoItem,
         required: false,
-        default: EstadoItem.BOM,
+        default: EstadoItem.USADO,
     })
     @IsEnum(EstadoItem, { message: 'Estado deve ser um valor válido' })
     @IsOptional()
-    estado: EstadoItem = EstadoItem.BOM;
+    estado: EstadoItem = EstadoItem.USADO;
 
     @ApiProperty({
         description: 'Tipo de anúncio',

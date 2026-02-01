@@ -51,9 +51,8 @@ export class CreateItemTableSchema1734393600000 implements MigrationInterface {
                 IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'estado_item' AND typnamespace = 'item'::regnamespace) THEN
                     CREATE TYPE item.estado_item AS ENUM (
                         'NOVO',
-                        'COMO_NOVO',
-                        'BOM',
-                        'REGULAR',
+                        'SEMINOVO',
+                        'USADO',
                         'PARA_CONSERTAR'
                     );
                 END IF;
@@ -88,7 +87,7 @@ export class CreateItemTableSchema1734393600000 implements MigrationInterface {
                 nome VARCHAR(255) NOT NULL,
                 descricao TEXT NOT NULL,
                 categoria item.categoria_item DEFAULT 'OUTROS' NOT NULL,
-                estado item.estado_item DEFAULT 'BOM' NOT NULL,
+                estado item.estado_item DEFAULT 'USADO' NOT NULL,
                 tipo_anuncio item.tipo_anuncio DEFAULT 'ALUGUEL' NOT NULL,
                 status item.status_item DEFAULT 'RASCUNHO' NOT NULL,
                 
@@ -105,6 +104,7 @@ export class CreateItemTableSchema1734393600000 implements MigrationInterface {
                 localizacao_cidade VARCHAR(100) NOT NULL,
                 localizacao_estado VARCHAR(2) NOT NULL,
                 localizacao_cep VARCHAR(10) NOT NULL,
+                localizacao_bairro VARCHAR(100) NOT NULL,
                 ponto geography(Point, 4326) GENERATED ALWAYS AS (
                     ST_SetSRID(ST_MakePoint(localizacao_lng, localizacao_lat), 4326)::geography
                 ) STORED,

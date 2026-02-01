@@ -1,7 +1,9 @@
+import { TipoAnuncio } from '../../infra/models/item.model';
 import { Item } from '../item';
 
 export type FiltrosGeograficos = {
     termo?: string;
+    tipoAnuncio?: TipoAnuncio;
     latitude: number;
     longitude: number;
     raioMetros: number;
@@ -16,6 +18,7 @@ export type FiltrosGeograficos = {
 
 export type BuscarItensPopularesSemLocalizacaoProps = {
     termo?: string;
+    tipoAnuncio?: TipoAnuncio;
     categorias?: string[];
     estados?: string[];
     precoMinimoPorDia?: number;
@@ -51,9 +54,7 @@ export interface ItemRepository {
      * Busca itens dentro de um raio específico (em metros) a partir de um ponto geográfico.
      * Utiliza PostGIS ST_DWithin para consulta otimizada com índice GiST.
      */
-    buscarPorProximidade(
-        filtros: FiltrosGeograficos,
-    ): Promise<ResultadoBuscaGeografica[]>;
+    buscarPorProximidade(filtros: FiltrosGeograficos): Promise<Item[]>;
 
     buscarItensPopularesSemLocalizacao(
         props: BuscarItensPopularesSemLocalizacaoProps,

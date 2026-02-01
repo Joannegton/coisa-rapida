@@ -36,6 +36,7 @@ import { ItemComDistanciaDto } from './application/dtos/responses/item-distancia
 import { BuscarItemQuery } from './application/queries/buscar-item.query';
 import { BuscarItemDto } from './application/dtos/buscar-item.dto';
 import { ItemFotoDto } from './application/dtos/responses/item-foto.dto';
+import { ItemDto } from './application/dtos/responses/item.dto';
 
 @ApiTags('item')
 @Controller('item')
@@ -217,7 +218,7 @@ export class ItemController {
     @ApiResponse({
         status: 200,
         description: 'Lista de itens encontrados com distância calculada',
-        type: ItemComDistanciaDto,
+        type: ItemDto,
         isArray: true,
     })
     @ApiAccessToken()
@@ -226,7 +227,7 @@ export class ItemController {
     async buscarPorProximidade(
         @usuarioAtual() usuario: UsuarioPayload,
         @Query() dto: BuscarPorProximidadeDto,
-    ): Promise<ItemComDistanciaDto[]> {
+    ): Promise<ItemDto[]> {
         return this.buscarItensProximidadeQuery.execute({
             ...dto,
             usuarioId: usuario.sub,

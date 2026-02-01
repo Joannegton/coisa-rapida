@@ -51,6 +51,7 @@ export class CriarItemUseCase {
 
         const localizacao = LocalizacaoItem.criar({
             cep: usuario.endereco.cep,
+            bairro: usuario.endereco.bairro,
             cidade: usuario.endereco.cidade,
             estado: usuario.endereco.estado,
             latitude: usuario.endereco.latitude!,

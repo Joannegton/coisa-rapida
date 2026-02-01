@@ -17,7 +17,7 @@ export class ItemMapper {
         private readonly localizacaoMapper: LocalizacaoMapper,
     ) {}
 
-    toDomain(model: ItemModel): Item {
+    toDomain(model: ItemModel, options?: { distanciaMetros?: number }): Item {
         const preco = this.precoMapper.toDomain(model.precos);
         const fotos = model.fotos
             ? this.fotoMapper.toDomainList(model.fotos)
@@ -50,6 +50,7 @@ export class ItemMapper {
                 disponibilidade: disponibilidade,
                 moderacao: moderacao,
                 fotos: fotos,
+                distanciaMetros: options?.distanciaMetros,
             },
             model.id,
         );

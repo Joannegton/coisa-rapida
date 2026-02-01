@@ -19,6 +19,9 @@ export class LocalizacaoItemModel {
     @Column({ name: 'localizacao_cep', length: 10 })
     cep: string;
 
+    @Column({ name: 'localizacao_bairro', length: 100 })
+    bairro: string;
+
     /**
      * Campo geography(Point, 4326) gerado automaticamente pelo PostgreSQL/PostGIS.
      * Calculado a partir de localizacao_lng e localizacao_lat via GENERATED ALWAYS AS.

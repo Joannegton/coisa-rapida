@@ -16,6 +16,7 @@ import {
 } from './disponibilidade';
 import { ItemDto } from '../application/dtos/responses/item.dto';
 import { ItemCardDto } from '../application/dtos/responses/item-cards.dto';
+import { Utils } from 'src/shared/utils';
 
 export type ItemProps = {
     usuarioId: string;
@@ -36,6 +37,9 @@ export type ItemProps = {
     atualizadoEm: Date;
     dataArquivamento?: Date;
     dataExclusao?: Date;
+
+    distanciaMetros?: number;
+    proprietario?: boolean;
 };
 
 export type CriarItemProps = {
@@ -109,6 +113,7 @@ export class Item {
         item.props.versao = props.versao;
         item.props.criadoEm = props.criadoEm;
         item.props.atualizadoEm = props.atualizadoEm;
+        item.props.distanciaMetros = props.distanciaMetros;
 
         return item;
     }
@@ -230,6 +235,21 @@ export class Item {
         this.props.disponibilidade.removerDataBloqueio(bloqueio);
     }
 
+    adicionarProprietario(usuarioId: string) {
+        if (this.props.usuarioId === usuarioId) {
+            this.setProprietario(true);
+        } else {
+            this.setProprietario(false);
+        }
+    }
+
+    getDistanciaFormatada(): string | undefined {
+        if (this.props.distanciaMetros === undefined) {
+            return undefined;
+        }
+        return Utils.formatarDistancia(this.props.distanciaMetros);
+    }
+
     private setUsuarioId(usuarioId: string) {
         if (!usuarioId || usuarioId.trim().length === 0) {
             throw new InvalidPropsException('ID do usuário é obrigatório');
@@ -312,6 +332,10 @@ export class Item {
 
     private setDisponibilidade(disponibilidade: Disponibilidade) {
         this.props.disponibilidade = disponibilidade;
+    }
+
+    private setProprietario(proprietario?: boolean) {
+        this.props.proprietario = proprietario;
     }
 
     private setAluguelsTotais(aluguelsTotais: number) {
@@ -414,8 +438,8 @@ export class Item {
             nome: this.nome,
             descricao: this.descricao,
             categoria: this.categoria,
-            estado: this.estado,
-            tipoAnuncio: this.tipoAnuncio,
+            estado: this.estado.toLowerCase(),
+            tipoAnuncio: this.tipoAnuncio.toLowerCase(),
             status: this.status,
             precoPorDia: this.precos.precoPorDia,
             precoPorHora: this.precos.precoPorHora,
@@ -429,6 +453,9 @@ export class Item {
             aluguelsTotais: this.aluguelsTotais,
             diasMinimosAluguel: this.disponibilidade?.diasMinimosAluguel ?? 1,
             diasMaximosAluguel: this.disponibilidade?.diasMaximosAluguel ?? 30,
+            distanciaFormatada: this.getDistanciaFormatada(),
+            bairro: this.localizacao.bairro,
+            proprietario: this.props.proprietario,
             criadoEm: this.criadoEm,
             atualizadoEm: this.atualizadoEm,
         };

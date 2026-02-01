@@ -19,11 +19,11 @@ export class ItemCardDto {
     @ApiProperty({ enum: CategoriaItem, example: CategoriaItem.FERRAMENTAS })
     categoria: CategoriaItem;
 
-    @ApiProperty({ enum: EstadoItem, example: EstadoItem.BOM })
-    estado: EstadoItem;
+    @ApiProperty({ enum: EstadoItem, example: 'usado' })
+    estado: string;
 
-    @ApiProperty({ enum: TipoAnuncio, example: TipoAnuncio.ALUGUEL })
-    tipoAnuncio: TipoAnuncio;
+    @ApiProperty({ enum: TipoAnuncio, example: 'aluguel' })
+    tipoAnuncio: string;
 
     @ApiProperty({ example: 50, required: false })
     precoPorDia?: number;

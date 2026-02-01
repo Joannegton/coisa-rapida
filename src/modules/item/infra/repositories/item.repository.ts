@@ -1,6 +1,6 @@
 import { Repository, DataSource } from 'typeorm';
 import { Injectable, Logger } from '@nestjs/common';
-import { ItemModel, StatusItem } from '../models/item.model';
+import { ItemModel, StatusItem, TipoAnuncio } from '../models/item.model';
 import { ItemMapper } from '../mappers/item.mapper';
 import { Item } from '../../domain/item';
 import {
@@ -120,9 +120,7 @@ export class ItemRepositoryImpl implements ItemRepository {
      * Busca itens dentro de um raio específico (em metros) a partir de um ponto geográfico.
      * Utiliza PostGIS ST_DWithin para consulta otimizada com índice GiST.
      */
-    async buscarPorProximidade(
-        filtros: FiltrosGeograficos,
-    ): Promise<ResultadoBuscaGeografica[]> {
+    async buscarPorProximidade(filtros: FiltrosGeograficos): Promise<Item[]> {
         const {
             latitude,
             longitude,
@@ -130,6 +128,7 @@ export class ItemRepositoryImpl implements ItemRepository {
             termo,
             categorias,
             estados,
+            tipoAnuncio,
             precoMinimoPorDia,
             precoMaximoPorDia,
             ordenarPor = 'distancia',
@@ -162,6 +161,12 @@ export class ItemRepositoryImpl implements ItemRepository {
                     longitude,
                     raioMetros,
                 });
+
+            if (tipoAnuncio && tipoAnuncio !== TipoAnuncio.AMBOS) {
+                query = query.andWhere('item.tipoAnuncio = :tipoAnuncio', {
+                    tipoAnuncio,
+                });
+            }
 
             if (termo) {
                 // Full-Text Search com PostgreSQL tsvector (50-100x mais rápido que LIKE)
@@ -240,13 +245,17 @@ export class ItemRepositoryImpl implements ItemRepository {
 
             const rawAndEntities = await query.getRawAndEntities();
 
-            const resultados: ResultadoBuscaGeografica[] =
-                rawAndEntities.entities.map((model, index) => ({
-                    item: this.itemMapper.toDomain(model),
-                    distanciaMetros: Number.parseFloat(
+            const resultados: Item[] = rawAndEntities.entities.map(
+                (model, index) => {
+                    const distancia = Number.parseFloat(
                         rawAndEntities.raw[index].distancia_metros,
-                    ),
-                }));
+                    );
+
+                    return this.itemMapper.toDomain(model, {
+                        distanciaMetros: distancia,
+                    });
+                },
+            );
 
             return resultados;
         } catch (error) {
@@ -271,6 +280,12 @@ export class ItemRepositoryImpl implements ItemRepository {
                 .where('item.status = :status', { status: StatusItem.ATIVO })
                 .orderBy('item.aluguelsTotais', 'DESC')
                 .addOrderBy('item.criadoEm', 'DESC');
+
+            if (props.tipoAnuncio && props.tipoAnuncio !== TipoAnuncio.AMBOS) {
+                queryBuilder.andWhere('item.tipoAnuncio = :tipoAnuncio', {
+                    tipoAnuncio: props.tipoAnuncio,
+                });
+            }
 
             if (props.termo) {
                 queryBuilder.andWhere(

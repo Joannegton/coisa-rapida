@@ -7,6 +7,7 @@ export class LocalizacaoMapper {
     toDomain(model: LocalizacaoItemModel) {
         const domain = LocalizacaoItem.criar({
             cep: model.cep,
+            bairro: model.bairro,
             cidade: model.cidade,
             estado: model.estado,
             endereco: model.endereco,
@@ -19,6 +20,7 @@ export class LocalizacaoMapper {
 
     toModel(domain: LocalizacaoItem) {
         const model = LocalizacaoItemModel.criar({
+            bairro: domain.bairro,
             cep: domain.cep,
             cidade: domain.cidade,
             estado: domain.estado,

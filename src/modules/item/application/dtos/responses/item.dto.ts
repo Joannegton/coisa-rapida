@@ -1,9 +1,4 @@
-import {
-    CategoriaItem,
-    EstadoItem,
-    StatusItem,
-    TipoAnuncio,
-} from '../../../infra/models/item.model';
+import { CategoriaItem, StatusItem } from '../../../infra/models/item.model';
 
 export class ItemDto {
     id: string;
@@ -11,8 +6,8 @@ export class ItemDto {
     nome: string;
     descricao: string;
     categoria: CategoriaItem;
-    estado: EstadoItem;
-    tipoAnuncio: TipoAnuncio;
+    estado: string;
+    tipoAnuncio: string;
     precoPorDia: number;
     precoPorHora?: number;
     valorCaucao?: number;
@@ -26,6 +21,9 @@ export class ItemDto {
     aluguelsTotais: number;
     diasMinimosAluguel: number;
     diasMaximosAluguel: number;
+    bairro?: string;
+    distanciaFormatada?: string;
+    proprietario?: boolean;
     criadoEm: Date;
     atualizadoEm: Date;
 }

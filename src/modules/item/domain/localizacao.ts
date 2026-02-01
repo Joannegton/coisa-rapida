@@ -4,6 +4,7 @@ export interface LocalizacaoProps {
     latitude: number;
     longitude: number;
     endereco: string;
+    bairro: string;
     cidade: string;
     estado: string;
     cep: string;
@@ -21,6 +22,7 @@ export class LocalizacaoItem {
         domain.setLatitude(props.latitude);
         domain.setLongitude(props.longitude);
         domain.setEndereco(props.endereco);
+        domain.setBairro(props.bairro);
         domain.setCidade(props.cidade);
         domain.setEstado(props.estado);
         domain.setCep(props.cep);
@@ -56,6 +58,10 @@ export class LocalizacaoItem {
 
     get endereco(): string {
         return this.props.endereco;
+    }
+
+    get bairro(): string {
+        return this.props.bairro;
     }
 
     get cidade(): string {
@@ -122,5 +128,12 @@ export class LocalizacaoItem {
             throw new InvalidPropsException('cep é obrigatório');
         }
         this.props.cep = value;
+    }
+
+    private setBairro(value: string) {
+        if (!value || value.trim() === '') {
+            throw new InvalidPropsException('bairro é obrigatório');
+        }
+        this.props.bairro = value;
     }
 }
