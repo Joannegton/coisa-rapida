@@ -19,6 +19,7 @@ import {
     AuditarCriacaoItem,
     usuarioAtual,
 } from 'src/common/decorators';
+import { TransformarListaQueryParams } from 'src/common/decorators/transformar-lista-query-params.decorator';
 import { CriarItemUseCase } from './application/usecases/criar-item.usecase';
 import { AtualizarItemUseCase } from './application/usecases/atualizar-item.usecase';
 import { AdicionarFotosItemUseCase } from './application/usecases/adicionar-fotos-item.usecase';
@@ -226,10 +227,12 @@ export class ItemController {
     @Get('proximidade')
     async buscarPorProximidade(
         @usuarioAtual() usuario: UsuarioPayload,
+        @TransformarListaQueryParams() rawQuery: any,
         @Query() dto: BuscarPorProximidadeDto,
     ): Promise<ItemDto[]> {
         return this.buscarItensProximidadeQuery.execute({
             ...dto,
+            ...rawQuery,
             usuarioId: usuario.sub,
         });
     }

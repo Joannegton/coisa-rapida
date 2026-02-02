@@ -9,8 +9,9 @@ export type FiltrosGeograficos = {
     raioMetros: number;
     categorias?: string[];
     estados?: string[];
-    precoMinimoPorDia?: number;
-    precoMaximoPorDia?: number;
+    precoMinimo?: number;
+    precoMaximo?: number;
+    exigeCaucao?: boolean;
     ordenarPor?: 'distancia' | 'preco' | 'popularidade' | 'relevancia';
     limite?: number;
     offset?: number;
@@ -23,6 +24,7 @@ export type BuscarItensPopularesSemLocalizacaoProps = {
     estados?: string[];
     precoMinimoPorDia?: number;
     precoMaximoPorDia?: number;
+    exigeCaucao?: boolean;
     limite: number;
     offset: number;
 };

@@ -11,14 +11,9 @@ export type BuscarItensProximidadeQueryProps = BuscarPorProximidadeDto & {
 /**
  * Busca itens por proximidade geográfica OU itens populares.
  *
- * Estratégia inteligente:
- * - Se latitude/longitude fornecidos NO REQUEST (via Flutter): busca por proximidade (PostGIS)
- * - Se NÃO fornecidos: retorna itens populares (ordenado por aluguelsTotais)
- *
  * Regra de negócio:
  * - Apenas itens com status ATIVO são retornados
  * - Distância calculada em linha reta quando aplicável
- * - Resultados podem ser filtrados por categoria, preço e estado
  * - Degradação elegante: sem localização = popularidade
  */
 export class BuscarItensProximidadeQuery {
@@ -51,8 +46,9 @@ export class BuscarItensProximidadeQuery {
             tipoAnuncio: props.tipoAnuncio,
             categorias: props.categorias,
             estados: props.estados,
-            precoMinimoPorDia: props.precoMinimoPorDia,
-            precoMaximoPorDia: props.precoMaximoPorDia,
+            precoMinimo: props.precoMinimo,
+            precoMaximo: props.precoMaximo,
+            exigeCaucao: props.exigeCaucao,
             ordenarPor: props.ordenarPor ?? 'distancia',
             limite: props.limite ?? 20,
             offset: props.offset ?? 0,
@@ -73,8 +69,9 @@ export class BuscarItensProximidadeQuery {
                 tipoAnuncio: props.tipoAnuncio,
                 categorias: props.categorias,
                 estados: props.estados,
-                precoMinimoPorDia: props.precoMinimoPorDia,
-                precoMaximoPorDia: props.precoMaximoPorDia,
+                exigeCaucao: props.exigeCaucao,
+                precoMinimoPorDia: props.precoMinimo,
+                precoMaximoPorDia: props.precoMaximo,
                 limite: props.limite ?? 20,
                 offset: props.offset ?? 0,
             });

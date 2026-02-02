@@ -8,8 +8,9 @@ import {
     IsIn,
     IsString,
     MinLength,
+    IsBoolean,
 } from 'class-validator';
-import { Transform, Type } from 'class-transformer';
+import { Type } from 'class-transformer';
 import {
     CategoriaItem,
     EstadoItem,
@@ -59,23 +60,17 @@ export class BuscarPorProximidadeDto {
     @IsArray()
     @IsOptional()
     @IsEnum(CategoriaItem, { each: true })
-    @Transform(({ value }) =>
-        typeof value === 'string' ? value.split(',') : value,
-    )
     categorias?: CategoriaItem[];
 
     @ApiProperty({
         description: 'Estados específicos do item para filtrar',
-        example: ['NOVO', 'COMO_NOVO', 'BOM'],
+        example: ['NOVO', 'SEMINOVO', 'USADO'],
         isArray: true,
         required: false,
     })
     @IsArray()
     @IsOptional()
     @IsEnum(EstadoItem, { each: true })
-    @Transform(({ value }) =>
-        typeof value === 'string' ? value.split(',') : value,
-    )
     estados?: EstadoItem[];
 
     @ApiProperty({
@@ -87,7 +82,7 @@ export class BuscarPorProximidadeDto {
     @IsOptional()
     @Min(0)
     @Type(() => Number)
-    precoMaximoPorDia?: number;
+    precoMaximo?: number;
 
     @ApiProperty({
         description: 'Preço mínimo por dia para filtrar',
@@ -98,7 +93,17 @@ export class BuscarPorProximidadeDto {
     @IsOptional()
     @Min(0)
     @Type(() => Number)
-    precoMinimoPorDia?: number;
+    precoMinimo?: number;
+
+    @ApiProperty({
+        description: 'Filtrar apenas itens que exigem caução obrigatória',
+        example: true,
+        required: false,
+    })
+    @IsBoolean()
+    @IsOptional()
+    @Type(() => Boolean)
+    exigeCaucao?: boolean;
 
     @ApiProperty({
         description: 'Ordenação dos resultados',

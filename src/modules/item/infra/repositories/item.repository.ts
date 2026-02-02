@@ -129,8 +129,8 @@ export class ItemRepositoryImpl implements ItemRepository {
             categorias,
             estados,
             tipoAnuncio,
-            precoMinimoPorDia,
-            precoMaximoPorDia,
+            precoMinimo,
+            precoMaximo,
             ordenarPor = 'distancia',
             limite = 50,
             offset = 0,
@@ -177,6 +177,7 @@ export class ItemRepositoryImpl implements ItemRepository {
             }
 
             if (categorias && categorias.length > 0) {
+                console.log('categorias no repo', categorias);
                 query = query.andWhere('item.categoria IN (:...categorias)', {
                     categorias,
                 });
@@ -188,20 +189,27 @@ export class ItemRepositoryImpl implements ItemRepository {
                 });
             }
 
-            if (precoMinimoPorDia) {
+            // Filtro de preço: verifica se precoPorDia OU precoPorHora (se existirem) está no intervalo
+            // Ambos os campos podem ser null, então verifica se não é null antes de comparar
+            if (precoMinimo) {
                 query = query.andWhere(
-                    'item.precoPorDia >= :precoMinimoPorDia',
-                    {
-                        precoMinimoPorDia,
-                    },
+                    '(item.precos.precoPorDia IS NOT NULL AND item.precos.precoPorDia >= :precoMinimo) OR (item.precos.precoPorHora IS NOT NULL AND item.precos.precoPorHora >= :precoMinimo)',
+                    { precoMinimo },
                 );
             }
 
-            if (precoMaximoPorDia) {
+            if (precoMaximo) {
                 query = query.andWhere(
-                    'item.precoPorDia <= :precoMaximoPorDia',
+                    '(item.precos.precoPorDia IS NOT NULL AND item.precos.precoPorDia <= :precoMaximo) OR (item.precos.precoPorHora IS NOT NULL AND item.precos.precoPorHora <= :precoMaximo)',
+                    { precoMaximo },
+                );
+            }
+
+            if (filtros.exigeCaucao !== undefined) {
+                query = query.andWhere(
+                    'item.precos.caucaoObrigatoria = :exigeCaucao',
                     {
-                        precoMaximoPorDia,
+                        exigeCaucao: filtros.exigeCaucao,
                     },
                 );
             }
@@ -307,20 +315,27 @@ export class ItemRepositoryImpl implements ItemRepository {
                 });
             }
 
+            // Filtro de preço: verifica se precoPorDia OU precoPorHora (se existirem) está no intervalo
+            // Ambos os campos podem ser null, então verifica se não é null antes de comparar
             if (props.precoMinimoPorDia) {
                 queryBuilder.andWhere(
-                    'item.precoPorDia >= :precoMinimoPorDia',
-                    {
-                        precoMinimoPorDia: props.precoMinimoPorDia,
-                    },
+                    '(item.precos.precoPorDia IS NOT NULL AND item.precos.precoPorDia >= :precoMinimoPorDia) OR (item.precos.precoPorHora IS NOT NULL AND item.precos.precoPorHora >= :precoMinimoPorDia)',
+                    { precoMinimoPorDia: props.precoMinimoPorDia },
                 );
             }
 
             if (props.precoMaximoPorDia) {
                 queryBuilder.andWhere(
-                    'item.precoPorDia <= :precoMaximoPorDia',
+                    '(item.precos.precoPorDia IS NOT NULL AND item.precos.precoPorDia <= :precoMaximoPorDia) OR (item.precos.precoPorHora IS NOT NULL AND item.precos.precoPorHora <= :precoMaximoPorDia)',
+                    { precoMaximoPorDia: props.precoMaximoPorDia },
+                );
+            }
+
+            if (props.exigeCaucao !== undefined) {
+                queryBuilder.andWhere(
+                    'item.precos.caucaoObrigatoria = :exigeCaucao',
                     {
-                        precoMaximoPorDia: props.precoMaximoPorDia,
+                        exigeCaucao: props.exigeCaucao,
                     },
                 );
             }
