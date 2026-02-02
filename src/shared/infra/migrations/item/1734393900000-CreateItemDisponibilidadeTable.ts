@@ -15,7 +15,6 @@ export class CreateItemDisponibilidadeTable1734393900000
                 dias_minimos_aluguel INTEGER DEFAULT 1 NOT NULL CHECK (dias_minimos_aluguel > 0),
                 dias_maximos_aluguel INTEGER DEFAULT 365 NOT NULL CHECK (dias_maximos_aluguel > 0),
                 permite_alugueis_consecutivos BOOLEAN DEFAULT TRUE NOT NULL,
-                aprovacao_automatica BOOLEAN DEFAULT FALSE NOT NULL,
                 
                 -- Bloqueios de datas (JSON array de intervalos com dataInicio, dataFim, motivo)
                 -- Formato: [{"dataInicio": "2024-01-01T00:00:00Z", "dataFim": "2024-01-05T23:59:59Z", "motivo": "Manutenção"}]

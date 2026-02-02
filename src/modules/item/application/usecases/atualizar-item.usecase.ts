@@ -84,8 +84,7 @@ export class AtualizarItemUseCase {
             props.permitAluguelsConsecutivos !== undefined ||
             props.permiteAluguelPorHora !== undefined ||
             props.horasMinimosAluguel !== undefined ||
-            props.horasMaximosAluguel !== undefined ||
-            props.aprovacaoAutomatica !== undefined
+            props.horasMaximosAluguel !== undefined
         ) {
             const dispAtual = itemDomain.disponibilidade;
             if (dispAtual) {
@@ -108,9 +107,6 @@ export class AtualizarItemUseCase {
                     horasMaximosAluguel:
                         props.horasMaximosAluguel ??
                         dispAtual.horasMaximosAluguel,
-                    aprovacaoAutomatica:
-                        props.aprovacaoAutomatica ??
-                        dispAtual.aprovacaoAutomatica,
                 };
             }
         }

@@ -9,7 +9,7 @@ import {
     Max,
     IsBoolean,
 } from 'class-validator';
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import {
     EstadoItem,
@@ -23,9 +23,9 @@ export class AtualizarItemDTO {
         example: 'Furadeira elétrica Bosch',
         required: false,
     })
-    @IsString()
-    @MinLength(5)
-    @MaxLength(255)
+    @IsString({ message: 'Nome deve ser uma string válida' })
+    @MinLength(5, { message: 'Nome deve ter pelo menos 5 caracteres' })
+    @MaxLength(255, { message: 'Nome deve ter no máximo 255 caracteres' })
     @IsOptional()
     nome?: string;
 
@@ -35,9 +35,9 @@ export class AtualizarItemDTO {
             'Furadeira elétrica profissional Bosch com bateria de longa duração',
         required: false,
     })
-    @IsString()
-    @MinLength(50)
-    @MaxLength(2000)
+    @IsString({ message: 'Descrição deve ser uma string válida' })
+    @MinLength(50, { message: 'Descrição deve ter pelo menos 50 caracteres' })
+    @MaxLength(2000, { message: 'Descrição deve ter no máximo 2000 caracteres' })
     @IsOptional()
     descricao?: string;
 
@@ -47,7 +47,7 @@ export class AtualizarItemDTO {
         enum: CategoriaItem,
         required: false,
     })
-    @IsEnum(CategoriaItem)
+    @IsEnum(CategoriaItem, { message: 'Categoria deve ser um valor válido' })
     @IsOptional()
     categoria?: CategoriaItem;
 
@@ -57,7 +57,7 @@ export class AtualizarItemDTO {
         enum: EstadoItem,
         required: false,
     })
-    @IsEnum(EstadoItem)
+    @IsEnum(EstadoItem, { message: 'Estado deve ser um valor válido' })
     @IsOptional()
     estado?: EstadoItem;
 
@@ -67,7 +67,7 @@ export class AtualizarItemDTO {
         enum: TipoAnuncio,
         required: false,
     })
-    @IsEnum(TipoAnuncio)
+    @IsEnum(TipoAnuncio, { message: 'Tipo de anúncio deve ser um valor válido' })
     @IsOptional()
     tipoAnuncio?: TipoAnuncio;
 
@@ -76,10 +76,11 @@ export class AtualizarItemDTO {
         example: 50,
         required: false,
     })
-    @IsNumber()
-    @Min(1)
-    @Max(10000)
+    @IsNumber({}, { message: 'Preço por dia deve ser um número válido' })
+    @Min(5, { message: 'Preço por dia deve ser no mínimo R$ 5,00' })
+    @Max(10000, { message: 'Preço por dia deve ser no máximo R$ 10.000,00' })
     @IsOptional()
+    @Type(() => Number)
     @Transform(({ value }) => (value ? Number.parseFloat(value) : undefined))
     precoPorDia?: number;
 
@@ -88,9 +89,10 @@ export class AtualizarItemDTO {
         example: 10,
         required: false,
     })
-    @IsNumber()
+    @IsNumber({}, { message: 'Preço por hora deve ser um número válido' })
     @IsOptional()
-    @Min(1)
+    @Min(1, { message: 'Preço por hora deve ser no mínimo R$ 1,00' })
+    @Type(() => Number)
     @Transform(({ value }) => (value ? Number.parseFloat(value) : undefined))
     precoPorHora?: number;
 
@@ -99,10 +101,11 @@ export class AtualizarItemDTO {
         example: 200,
         required: false,
     })
-    @IsNumber()
+    @IsNumber({}, { message: 'Valor da caução deve ser um número válido' })
     @IsOptional()
-    @Min(1)
-    @Max(10000)
+    @Min(50, { message: 'Valor da caução deve ser no mínimo R$ 50,00' })
+    @Max(10000, { message: 'Valor da caução deve ser no máximo R$ 10.000,00' })
+    @Type(() => Number)
     @Transform(({ value }) => (value ? Number.parseFloat(value) : undefined))
     valorCaucao?: number;
 
@@ -111,7 +114,7 @@ export class AtualizarItemDTO {
         example: true,
         required: false,
     })
-    @IsBoolean()
+    @IsBoolean({ message: 'Caução obrigatória deve ser um valor booleano' })
     @IsOptional()
     caucaoObrigatoria?: boolean;
 
@@ -120,10 +123,12 @@ export class AtualizarItemDTO {
         example: 1,
         required: false,
     })
-    @IsNumber()
+    @IsNumber({}, { message: 'Dias mínimos deve ser um número válido' })
     @IsOptional()
-    @Min(1)
-    @Max(365)
+    @Min(1, { message: 'Dias mínimos deve ser no mínimo 1' })
+    @Max(365, { message: 'Dias mínimos deve ser no máximo 365' })
+    @Type(() => Number)
+    @Transform(({ value }) => (value ? Number.parseInt(value) : undefined))
     diasMinimosAluguel?: number;
 
     @ApiProperty({
@@ -131,10 +136,12 @@ export class AtualizarItemDTO {
         example: 30,
         required: false,
     })
-    @IsNumber()
+    @IsNumber({}, { message: 'Dias máximos deve ser um número válido' })
     @IsOptional()
-    @Min(1)
-    @Max(365)
+    @Min(1, { message: 'Dias máximos deve ser no mínimo 1' })
+    @Max(365, { message: 'Dias máximos deve ser no máximo 365' })
+    @Type(() => Number)
+    @Transform(({ value }) => (value ? Number.parseInt(value) : undefined))
     diasMaximosAluguel?: number;
 
     @ApiProperty({
@@ -142,7 +149,7 @@ export class AtualizarItemDTO {
         example: true,
         required: false,
     })
-    @IsBoolean()
+    @IsBoolean({ message: 'Aluguéis consecutivos deve ser um valor booleano' })
     @IsOptional()
     permitAluguelsConsecutivos?: boolean;
 
@@ -151,7 +158,7 @@ export class AtualizarItemDTO {
         example: false,
         required: false,
     })
-    @IsBoolean()
+    @IsBoolean({ message: 'Aluguel por hora deve ser um valor booleano' })
     @IsOptional()
     permiteAluguelPorHora?: boolean;
 
@@ -160,9 +167,10 @@ export class AtualizarItemDTO {
         example: 2,
         required: false,
     })
-    @IsNumber()
+    @IsNumber({}, { message: 'Horas mínimas deve ser um número válido' })
     @IsOptional()
-    @Min(1)
+    @Min(1, { message: 'Horas mínimas deve ser no mínimo 1' })
+    @Type(() => Number)
     @Transform(({ value }) => (value ? Number.parseInt(value) : undefined))
     horasMinimosAluguel?: number;
 
@@ -171,18 +179,10 @@ export class AtualizarItemDTO {
         example: 8,
         required: false,
     })
-    @IsNumber()
+    @IsNumber({}, { message: 'Horas máximas deve ser um número válido' })
     @IsOptional()
-    @Min(1)
+    @Min(1, { message: 'Horas máximas deve ser no mínimo 1' })
+    @Type(() => Number)
     @Transform(({ value }) => (value ? Number.parseInt(value) : undefined))
     horasMaximosAluguel?: number;
-
-    @ApiProperty({
-        description: 'Aprova automaticamente novos aluguéis',
-        example: true,
-        required: false,
-    })
-    @IsBoolean()
-    @IsOptional()
-    aprovacaoAutomatica?: boolean;
 }

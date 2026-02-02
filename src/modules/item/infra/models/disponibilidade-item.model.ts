@@ -64,13 +64,6 @@ export class DisponibilidadeItemModel {
     permitAluguelsConsecutivos: boolean;
 
     @Column({
-        name: 'aprovacao_automatica',
-        type: 'boolean',
-        default: false,
-    })
-    aprovacaoAutomatica: boolean;
-
-    @Column({
         name: 'datas_bloqueadas',
         type: 'jsonb',
         default: [],

@@ -12,7 +12,6 @@ export interface DisponibilidadeProps {
     diasMinimosAluguel: number;
     diasMaximosAluguel: number;
     permitAluguelsConsecutivos: boolean;
-    aprovacaoAutomatica: boolean;
     datasBloqueadas?: DataBloqueada[];
     permiteAluguelPorHora?: boolean;
     horasMinimosAluguel?: number;
@@ -23,7 +22,6 @@ type CriarDisponibilidadeProps = {
     diasMinimosAluguel?: number;
     diasMaximosAluguel?: number;
     permitAluguelsConsecutivos?: boolean;
-    aprovacaoAutomatica?: boolean;
     permiteAluguelPorHora?: boolean;
     horasMinimosAluguel?: number;
     horasMaximosAluguel?: number;
@@ -49,7 +47,6 @@ export class Disponibilidade {
         domain.setDiasMinimosAluguel(props.diasMinimosAluguel || 1);
         domain.setDiasMaximosAluguel(props.diasMaximosAluguel || 365);
         domain.setPermitAluguelsConsecutivos(props.permitAluguelsConsecutivos);
-        domain.setAprovacaoAutomatica(props.aprovacaoAutomatica || false);
         if (props.permiteAluguelPorHora !== undefined) {
             domain.setPermiteAluguelPorHora(props.permiteAluguelPorHora);
             domain.setHorasMinimosAluguel(props.horasMinimosAluguel || 1);
@@ -65,7 +62,6 @@ export class Disponibilidade {
         domain.setDiasMinimosAluguel(props.diasMinimosAluguel);
         domain.setDiasMaximosAluguel(props.diasMaximosAluguel);
         domain.setPermitAluguelsConsecutivos(props.permitAluguelsConsecutivos);
-        domain.setAprovacaoAutomatica(props.aprovacaoAutomatica);
         domain.setDatasBloqueadas(props.datasBloqueadas);
         domain.setPermiteAluguelPorHora(!!props.permiteAluguelPorHora);
         domain.setHorasMinimosAluguel(props.horasMinimosAluguel);
@@ -93,9 +89,6 @@ export class Disponibilidade {
         }
         if (props.horasMaximosAluguel !== undefined) {
             this.setHorasMaximosAluguel(props.horasMaximosAluguel);
-        }
-        if (props.aprovacaoAutomatica !== undefined) {
-            this.setAprovacaoAutomatica(props.aprovacaoAutomatica);
         }
     }
 
@@ -152,10 +145,6 @@ export class Disponibilidade {
         return this.props.permitAluguelsConsecutivos;
     }
 
-    get aprovacaoAutomatica(): boolean {
-        return this.props.aprovacaoAutomatica;
-    }
-
     get datasBloqueadas(): DataBloqueada[] | undefined {
         return this.props.datasBloqueadas;
     }
@@ -200,14 +189,6 @@ export class Disponibilidade {
                 'permitAluguelsConsecutivos é obrigatório',
             );
         this.props.permitAluguelsConsecutivos = value;
-    }
-
-    private setAprovacaoAutomatica(value: boolean) {
-        if (value === undefined || value === null)
-            throw new InvalidPropsException(
-                'aprovacaoAutomatica é obrigatório',
-            );
-        this.props.aprovacaoAutomatica = value;
     }
 
     private setDatasBloqueadas(value?: DataBloqueada[]) {

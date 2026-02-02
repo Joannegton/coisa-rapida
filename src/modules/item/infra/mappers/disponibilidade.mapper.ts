@@ -33,7 +33,6 @@ export class DisponibilidadeMapper {
     toDomain(model: DisponibilidadeItemModel): Disponibilidade {
         const domain = Disponibilidade.carregar(
             {
-                aprovacaoAutomatica: model.aprovacaoAutomatica,
                 diasMaximosAluguel: model.diasMaximosAluguel,
                 diasMinimosAluguel: model.diasMinimosAluguel,
                 horasMaximosAluguel: model.horasMaximosAluguel,
@@ -55,7 +54,6 @@ export class DisponibilidadeMapper {
     toModel(domain: Disponibilidade): DisponibilidadeItemModel {
         const model = DisponibilidadeItemModel.criar({
             id: domain.id,
-            aprovacaoAutomatica: domain.aprovacaoAutomatica,
             diasMaximosAluguel: domain.diasMaximosAluguel,
             diasMinimosAluguel: domain.diasMinimosAluguel,
             horasMaximosAluguel: domain.horasMaximosAluguel,
