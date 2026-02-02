@@ -15,7 +15,6 @@ import {
     Disponibilidade,
 } from './disponibilidade';
 import { ItemDto } from '../application/dtos/responses/item.dto';
-import { ItemCardDto } from '../application/dtos/responses/item-cards.dto';
 import { Utils } from 'src/shared/utils';
 
 export type ItemProps = {
@@ -37,6 +36,7 @@ export type ItemProps = {
     atualizadoEm: Date;
     dataArquivamento?: Date;
     dataExclusao?: Date;
+    regrasDeUso?: string;
 
     distanciaMetros?: number;
     proprietario?: boolean;
@@ -46,6 +46,7 @@ export type CriarItemProps = {
     usuarioId: string;
     nome: string;
     descricao: string;
+    regrasDeUso?: string;
     categoria: CategoriaItem;
     estado: EstadoItem;
     tipoAnuncio: TipoAnuncio;
@@ -83,6 +84,7 @@ export class Item {
         item.setCategoria(props.categoria);
         item.setEstado(props.estado);
         item.setTipoAnuncio(props.tipoAnuncio);
+        item.setRegrasDeUso(props.regrasDeUso);
         item.setStatus(StatusItem.ATIVO);
         item.setPrecos(props.precos);
         item.setLocalizacao(props.localizacao);
@@ -110,6 +112,7 @@ export class Item {
         item.props.aluguelsTotais = props.aluguelsTotais;
         item.props.dataArquivamento = props.dataArquivamento;
         item.props.dataExclusao = props.dataExclusao;
+        item.props.regrasDeUso = props.regrasDeUso;
         item.props.versao = props.versao;
         item.props.criadoEm = props.criadoEm;
         item.props.atualizadoEm = props.atualizadoEm;
@@ -338,6 +341,10 @@ export class Item {
         this.props.proprietario = proprietario;
     }
 
+    private setRegrasDeUso(regrasDeUso?: string) {
+        this.props.regrasDeUso = regrasDeUso;
+    }
+
     private setAluguelsTotais(aluguelsTotais: number) {
         if (aluguelsTotais < 0) {
             throw new InvalidPropsException(
@@ -407,6 +414,10 @@ export class Item {
         return this.props.disponibilidade;
     }
 
+    get regrasDeUso(): string | undefined {
+        return this.props.regrasDeUso;
+    }
+
     get aluguelsTotais(): number {
         return this.props.aluguelsTotais;
     }
@@ -447,6 +458,7 @@ export class Item {
             permiteAluguelPorHora: this.disponibilidade?.permiteAluguelPorHora,
             horasMinimosAluguel: this.disponibilidade?.horasMinimosAluguel,
             horasMaximosAluguel: this.disponibilidade?.horasMaximosAluguel,
+            regrasDeUso: this.regrasDeUso,
             fotosUrls:
                 this.fotos?.map((f) => ({
                     url: f.url,
@@ -462,24 +474,6 @@ export class Item {
             proprietario: this.props.proprietario,
             criadoEm: this.criadoEm,
             atualizadoEm: this.atualizadoEm,
-        };
-    }
-
-    toCardDto(): ItemCardDto {
-        return {
-            id: this.id,
-            usuarioId: this.usuarioId,
-            nome: this.nome,
-            categoria: this.categoria,
-            estado: this.estado,
-            tipoAnuncio: this.tipoAnuncio,
-            status: this.status,
-            precoPorDia: this.precos.precoPorDia,
-            precoPorHora: this.precos.precoPorHora,
-            disponivel: this.disponibilidade?.disponivel ?? false,
-            fotoPrincipalUrl: this.fotos?.find((f) => f.principal)?.url,
-            permiteAluguelPorHora: this.disponibilidade?.permiteAluguelPorHora,
-            valorCaucao: this.precos.valorCaucao,
         };
     }
 }

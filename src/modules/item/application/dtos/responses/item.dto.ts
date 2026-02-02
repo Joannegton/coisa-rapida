@@ -17,6 +17,7 @@ export class ItemDto {
     fotosUrls: { url: string; principal: boolean }[];
     fotoPrincipalUrl?: string;
     status: StatusItem;
+    regrasDeUso?: string;
     disponivel: boolean;
     aluguelsTotais: number;
     diasMinimosAluguel: number;

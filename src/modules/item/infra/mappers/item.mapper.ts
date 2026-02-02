@@ -82,6 +82,7 @@ export class ItemMapper {
             atualizadoEm: item.atualizadoEm,
             dataArquivamento: item.dataArquivamento,
             dataExclusao: item.dataExclusao,
+            regrasDeUso: item.regrasDeUso,
             disponibilidade: disponibilidade,
             precos: precos,
             fotos: fotos,

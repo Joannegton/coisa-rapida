@@ -90,6 +90,7 @@ export class CreateItemTableSchema1734393600000 implements MigrationInterface {
                 estado item.estado_item DEFAULT 'USADO' NOT NULL,
                 tipo_anuncio item.tipo_anuncio DEFAULT 'ALUGUEL' NOT NULL,
                 status item.status_item DEFAULT 'RASCUNHO' NOT NULL,
+                regras_de_uso TEXT,
                 
                 -- Preços (value object PrecosItemModel)
                 preco_por_dia DECIMAL(10,2) NOT NULL CHECK (preco_por_dia >= 0),

@@ -106,6 +106,9 @@ export class ItemModel {
     @Column(() => PrecosItemModel, { prefix: false })
     precos: PrecosItemModel;
 
+    @Column({ type: 'text', name: 'regras_de_uso', nullable: true })
+    regrasDeUso?: string;
+
     @Column(() => LocalizacaoItemModel, { prefix: false })
     localizacao: LocalizacaoItemModel;
 

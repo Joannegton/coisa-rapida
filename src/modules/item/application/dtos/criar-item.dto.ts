@@ -12,7 +12,7 @@ import {
     ArrayMinSize,
     IsArray,
 } from 'class-validator';
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import {
     CategoriaItem,
@@ -109,11 +109,11 @@ export class CriarItemDto {
         maximum: 10000,
         required: false,
     })
-    @IsNumber({}, { message: 'Valor da caução deve ser um número válido' })
     @IsOptional()
+    @Type(() => Number)
+    @IsNumber({}, { message: 'Valor da caução deve ser um número válido' })
     @Min(50, { message: 'Valor da caução deve ser no mínimo R$ 50,00' })
     @Max(10000, { message: 'Valor da caução deve ser no máximo R$ 10.000,00' })
-    @Transform(({ value }) => (value ? Number.parseFloat(value) : undefined))
     valorCaucao?: number;
 
     @ApiProperty({
@@ -146,11 +146,21 @@ export class CriarItemDto {
         required: false,
         default: 1,
     })
-    @IsNumber({}, { message: 'Dias mínimos deve ser um número válido' })
     @IsOptional()
+    @Type(() => Number)
+    @IsNumber({}, { message: 'Dias mínimos deve ser um número válido' })
     @Min(1, { message: 'Dias mínimos deve ser no mínimo 1' })
     @Max(365, { message: 'Dias mínimos deve ser no máximo 365' })
     diasMinimosAluguel: number = 1;
+
+    @ApiProperty({
+        description: 'Regras de uso do item',
+        example: 'Não fumar perto do item',
+        required: false,
+    })
+    @IsString({ message: 'Regras de uso deve ser uma string válida' })
+    @IsOptional()
+    regrasDeUso?: string;
 
     @ApiProperty({
         description: 'Número máximo de dias para aluguel',
@@ -160,9 +170,9 @@ export class CriarItemDto {
         required: false,
         default: 365,
     })
-    @IsNumber({}, { message: 'Dias máximos deve ser um número válido' })
     @IsOptional()
-    @Min(1, { message: 'Dias máximos deve ser no mínimo 1' })
+    @Type(() => Number)
+    @IsNumber({}, { message: 'Dias máximos deve ser um número válido' })
     @Max(365, { message: 'Dias máximos deve ser no máximo 365' })
     diasMaximosAluguel?: number = 365;
 

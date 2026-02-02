@@ -105,6 +105,7 @@ export class CriarItemUseCase {
             estado: props.estado,
             tipoAnuncio: props.tipoAnuncio,
             usuarioId: props.usuarioId,
+            regrasDeUso: props.regrasDeUso,
             fotos: imagens,
             localizacao: localizacao,
             precos: precos,
