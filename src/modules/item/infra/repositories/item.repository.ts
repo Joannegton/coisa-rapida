@@ -6,7 +6,6 @@ import { Item } from '../../domain/item';
 import {
     ItemRepository,
     FiltrosGeograficos,
-    ResultadoBuscaGeografica,
     BuscarItensPopularesSemLocalizacaoProps,
     BuscarComDistancia,
 } from '../../domain/repositories/item.repository';
@@ -353,9 +352,7 @@ export class ItemRepositoryImpl implements ItemRepository {
         }
     }
 
-    async buscarComDistancia(
-        props: BuscarComDistancia,
-    ): Promise<ResultadoBuscaGeografica | null> {
+    async buscarComDistancia(props: BuscarComDistancia): Promise<Item | null> {
         try {
             let query = this.repository
                 .createQueryBuilder('item')
@@ -383,16 +380,18 @@ export class ItemRepositoryImpl implements ItemRepository {
                 return null;
             }
 
-            const model = rawAndEntities.entities[0];
-            const distanciaMetros: number | null =
-                props.latitude !== undefined && props.longitude !== undefined
-                    ? Number.parseFloat(rawAndEntities.raw[0].distancia_metros)
-                    : null;
+            const distancia = rawAndEntities.raw[0].distancia_metros
+                ? Number.parseFloat(rawAndEntities.raw[0].distancia_metros)
+                : undefined;
 
-            return {
-                item: this.itemMapper.toDomain(model),
-                distanciaMetros,
-            };
+            const domain = this.itemMapper.toDomain(
+                rawAndEntities.entities[0],
+                {
+                    distanciaMetros: distancia,
+                },
+            );
+
+            return domain;
         } catch (error) {
             this.logger.error(
                 `Erro ao buscar item com distância: ${error.message}`,

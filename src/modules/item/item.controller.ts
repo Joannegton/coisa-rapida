@@ -33,7 +33,6 @@ import { AdicionarFotosItemDTO } from './application/dtos/adicionar-fotos-item.d
 import { AtualizarOrdemFotosDTO } from './application/dtos/atualizar-ordem-fotos.dto';
 import { BuscarPorProximidadeDto } from './application/dtos/buscar-por-proximidade.dto';
 import { BuscarItensProximidadeQuery } from './application/queries/buscar-itens-proximidade.query';
-import { ItemComDistanciaDto } from './application/dtos/responses/item-distancia.dto';
 import { BuscarItemQuery } from './application/queries/buscar-item.query';
 import { BuscarItemDto } from './application/dtos/buscar-item.dto';
 import { ItemFotoDto } from './application/dtos/responses/item-foto.dto';
@@ -244,7 +243,7 @@ export class ItemController {
     @ApiResponse({
         status: 200,
         description: 'Detalhes do item encontrado',
-        type: ItemComDistanciaDto,
+        type: ItemDto,
     })
     @ApiAccessToken()
     @Get(':itemId')
@@ -252,7 +251,7 @@ export class ItemController {
         @Param('itemId') itemId: string,
         @usuarioAtual() usuario: UsuarioPayload,
         @Query() props: BuscarItemDto,
-    ): Promise<ItemComDistanciaDto> {
+    ): Promise<ItemDto> {
         return this.buscarItemQuery.execute({
             itemId,
             usuarioId: usuario.sub,

@@ -447,7 +447,11 @@ export class Item {
             permiteAluguelPorHora: this.disponibilidade?.permiteAluguelPorHora,
             horasMinimosAluguel: this.disponibilidade?.horasMinimosAluguel,
             horasMaximosAluguel: this.disponibilidade?.horasMaximosAluguel,
-            fotosUrls: this.fotos?.map((f) => f.url) || [],
+            fotosUrls:
+                this.fotos?.map((f) => ({
+                    url: f.url,
+                    principal: f.principal,
+                })) || [],
             fotoPrincipalUrl: this.fotos?.find((f) => f.principal)?.url,
             disponivel: this.disponibilidade?.disponivel ?? false,
             aluguelsTotais: this.aluguelsTotais,

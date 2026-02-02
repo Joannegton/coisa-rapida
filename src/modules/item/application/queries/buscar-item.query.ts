@@ -1,9 +1,9 @@
 import { Inject, NotFoundException } from '@nestjs/common';
 import type { ItemRepository } from '../../domain/repositories/item.repository';
 import { InvalidPropsException } from 'src/common/exceptions/invalidProps.exception';
-import { ItemComDistanciaDto } from '../dtos/responses/item-distancia.dto';
-import { Utils } from 'src/shared/utils';
 import { BuscarItemDto } from '../dtos/buscar-item.dto';
+import type { UsuarioService } from '../../domain/services/usuario.service';
+import { ItemDto } from '../dtos/responses/item.dto';
 
 export type BuscarItemQueryProps = BuscarItemDto & {
     itemId: string;
@@ -14,37 +14,35 @@ export class BuscarItemQuery {
     constructor(
         @Inject('ItemRepository')
         private readonly itemRepository: ItemRepository,
+        @Inject('UsuarioService')
+        private readonly usuarioService: UsuarioService,
     ) {}
 
-    async execute(props: BuscarItemQueryProps): Promise<ItemComDistanciaDto> {
+    async execute(props: BuscarItemQueryProps): Promise<ItemDto> {
         if (!props.itemId || props.itemId.trim() === '')
             throw new InvalidPropsException('Item ID é obrigatório');
 
-        const resultado = await this.itemRepository.buscarComDistancia({
+        if (!props.latitude || !props.longitude) {
+            const usuario = await this.usuarioService.buscar(props.usuarioId);
+
+            if (!usuario) throw new NotFoundException('Usuário não encontrado');
+
+            props.latitude = usuario.endereco?.latitude;
+            props.longitude = usuario.endereco?.longitude;
+        }
+
+        const item = await this.itemRepository.buscarComDistancia({
             itemId: props.itemId,
-            latitude: props.usuarioLatitude,
-            longitude: props.usuarioLongitude,
+            latitude: props.latitude,
+            longitude: props.longitude,
         });
 
-        if (!resultado) {
+        if (!item) {
             throw new NotFoundException('Item não encontrado');
         }
 
-        const { item, distanciaMetros } = resultado;
+        item.adicionarProprietario(props.usuarioId);
 
-        if (item.usuarioId === props.usuarioId) {
-            return {
-                item: item.toDto(),
-                distanciaMetros: null,
-                distanciaFormatada: null,
-                proprietario: true,
-            };
-        }
-
-        return {
-            item: item.toDto(),
-            distanciaMetros,
-            distanciaFormatada: Utils.formatarDistancia(distanciaMetros!),
-        };
+        return item.toDto();
     }
 }

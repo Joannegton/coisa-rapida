@@ -14,7 +14,7 @@ export class ItemDto {
     permiteAluguelPorHora?: boolean;
     horasMinimosAluguel?: number;
     horasMaximosAluguel?: number;
-    fotosUrls: string[];
+    fotosUrls: { url: string; principal: boolean }[];
     fotoPrincipalUrl?: string;
     status: StatusItem;
     disponivel: boolean;

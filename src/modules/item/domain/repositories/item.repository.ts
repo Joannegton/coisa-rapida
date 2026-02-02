@@ -62,9 +62,7 @@ export interface ItemRepository {
         props: BuscarItensPopularesSemLocalizacaoProps,
     ): Promise<Item[]>;
 
-    buscarComDistancia(
-        props: BuscarComDistancia,
-    ): Promise<ResultadoBuscaGeografica | null>;
+    buscarComDistancia(props: BuscarComDistancia): Promise<Item | null>;
 
     /**
      * Calcula a distância (em metros) entre um item específico e um ponto geográfico.

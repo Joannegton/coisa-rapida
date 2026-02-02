@@ -1,4 +1,4 @@
-import { Inject } from '@nestjs/common';
+import { Inject, NotFoundException } from '@nestjs/common';
 import type { ItemRepository } from '../../domain/repositories/item.repository';
 import { BuscarPorProximidadeDto } from '../dtos/buscar-por-proximidade.dto';
 import { ItemDto } from '../dtos/responses/item.dto';
@@ -28,7 +28,7 @@ export class BuscarItensProximidadeQuery {
         if (!props.latitude || !props.longitude) {
             const usuario = await this.usuarioService.buscar(props.usuarioId);
             if (!usuario) {
-                throw new Error('Usuário não encontrado');
+                throw new NotFoundException('Usuário não encontrado');
             }
 
             props.latitude = usuario.endereco?.latitude;
