@@ -448,7 +448,7 @@ export class Item {
             usuarioId: this.usuarioId,
             nome: this.nome,
             descricao: this.descricao,
-            categoria: this.categoria,
+            categoria: this.categoria.toLowerCase(),
             estado: this.estado.toLowerCase(),
             tipoAnuncio: this.tipoAnuncio.toLowerCase(),
             status: this.status,
@@ -461,6 +461,7 @@ export class Item {
             regrasDeUso: this.regrasDeUso,
             fotosUrls:
                 this.fotos?.map((f) => ({
+                    id: f.id,
                     url: f.url,
                     principal: f.principal,
                 })) || [],
@@ -469,6 +470,8 @@ export class Item {
             aluguelsTotais: this.aluguelsTotais,
             diasMinimosAluguel: this.disponibilidade?.diasMinimosAluguel ?? 1,
             diasMaximosAluguel: this.disponibilidade?.diasMaximosAluguel ?? 30,
+            permitAluguelsConsecutivos:
+                this.disponibilidade?.permitAluguelsConsecutivos,
             distanciaFormatada: this.getDistanciaFormatada(),
             bairro: this.localizacao.bairro,
             proprietario: this.props.proprietario,

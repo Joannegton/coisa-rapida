@@ -37,7 +37,9 @@ export class AtualizarItemDTO {
     })
     @IsString({ message: 'Descrição deve ser uma string válida' })
     @MinLength(50, { message: 'Descrição deve ter pelo menos 50 caracteres' })
-    @MaxLength(2000, { message: 'Descrição deve ter no máximo 2000 caracteres' })
+    @MaxLength(2000, {
+        message: 'Descrição deve ter no máximo 2000 caracteres',
+    })
     @IsOptional()
     descricao?: string;
 
@@ -67,7 +69,9 @@ export class AtualizarItemDTO {
         enum: TipoAnuncio,
         required: false,
     })
-    @IsEnum(TipoAnuncio, { message: 'Tipo de anúncio deve ser um valor válido' })
+    @IsEnum(TipoAnuncio, {
+        message: 'Tipo de anúncio deve ser um valor válido',
+    })
     @IsOptional()
     tipoAnuncio?: TipoAnuncio;
 
@@ -103,8 +107,6 @@ export class AtualizarItemDTO {
     })
     @IsNumber({}, { message: 'Valor da caução deve ser um número válido' })
     @IsOptional()
-    @Min(50, { message: 'Valor da caução deve ser no mínimo R$ 50,00' })
-    @Max(10000, { message: 'Valor da caução deve ser no máximo R$ 10.000,00' })
     @Type(() => Number)
     @Transform(({ value }) => (value ? Number.parseFloat(value) : undefined))
     valorCaucao?: number;

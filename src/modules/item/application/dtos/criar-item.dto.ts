@@ -112,8 +112,6 @@ export class CriarItemDto {
     @IsOptional()
     @Type(() => Number)
     @IsNumber({}, { message: 'Valor da caução deve ser um número válido' })
-    @Min(50, { message: 'Valor da caução deve ser no mínimo R$ 50,00' })
-    @Max(10000, { message: 'Valor da caução deve ser no máximo R$ 10.000,00' })
     valorCaucao?: number;
 
     @ApiProperty({

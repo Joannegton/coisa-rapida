@@ -26,6 +26,7 @@ export class AtualizarItemUseCase {
         if (!itemDomain) {
             throw new NotFoundException('Item não encontrado');
         }
+        console.log('props', props);
 
         if (itemDomain.usuarioId !== props.usuarioId) {
             throw new ConflictException(

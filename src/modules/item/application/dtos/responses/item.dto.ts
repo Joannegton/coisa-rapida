@@ -1,11 +1,11 @@
-import { CategoriaItem, StatusItem } from '../../../infra/models/item.model';
+import { StatusItem } from '../../../infra/models/item.model';
 
 export class ItemDto {
     id: string;
     usuarioId: string;
     nome: string;
     descricao: string;
-    categoria: CategoriaItem;
+    categoria: string;
     estado: string;
     tipoAnuncio: string;
     precoPorDia: number;
@@ -14,7 +14,7 @@ export class ItemDto {
     permiteAluguelPorHora?: boolean;
     horasMinimosAluguel?: number;
     horasMaximosAluguel?: number;
-    fotosUrls: { url: string; principal: boolean }[];
+    fotosUrls: { id: string; url: string; principal: boolean }[];
     fotoPrincipalUrl?: string;
     status: StatusItem;
     regrasDeUso?: string;
@@ -22,6 +22,7 @@ export class ItemDto {
     aluguelsTotais: number;
     diasMinimosAluguel: number;
     diasMaximosAluguel: number;
+    permitAluguelsConsecutivos?: boolean;
     bairro?: string;
     distanciaFormatada?: string;
     proprietario?: boolean;

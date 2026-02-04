@@ -30,7 +30,9 @@ export class UploadImagemServiceImpl implements UploadImagemService {
             resource_type: uploadResult.resource_type,
             secure_url: uploadResult.secure_url,
             type: uploadResult.type,
-            url: uploadResult.url,
+            url:
+                uploadResult.secure_url ||
+                uploadResult.url?.replace('http://', 'https://'),
         };
     }
 

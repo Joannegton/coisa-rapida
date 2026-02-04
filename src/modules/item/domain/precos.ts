@@ -1,5 +1,6 @@
 import { InvalidPropsException } from 'src/common/exceptions/invalidProps.exception';
 import { PrecoException } from './exceptions/preco.exception';
+import { DinheiroUtils } from 'src/shared/utils/dinheiro.utils';
 
 export interface PrecosProps {
     precoPorDia: number;
@@ -68,8 +69,7 @@ export class Preco {
     }
 
     private calcularCaucaoMinima(): number {
-        const taxa = this.precoPorDia * 0.5;
-        return this.precoPorDia + taxa;
+        return DinheiroUtils.multiplicar(this.precoPorDia, 1.5);
     }
 
     private setPrecoPorDia(value: number) {
