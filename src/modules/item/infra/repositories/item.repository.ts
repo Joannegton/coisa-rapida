@@ -162,9 +162,13 @@ export class ItemRepositoryImpl implements ItemRepository {
                 });
 
             if (tipoAnuncio && tipoAnuncio !== TipoAnuncio.AMBOS) {
-                query = query.andWhere('item.tipoAnuncio = :tipoAnuncio', {
-                    tipoAnuncio,
-                });
+                query = query.andWhere(
+                    '(item.tipoAnuncio = :tipoAnuncio OR item.tipoAnuncio = :ambos)',
+                    {
+                        tipoAnuncio,
+                        ambos: TipoAnuncio.AMBOS,
+                    },
+                );
             }
 
             if (termo) {
@@ -289,9 +293,13 @@ export class ItemRepositoryImpl implements ItemRepository {
                 .addOrderBy('item.criadoEm', 'DESC');
 
             if (props.tipoAnuncio && props.tipoAnuncio !== TipoAnuncio.AMBOS) {
-                queryBuilder.andWhere('item.tipoAnuncio = :tipoAnuncio', {
-                    tipoAnuncio: props.tipoAnuncio,
-                });
+                queryBuilder.andWhere(
+                    '(item.tipoAnuncio = :tipoAnuncio OR item.tipoAnuncio = :ambos)',
+                    {
+                        tipoAnuncio: props.tipoAnuncio,
+                        ambos: TipoAnuncio.AMBOS,
+                    },
+                );
             }
 
             if (props.termo) {
