@@ -20,10 +20,11 @@ export class AluguelRepositoryImpl implements AluguelRepository {
         private readonly aluguelMapper: AluguelMapper,
     ) {}
 
-    async salvar(aluguel: Aluguel): Promise<void> {
+    async salvar(aluguel: Aluguel): Promise<Aluguel> {
         try {
             const aluguelModel = this.aluguelMapper.toModel(aluguel);
-            await this.repository.save(aluguelModel);
+            const aluguelSalvo = await this.repository.save(aluguelModel);
+            return this.aluguelMapper.toDomain(aluguelSalvo);
         } catch (error) {
             this.logger.error(`Erro ao salvar aluguel: ${error.message}`);
             throw new RepositoryException('Erro ao salvar aluguel.');

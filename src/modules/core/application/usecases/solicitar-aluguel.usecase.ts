@@ -4,6 +4,7 @@ import { SolicitarAluguelDto } from '../dtos/solicitar-aluguel.dto';
 import type { CoreUsuarioService } from '../../domain/services/usuario.service';
 import { Aluguel } from '../../domain/aluguel';
 import type { CoreItemService } from '../../domain/services/item.service';
+import { AluguelDto } from '../dtos/results/Aluguel.dto';
 
 type SolicitarAluguelUseCaseProps = SolicitarAluguelDto & {
     usuarioId: string;
@@ -19,7 +20,7 @@ export class SolicitarAluguelUseCase {
         private readonly itemService: CoreItemService,
     ) {}
 
-    async execute(props: SolicitarAluguelUseCaseProps): Promise<void> {
+    async execute(props: SolicitarAluguelUseCaseProps): Promise<AluguelDto> {
         const [locatario, item] = await Promise.all([
             this.usuarioService.buscar(props.usuarioId),
             this.itemService.buscar(props.itemId),
@@ -44,6 +45,8 @@ export class SolicitarAluguelUseCase {
             observacoesLocatario: props.observacoesLocatario,
         });
 
-        await this.aluguelRepository.salvar(aluguelDomain);
+        const aluguelSalvo = await this.aluguelRepository.salvar(aluguelDomain);
+
+        return aluguelSalvo.toDto();
     }
 }

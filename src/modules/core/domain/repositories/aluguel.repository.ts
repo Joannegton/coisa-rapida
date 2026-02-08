@@ -10,7 +10,7 @@ export type AtualizarPagamentoProps = {
 };
 
 export interface AluguelRepository {
-    salvar(aluguel: Aluguel): Promise<void>;
+    salvar(aluguel: Aluguel): Promise<Aluguel>;
     buscar(id: string): Promise<Aluguel | null>;
     listarPorUsuario(usuarioId: string): Promise<Aluguel[]>;
     atualizarPagamento(props: AtualizarPagamentoProps): Promise<void>;

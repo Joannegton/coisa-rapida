@@ -1,5 +1,25 @@
+import { Inject } from '@nestjs/common';
+import type { AluguelRepository } from '../../domain/repositories/aluguel.repository';
+
 export class BuscarContratoAluguelQuery {
-    execute(aluguelId: string): { conteudoHtml: string } {
+    constructor(
+        @Inject('AluguelRepository')
+        private readonly aluguelRepository: AluguelRepository,
+    ) {}
+
+    async execute(aluguelId: string): Promise<{ conteudoHtml: string }> {
+        const aluguel = await this.aluguelRepository.buscar(aluguelId);
+
+        if (!aluguel) {
+            throw new Error('Aluguel não encontrado');
+        }
+
+        const dataInicio = new Date(aluguel.dataInicio).toLocaleDateString(
+            'pt-BR',
+        );
+        const dataFim = aluguel.dataFim
+            ? new Date(aluguel.dataFim).toLocaleDateString('pt-BR')
+            : 'A definir';
         const id = `CR-${aluguelId}`;
 
         const conteudo = `
@@ -72,14 +92,14 @@ export class BuscarContratoAluguelQuery {
                 <div class="header">
                     <h2>CONTRATO DIGITAL DE ALUGUEL DE BENS</h2>
                     <h3>Plataforma Coisa Rápida</h3>
-                    <p>Contrato nº CR-1764460945011</p>
+                    <p>Contrato nº ${id}</p>
                 </div>
                 
                 <div class="section">
                     <h4>1. PARTES</h4>
-                    <p><strong>Locador:</strong> Teste</p>
+                    <p><strong>Locador:</strong> ${aluguel.locador.nome}</p>
                     <p><strong>CPF/CNPJ:</strong> Documento</p>
-                    <p><strong>Locatário:</strong> Wellington joanne</p>
+                    <p><strong>Locatário:</strong> ${aluguel.locatario.nome}</p>
                     <p><strong>CPF/CNPJ:</strong> Documento</p>
                     <p>Ambas as partes devidamente cadastradas e verificadas na plataforma <strong>Coisa Rápida</strong>, intermediadora deste contrato.</p>
                 </div>
@@ -87,21 +107,21 @@ export class BuscarContratoAluguelQuery {
                 <div class="section">
                     <h4>2. OBJETO</h4>
                     <p>O presente contrato tem por objeto o aluguel do seguinte item:</p>
-                    <p><strong>Item:</strong> Barraca Camping Acampamento Grande Varanda Para 8-12 Pessoas 380*260 *200 Cm</p>
-                    <p><strong>Descrição:</strong> O que você precisa saber sobre este produto Tem 3 compartimentos divisórios. O peso é de 15 kg. Dimensões: 2m x 2.6m x 3.8m. Impermeabilidade: 2000mm. O piso é feito de tecido oxford 210d. O material da parede é feito de tecido pu silver gel à prova d'água.</p>
-                    <p><strong>Código de identificação:</strong> Mm1Tv1bYMxj5FK7BjgYN</p>
+                    <p><strong>Item:</strong> ${aluguel.itemSnapshot.nome}</p>
+                    <p><strong>Descrição:</strong> ${aluguel.itemSnapshot.descricao || 'N/A'}</p>
+                    <p><strong>Código de identificação:</strong> ${aluguel.itemId}</p>
                     <p><strong>Condição atual:</strong> Em perfeito estado</p>
                     <p>O item deverá ser utilizado única e exclusivamente para fins lícitos, respeitando suas condições normais de uso.</p>
                 </div>
                 
                 <div class="section">
                     <h4>3. VALORES E PRAZOS</h4>
-                    <p><strong>Valor do aluguel:</strong> R$ 0.0</p>
-                    <p><strong>Data de início:</strong> 2025-11-29T00:00:00.000</p>
-                    <p><strong>Data de término:</strong> A definir</p>
+                    <p><strong>Valor do aluguel:</strong> R$ ${aluguel.precoTotal.toFixed(2)}</p>
+                    <p><strong>Data de início:</strong> ${dataInicio}</p>
+                    <p><strong>Data de término:</strong> ${dataFim}</p>
                     <p><strong>Prazo de locação:</strong> Período acordado entre as partes</p>
-                    <p><strong>Caução:</strong> R$ 300.0, retida pela plataforma até confirmação da devolução do item.</p>
-                    <p><strong>Taxa de serviço da plataforma:</strong> R$ 0,00</p>
+                    <p><strong>Caução:</strong> R$ ${(aluguel.caucao?.valor ?? 0).toFixed(2)}, retida pela plataforma até confirmação da devolução do item.</p>
+                    <p><strong>Taxa de serviço da plataforma:</strong> R$ ${(aluguel.precoTotalComTaxa - aluguel.precoTotal).toFixed(2)}</p>
                 </div>
                 
                 <div class="section">

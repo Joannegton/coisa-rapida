@@ -5,6 +5,7 @@ import {
     MinLength,
     MaxLength,
     Matches,
+    ValidateIf,
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
@@ -47,7 +48,9 @@ export class SolicitarAluguelDto {
     })
     @IsString({ message: 'Observações deve ser uma string válida' })
     @IsOptional()
+    @ValidateIf((o) => o.observacoesLocatario && o.observacoesLocatario.length > 0)
     @MinLength(10, { message: 'Observações deve ter pelo menos 10 caracteres' })
+    @ValidateIf((o) => o.observacoesLocatario && o.observacoesLocatario.length > 0)
     @MaxLength(500, {
         message: 'Observações deve ter no máximo 500 caracteres',
     })

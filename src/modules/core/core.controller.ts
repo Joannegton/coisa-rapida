@@ -36,7 +36,7 @@ import type { Request } from 'express';
 import { FinalizarAluguelUseCase } from './application/usecases/finalizar-aluguel.usecase';
 
 @ApiTags('core')
-@Controller()
+@Controller('core')
 export class CoreController {
     constructor(
         private readonly solicitarAluguelUseCase: SolicitarAluguelUseCase,
@@ -58,12 +58,13 @@ export class CoreController {
     @ApiResponse({
         status: 201,
         description: 'Aluguel solicitado com sucesso.',
+        type: AluguelDto,
     })
     @ApiBody({ type: SolicitarAluguelDto })
     @ApiAccessToken()
     @HttpCode(HttpStatus.CREATED)
     @AuditarSolicitacaoAluguel()
-    @Post('aluguel')
+    @Post()
     async solicitarAluguel(
         @usuarioAtual() usuario: UsuarioPayload,
         @Body() props: SolicitarAluguelDto,
@@ -86,7 +87,7 @@ export class CoreController {
     })
     @ApiAccessToken()
     @HttpCode(HttpStatus.OK)
-    @Get('aluguel')
+    @Get()
     async listarAlugueisPorUsuario(
         @usuarioAtual() usuario: UsuarioPayload,
     ): Promise<AluguelDto[]> {
@@ -105,7 +106,7 @@ export class CoreController {
     @ApiParam({ name: 'id', description: 'ID do aluguel' })
     @ApiAccessToken()
     @HttpCode(HttpStatus.OK)
-    @Get('aluguel/:id')
+    @Get(':id')
     async buscarAluguel(
         @Param('id') id: string,
         @usuarioAtual() usuario: UsuarioPayload,
@@ -127,7 +128,7 @@ export class CoreController {
     @ApiParam({ name: 'id', description: 'ID do aluguel' })
     @ApiAccessToken()
     @HttpCode(HttpStatus.OK)
-    @Get('aluguel/:id/contrato')
+    @Get(':id/contrato')
     buscarContrato(@Param('id') id: string) {
         return this.buscarContratoAluguelQuery.execute(id);
     }
@@ -144,7 +145,7 @@ export class CoreController {
     @ApiBody({ type: AssinarContratoDto })
     @ApiAccessToken()
     @HttpCode(HttpStatus.OK)
-    @Patch('aluguel/:id/contrato/assinar')
+    @Patch(':id/contrato/assinar')
     async assinarContrato(
         @Param('id') id: string,
         @usuarioAtual() usuario: UsuarioPayload,
@@ -170,7 +171,7 @@ export class CoreController {
     @ApiParam({ name: 'id', description: 'ID do aluguel' })
     @ApiAccessToken()
     @HttpCode(HttpStatus.OK)
-    @Post('aluguel/:id/confirmar')
+    @Post(':id/confirmar')
     async confirmarAluguel(
         @Param('id') id: string,
         @usuarioAtual() usuario: UsuarioPayload,
@@ -196,7 +197,7 @@ export class CoreController {
     @ApiBody({ type: CancelarAluguelDto })
     @ApiAccessToken()
     @HttpCode(HttpStatus.OK)
-    @Post('aluguel/:id/cancelar')
+    @Post(':id/cancelar')
     async cancelarAluguel(
         @Param('id') id: string,
         @usuarioAtual() usuario: UsuarioPayload,
@@ -222,7 +223,7 @@ export class CoreController {
     @ApiBody({ type: RecusarAluguelDto })
     @ApiAccessToken()
     @HttpCode(HttpStatus.OK)
-    @Post('aluguel/:id/recusar')
+    @Post(':id/recusar')
     async recusarAluguel(
         @Param('id') id: string,
         @usuarioAtual() usuario: UsuarioPayload,
@@ -248,7 +249,7 @@ export class CoreController {
     @ApiParam({ name: 'id', description: 'ID do aluguel' })
     @ApiAccessToken()
     @HttpCode(HttpStatus.OK)
-    @Post('aluguel/:id/finalizar')
+    @Post(':id/finalizar')
     async finalizarAluguel(
         @Param('id') id: string,
         @usuarioAtual() usuario: UsuarioPayload,
