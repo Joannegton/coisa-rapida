@@ -768,7 +768,6 @@ export class Aluguel {
                 valorCaucao: this.props.itemSnapshot.valorCaucao,
             },
             precoTotal: this.props.precoTotal,
-            precoTotalComTaxa: this.precoTotalComTaxa,
             caucao: this.props.caucao?.toDto(),
             dataInicio: this.props.dataInicio,
             dataFim: this.props.dataFim,

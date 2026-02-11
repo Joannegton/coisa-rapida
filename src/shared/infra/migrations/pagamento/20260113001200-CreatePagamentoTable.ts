@@ -23,6 +23,7 @@ export class CreatePagamentoTable20260113001200 implements MigrationInterface {
         await queryRunner.query(`
             CREATE TYPE pagamento.pagamento_tipo AS ENUM (
                 'aluguel',
+                'caucao',
                 'venda',
                 'multa'
             );

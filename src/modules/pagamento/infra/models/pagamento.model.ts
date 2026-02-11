@@ -18,6 +18,7 @@ export enum StatusPagamento {
 
 export enum PagamentoTipo {
     ALUGUEL = 'aluguel',
+    CAUCAO = 'caucao', //adicionar na migration e na model e dbeaver
     VENDA = 'venda',
     MULTA = 'multa',
 }
