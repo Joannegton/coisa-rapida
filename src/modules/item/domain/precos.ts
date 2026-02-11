@@ -23,17 +23,22 @@ export class Preco {
         domain.setPrecoPorDia(props.precoPorDia);
         domain.setPrecoPorHora(props.precoPorHora);
 
-        const calcaoMinimo = domain.calcularCaucaoMinima();
-        if (
-            props.valorCaucao !== undefined &&
-            props.valorCaucao < calcaoMinimo
-        ) {
-            throw new PrecoException(
-                `valor do Caução deve ser no mínimo ${calcaoMinimo}`,
-            );
+        if (props.caucaoObrigatoria) {
+            if (!props.valorCaucao)
+                throw new PrecoException(
+                    'Adicione valor da caução ou desative o obrigatório',
+                );
+            const calcaoMinimo = domain.calcularCaucaoMinima();
+
+            if (props.valorCaucao < calcaoMinimo) {
+                throw new PrecoException(
+                    `valor do Caução deve ser no mínimo ${calcaoMinimo}`,
+                );
+            }
+            domain.setCaucaoObrigatoria(props.caucaoObrigatoria);
+            domain.setValorCaucao(props.valorCaucao);
         }
-        domain.setValorCaucao(props.valorCaucao);
-        domain.setCaucaoObrigatoria(props.caucaoObrigatoria);
+
         return domain;
     }
 

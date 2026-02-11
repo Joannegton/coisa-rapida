@@ -122,7 +122,7 @@ export class CriarItemDto {
     })
     @IsBoolean({ message: 'Caução obrigatória deve ser um valor booleano' })
     @IsOptional()
-    caucaoObrigatoria: boolean = true;
+    caucaoObrigatoria: boolean;
 
     @ApiProperty({
         type: 'array',
