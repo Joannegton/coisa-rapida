@@ -65,6 +65,7 @@ async function bootstrap() {
         'http://localhost:3000',
         'http://localhost:3001',
         'http://localhost:8080',
+        'https://theft-residence-move-object.trycloudflare.com',
     ];
 
     app.enableCors({

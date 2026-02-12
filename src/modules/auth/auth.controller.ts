@@ -88,6 +88,7 @@ export class AuthController {
             response,
             loginResult.access_token,
             loginResult.refresh_token,
+            request,
         );
 
         response.json(authResponse);
@@ -130,6 +131,7 @@ export class AuthController {
             response,
             registrarResult.access_token,
             registrarResult.refresh_token,
+            request,
         );
 
         response.json(authResponse);
@@ -185,10 +187,12 @@ export class AuthController {
         const tokenResult =
             await this.refreshTokenUsecase.execute(refreshToken);
 
+        const isProducao = process.env.NODE_ENV === 'production';
+
         const cookieOptions = {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict' as const,
+            secure: isProducao,
+            sameSite: isProducao ? ('none' as const) : ('lax' as const),
             maxAge: 15 * 60 * 1000, // 15 minutos
             path: '/',
         };
@@ -290,13 +294,17 @@ export class AuthController {
         response: express.Response,
         accessToken: string,
         refreshToken: string,
+        request: Request,
     ) {
+        const isProducao = process.env.NODE_ENV === 'production';
+
         const cookieOptions = {
             httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict' as const,
+            secure: isProducao,
+            sameSite: isProducao ? ('none' as const) : ('lax' as const), // necessário para cross-origin
             maxAge: 15 * 60 * 1000, // 15 minutos
             path: '/',
+            domain: isProducao ? request.hostname : undefined,
         };
 
         response.cookie('access_token', accessToken, cookieOptions);
