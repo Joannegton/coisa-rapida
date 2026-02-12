@@ -36,25 +36,34 @@ export class CriarPreferenciaPagamentoUsecase {
 
         const tipoPagamento = this.determinarTipoPagamento(aluguel);
 
+        const valorPagamento = aluguel.caucao?.valor
+            ? aluguel.caucao?.valor
+            : aluguel.precoTotalComTaxa;
+
         const external_reference = `${props.aluguelId}, ${tipoPagamento}`;
 
         const preferencia =
             await this.mercadoPagoIntegration.criarPreferenciaPagamento({
                 aluguelId: props.aluguelId,
                 itemDescricao: aluguel.item.descricao,
-                valor: aluguel.precoTotalComTaxa,
+                valor: valorPagamento,
                 itemNome: aluguel.item.nome,
                 tipo: tipoPagamento,
                 locatarioEmail: props.usuarioEmail,
                 locatarioNome: aluguel.locatario.nome,
                 externalReference: external_reference,
+                backUrls: {
+                    success: `${process.env.FRONTEND_URL}/pagamento/sucesso`,
+                    failure: `${process.env.FRONTEND_URL}/pagamento/falha`,
+                    pending: `${process.env.FRONTEND_URL}/pagamento/pendente`,
+                },
             });
 
         const pagamento = Pagamento.criar({
-            tipo: PagamentoTipo.ALUGUEL,
+            tipo: tipoPagamento,
             aluguelId: props.aluguelId,
             usuarioId: props.usuarioId,
-            valor: aluguel.precoTotalComTaxa,
+            valor: valorPagamento,
             metodoPagamento: 'mercado_pago',
             mercadoPagoPreferenciaId: preferencia.id!,
             dadosMercadoPago: {
@@ -77,13 +86,13 @@ export class CriarPreferenciaPagamentoUsecase {
         };
     }
 
-    private determinarTipoPagamento(
-        aluguel: AluguelResult,
-    ): 'aluguel' | 'venda' | 'caucao' | 'multa' {
-        if (aluguel.caucao?.status === 'aguardando_pagamento') return 'caucao';
-        if (aluguel.multa?.status === 'aguardando_pagamento') return 'multa';
+    private determinarTipoPagamento(aluguel: AluguelResult): PagamentoTipo {
+        if (aluguel.caucao?.status === 'aguardando_pagamento')
+            return PagamentoTipo.CAUCAO;
+        if (aluguel.multa?.status === 'aguardando_pagamento')
+            return PagamentoTipo.MULTA;
 
-        return 'aluguel';
+        return PagamentoTipo.ALUGUEL;
 
         // implementar tipo venda
     }

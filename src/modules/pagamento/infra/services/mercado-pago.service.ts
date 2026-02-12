@@ -25,6 +25,7 @@ export class MercadoPagoServiceImpl implements MercadoPagoService {
     async criarPreferenciaPagamento(
         props: PreferenciaPagamentoProps,
     ): Promise<PreferenceResponse> {
+        console.log('props', props.backUrls);
         try {
             const body: PreferenceRequest = {
                 items: [
@@ -42,7 +43,7 @@ export class MercadoPagoServiceImpl implements MercadoPagoService {
                     name: props.locatarioNome,
                 },
                 external_reference: props.externalReference,
-                back_urls: {
+                back_urls: props.backUrls || {
                     success: `coisarapida://success`,
                     failure: `coisarapida://failure`,
                     pending: `coisarapida://pending`,

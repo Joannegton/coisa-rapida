@@ -9,6 +9,11 @@ export type PreferenciaPagamentoProps = {
     locatarioNome?: string;
     externalReference: string;
     tipo: 'aluguel' | 'venda' | 'caucao' | 'multa';
+    backUrls?: {
+        success?: string;
+        failure?: string;
+        pending?: string;
+    };
 };
 
 export type PagamentoStatusResponse = {
